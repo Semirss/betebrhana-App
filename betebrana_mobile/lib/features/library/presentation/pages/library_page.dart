@@ -1,0 +1,194 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:betebrana_mobile/core/config/app_config.dart';
+import 'package:betebrana_mobile/features/library/data/book_repository.dart';
+import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
+import 'package:betebrana_mobile/features/library/presentation/bloc/library_bloc.dart';
+import 'package:betebrana_mobile/features/library/presentation/bloc/library_event.dart';
+import 'package:betebrana_mobile/features/library/presentation/bloc/library_state.dart';
+import 'package:betebrana_mobile/features/library/presentation/pages/book_details_page.dart';
+
+class LibraryPage extends StatelessWidget {
+  const LibraryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return RepositoryProvider(
+      create: (_) => BookRepository(),
+      child: BlocProvider(
+        create: (context) => LibraryBloc(context.read<BookRepository>())
+          ..add(const LibraryStarted()),
+        child: const _LibraryView(),
+      ),
+    );
+  }
+}
+
+class _LibraryView extends StatelessWidget {
+  const _LibraryView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('BeteBrana Library'),
+      ),
+      body: BlocBuilder<LibraryBloc, LibraryState>(
+        builder: (context, state) {
+          if (state is LibraryLoading || state is LibraryInitial) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state is LibraryError) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.redAccent),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Failed to load books',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () =>
+                        context.read<LibraryBloc>().add(const LibraryStarted()),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (state is LibraryLoaded) {
+            final books = state.books;
+            if (books.isEmpty) {
+              return const Center(child: Text('No books available'));
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<LibraryBloc>().add(const LibraryRefreshed());
+              },
+              child: ListView.separated(
+                padding: const EdgeInsets.all(8),
+                itemBuilder: (context, index) {
+                  final book = books[index];
+                  return _BookListTile(book: book);
+                },
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemCount: books.length,
+              ),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+}
+
+class _BookListTile extends StatelessWidget {
+  const _BookListTile({required this.book});
+
+  final Book book;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: _BookCover(coverImagePath: book.coverImagePath),
+      title: Text(book.title.isEmpty ? 'Untitled' : book.title),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(book.author.isEmpty ? 'Unknown author' : book.author),
+          const SizedBox(height: 2),
+          Text(
+            _queueSubtitleText(book),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+      trailing: Text(
+        '${book.availableCopies}/${book.totalCopies} available',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => BookDetailsPage(book: book),
+          ),
+        );
+      },
+    );
+  }
+
+  String _queueSubtitleText(Book book) {
+    final info = book.queueInfo;
+
+    if (info == null) {
+      if (!book.isAvailable) {
+        return 'Currently unavailable';
+      }
+      return 'Available';
+    }
+
+    if (info.hasReservation) {
+      return 'Reserved for you';
+    }
+
+    if (info.userInQueue) {
+      if (info.userPosition > 0) {
+        return 'In queue (position ${info.userPosition})';
+      }
+      return 'In queue';
+    }
+
+    if (info.totalInQueue > 0) {
+      return 'Queue: ${info.totalInQueue} waiting';
+    }
+
+    return book.isAvailable ? 'Available' : 'Currently unavailable';
+  }
+}
+
+class _BookCover extends StatelessWidget {
+  const _BookCover({this.coverImagePath});
+
+  final String? coverImagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    if (coverImagePath == null || coverImagePath!.isEmpty) {
+      return const Icon(Icons.book, size: 40);
+    }
+
+    final url = '${AppConfig.coversBaseUrl}/$coverImagePath';
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: CachedNetworkImage(
+        imageUrl: url,
+        width: 40,
+        height: 60,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => const SizedBox(
+          width: 40,
+          height: 60,
+          child: Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => const Icon(Icons.book, size: 40),
+      ),
+    );
+  }
+}
