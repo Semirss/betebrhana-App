@@ -4,30 +4,36 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
-  // Base colors from requirements
-  static const lightBackground = Color(0xFFFFFFFF); // #ffffff
-  static const lightForeground = Color(0xFF333333); // #333333
+  // Enhanced colors with more depth and richness
+  static const lightBackground = Color(0xFFF8F9FA); // Softer off-white
+  static const lightForeground = Color(0xFF2D3748); // Darker gray for better contrast
 
-  static const darkBackground = Color(0xFF1A1A1A); // #1a1a1a
-  static const darkForeground = Color(0xFFE0E0E0); // #e0e0e0
+  static const darkBackground = Color(0xFF121212); // True dark
+  static const darkForeground = Color(0xFFE2E8F0); // Softer light gray
 
-  static const tanBackground = Color(0xFFFDF6E3); // #fdf6e3
-  static const tanForeground = Color(0xFF586E75); // #586e75
+  static const tanBackground = Color(0xFFF4EBD0); // Warmer, richer tan
+  static const tanForeground = Color(0xFF4A5568); // Deeper gray-brown
 
-  static const blueBackground = Color(0xFFE3F2FD); // #e3f2fd
-  static const blueForeground = Color(0xFF1565C0); // #1565c0
+  static const blueBackground = Color(0xFFDBEAFE); // Deeper blue tint
+  static const blueForeground = Color(0xFF1E40AF); // Richer blue
 
-  static const greenBackground = Color(0xFFE8F5E8); // #e8f5e8
-  static const greenForeground = Color(0xFF2E7D32); // #2e7d32
+  static const greenBackground = Color(0xFFD1FAE5); // Deeper green tint
+  static const greenForeground = Color(0xFF065F46); // Richer forest green
 
   static ThemeData light() {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: lightForeground,
-        brightness: Brightness.light,
+      scaffoldBackgroundColor: lightBackground,
+      colorScheme: ColorScheme.light(
+        primary: lightForeground,
+        onPrimary: lightBackground,
+        secondary: lightForeground.withOpacity(0.7),
+        onSecondary: lightBackground,
         background: lightBackground,
+        onBackground: lightForeground,
+        surface: lightBackground,
+        onSurface: lightForeground,
       ),
     );
   }
@@ -36,12 +42,71 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: darkForeground,
-        brightness: Brightness.dark,
+      scaffoldBackgroundColor: darkBackground,
+      colorScheme: ColorScheme.dark(
+        primary: darkForeground,
+        onPrimary: darkBackground,
+        secondary: darkForeground.withOpacity(0.7),
+        onSecondary: darkBackground,
         background: darkBackground,
+        onBackground: darkForeground,
+        surface: Color(0xFF1E1E1E), // Slightly lighter than background
+        onSurface: darkForeground,
+      ),
+    );
+  }
+
+  static ThemeData sepia() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: tanBackground,
+      colorScheme: ColorScheme.light(
+        primary: tanForeground,
+        onPrimary: tanBackground,
+        secondary: tanForeground.withOpacity(0.7),
+        onSecondary: tanBackground,
+        background: tanBackground,
+        onBackground: tanForeground,
+        surface: tanBackground,
+        onSurface: tanForeground,
+      ),
+    );
+  }
+
+  static ThemeData blue() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: blueBackground,
+      colorScheme: ColorScheme.light(
+        primary: blueForeground,
+        onPrimary: blueBackground,
+        secondary: blueForeground.withOpacity(0.7),
+        onSecondary: blueBackground,
+        background: blueBackground,
+        onBackground: blueForeground,
+        surface: blueBackground,
+        onSurface: blueForeground,
+      ),
+    );
+  }
+
+  static ThemeData green() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: greenBackground,
+      colorScheme: ColorScheme.light(
+        primary: greenForeground,
+        onPrimary: greenBackground,
+        secondary: greenForeground.withOpacity(0.7),
+        onSecondary: greenBackground,
+        background: greenBackground,
+        onBackground: greenForeground,
+        surface: greenBackground,
+        onSurface: greenForeground,
       ),
     );
   }
 }
-

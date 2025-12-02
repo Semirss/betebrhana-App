@@ -9,6 +9,7 @@ class Book {
   final int totalCopies;
   final int availableCopies;
   final BookQueueInfo? queueInfo;
+  final bool userHasRental;
 
   const Book({
     required this.id,
@@ -21,6 +22,7 @@ class Book {
     this.totalCopies = 0,
     this.availableCopies = 0,
     this.queueInfo,
+    this.userHasRental = false,
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -43,6 +45,7 @@ class Book {
       queueInfo: json['queueInfo'] is Map<String, dynamic>
           ? BookQueueInfo.fromJson(json['queueInfo'] as Map<String, dynamic>)
           : null,
+          userHasRental: json['userHasRental'] as bool? ?? false,
     );
   }
 

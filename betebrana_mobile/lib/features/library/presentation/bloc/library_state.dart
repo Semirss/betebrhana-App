@@ -18,12 +18,18 @@ class LibraryLoading extends LibraryState {
 }
 
 class LibraryLoaded extends LibraryState {
-  const LibraryLoaded(this.books);
+  const LibraryLoaded({
+    required this.books,
+    this.hasUpdates = false,
+    this.updateMessage,
+  });
 
   final List<Book> books;
+  final bool hasUpdates;
+  final String? updateMessage;
 
   @override
-  List<Object?> get props => [books];
+  List<Object?> get props => [books, hasUpdates, updateMessage];
 }
 
 class LibraryError extends LibraryState {
@@ -34,4 +40,3 @@ class LibraryError extends LibraryState {
   @override
   List<Object?> get props => [message];
 }
-
