@@ -7,7 +7,9 @@ import 'features/auth/presentation/bloc/authentication_bloc.dart';
 import 'features/auth/presentation/bloc/authentication_event.dart';
 import 'features/auth/presentation/bloc/authentication_state.dart';
 import 'features/auth/presentation/pages/login_page.dart';
+import 'features/auth/presentation/pages/register_page.dart';
 import 'features/library/presentation/pages/library_page.dart';
+import 'features/library/presentation/pages/downloaded_books_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,21 +34,45 @@ class BeteBranaApp extends StatelessWidget {
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
           themeMode: ThemeMode.system,
-          home: BlocBuilder<AuthBloc, AuthState>(
-            builder: (context, state) {
-              if (state is AuthLoading || state is AuthInitial) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (state is AuthAuthenticated) {
-                return const LibraryPage();
-              }
-              return const LoginPage();
-            },
-          ),
+          home: const _AppWrapper(), // Use a wrapper widget instead
         ),
       ),
     );
   }
+}
+
+// This wrapper ensures BlocBuilder is in the widget tree
+class _AppWrapper extends StatelessWidget {
+  const _AppWrapper();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        // Show loading while checking auth
+        if (state is AuthLoading || state is AuthInitial) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        
+        // If authenticated, show library
+        if (state is AuthAuthenticated) {
+          return const LibraryPage();
+        }
+        
+        // Otherwise show login
+        return const LoginPage();
+      },
+    );
+  }
+  // Helper functions for navigation (add these outside the BeteBranaApp class)
+void logoutAndNavigateToLogin(BuildContext context) {
+  context.read<AuthBloc>().add(const AuthLogoutRequested());
+  // Navigation is handled by the root BlocBuilder
+}
+
+void navigateTo(BuildContext context, String routeName, {Object? arguments}) {
+  Navigator.pushNamed(context, routeName, arguments: arguments);
+}
 }

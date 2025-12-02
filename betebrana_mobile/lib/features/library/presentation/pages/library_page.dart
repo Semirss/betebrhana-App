@@ -1,4 +1,9 @@
 import 'dart:async';
+import 'package:betebrana_mobile/features/auth/domain/entities/auth_user.dart';
+import 'package:betebrana_mobile/features/auth/presentation/bloc/authentication_bloc.dart';
+import 'package:betebrana_mobile/features/auth/presentation/bloc/authentication_event.dart';
+import 'package:betebrana_mobile/features/auth/presentation/bloc/authentication_state.dart';
+import 'package:betebrana_mobile/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,7 +32,6 @@ class LibraryPage extends StatelessWidget {
     );
   }
 }
-
 class _LibraryView extends StatefulWidget {
   const _LibraryView();
 
@@ -37,12 +41,17 @@ class _LibraryView extends StatefulWidget {
 
 class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver {
   Timer? _refreshTimer;
+  AuthUser? _currentUser;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _startAutoRefresh();
+    // Get current user from AuthBloc
+    _currentUser = context.read<AuthBloc>().state is AuthAuthenticated
+        ? (context.read<AuthBloc>().state as AuthAuthenticated).user
+        : null;
   }
 
   @override
@@ -177,50 +186,56 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
   }
 
   Widget _buildDrawer(BuildContext context) {
+    // Get current user
+    final authState = context.read<AuthBloc>().state;
+    AuthUser? user;
+    
+    if (authState is AuthAuthenticated) {
+      user = authState.user;
+    }
+    
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
+          UserAccountsDrawerHeader(
+            accountName: Text(
+              user?.name ?? 'Guest',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            accountEmail: Text(user?.email ?? 'Not logged in'),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Text(
+                user?.name.isNotEmpty == true 
+                  ? user!.name[0].toUpperCase() 
+                  : 'G',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+            ),
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const Text(
-                  'Betebrana',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Digital Library',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
             ),
           ),
           ListTile(
             leading: const Icon(Icons.library_books),
             title: const Text('Library'),
             onTap: () {
-              Navigator.pop(context); // Close drawer
-              // Already on Library page, just close drawer
+              Navigator.pop(context);
             },
           ),
           ListTile(
             leading: const Icon(Icons.download),
-            title: const Text('Downloaded'),
+            title: const Text('Downloaded Books'),
             onTap: () {
-              Navigator.pop(context); // Close drawer
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -229,12 +244,50 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
               );
             },
           ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              _showLogoutConfirmation(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<AuthBloc>().add(const AuthLogoutRequested());
+              // Navigation will be handled by the root BlocBuilder
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Logout'),
+          ),
         ],
       ),
     );
   }
 }
-
 class _BookListTile extends StatelessWidget {
   const _BookListTile({required this.book});
 
