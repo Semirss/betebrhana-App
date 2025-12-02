@@ -1,4 +1,4 @@
-import 'dart:async'; // Add this import
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +10,7 @@ import 'package:betebrana_mobile/features/library/presentation/bloc/library_bloc
 import 'package:betebrana_mobile/features/library/presentation/bloc/library_event.dart';
 import 'package:betebrana_mobile/features/library/presentation/bloc/library_state.dart';
 import 'package:betebrana_mobile/features/library/presentation/pages/book_details_page.dart';
+import 'package:betebrana_mobile/features/library/presentation/pages/downloaded_books_page.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -53,7 +54,6 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Refresh when app comes to foreground
     if (state == AppLifecycleState.resumed) {
       _refreshLibrary();
     }
@@ -61,12 +61,10 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
 
   @override
   void didPopNext() {
-    // Called when returning from another page
     _refreshLibrary();
   }
 
   void _startAutoRefresh() {
-    // Refresh every 30 seconds to check for queue updates
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted) {
         _refreshLibrary();
@@ -86,16 +84,21 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) {
-        // Refresh when back button is pressed (if coming from details page)
         if (didPop) {
           _refreshLibrary();
         }
       },
       child: Scaffold(
+        drawer: _buildDrawer(context),
         appBar: AppBar(
           title: const Text('BeteBrana Library'),
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+          ),
           actions: [
-            // Manual refresh button
             IconButton(
               onPressed: _refreshLibrary,
               icon: const Icon(Icons.refresh),
@@ -105,7 +108,6 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
         ),
         body: BlocConsumer<LibraryBloc, LibraryState>(
           listener: (context, state) {
-            // Show snackbar for important updates
             if (state is LibraryLoaded && state.hasUpdates) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -173,6 +175,64 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
       ),
     );
   }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Text(
+                  'Betebrana',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Digital Library',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.library_books),
+            title: const Text('Library'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              // Already on Library page, just close drawer
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.download),
+            title: const Text('Downloaded'),
+            onTap: () {
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const DownloadedBooksPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _BookListTile extends StatelessWidget {
@@ -234,81 +294,80 @@ class _BookListTile extends StatelessWidget {
             builder: (_) => BookDetailsPage(book: book),
           ),
         ).then((_) {
-          // Refresh library when returning from book details
           final libraryBloc = context.read<LibraryBloc>();
           libraryBloc.add(const LibraryRefreshed());
         });
       },
     );
   }
-String _queueSubtitleText(Book book) {
-  final info = book.queueInfo;
 
-  // First check if user has rented this book
-  if (book.userHasRental) {
-    return 'Rented';
-  }
+  String _queueSubtitleText(Book book) {
+    final info = book.queueInfo;
 
-  if (info == null) {
-    if (!book.isAvailable) {
-      return 'Currently unavailable';
+    if (book.userHasRental) {
+      return 'Rented';
     }
-    return 'Available';
-  }
 
-  if (info.hasReservation) {
-    final expiresAt = info.expiresAt;
-    if (expiresAt != null) {
-      final now = DateTime.now();
-      final difference = expiresAt.difference(now);
-      
-      if (difference.inHours > 0) {
-        return 'Reserved - ${difference.inHours}h ${difference.inMinutes.remainder(60)}m left';
-      } else if (difference.inMinutes > 0) {
-        return 'Reserved - ${difference.inMinutes}m left';
-      } else {
-        return 'Reserved - Expiring soon';
+    if (info == null) {
+      if (!book.isAvailable) {
+        return 'Currently unavailable';
       }
+      return 'Available';
     }
-    return 'Reserved for you';
-  }
 
-  if (info.userInQueue) {
-    if (info.userPosition > 0) {
-      return 'In queue (position ${info.userPosition})';
+    if (info.hasReservation) {
+      final expiresAt = info.expiresAt;
+      if (expiresAt != null) {
+        final now = DateTime.now();
+        final difference = expiresAt.difference(now);
+        
+        if (difference.inHours > 0) {
+          return 'Reserved - ${difference.inHours}h ${difference.inMinutes.remainder(60)}m left';
+        } else if (difference.inMinutes > 0) {
+          return 'Reserved - ${difference.inMinutes}m left';
+        } else {
+          return 'Reserved - Expiring soon';
+        }
+      }
+      return 'Reserved for you';
     }
-    return 'In queue';
+
+    if (info.userInQueue) {
+      if (info.userPosition > 0) {
+        return 'In queue (position ${info.userPosition})';
+      }
+      return 'In queue';
+    }
+
+    if (info.totalInQueue > 0) {
+      return 'Queue: ${info.totalInQueue} waiting';
+    }
+
+    return book.isAvailable ? 'Available' : 'Currently unavailable';
   }
 
-  if (info.totalInQueue > 0) {
-    return 'Queue: ${info.totalInQueue} waiting';
+  Color _getQueueStatusColor(BuildContext context, Book book) {
+    if (book.userHasRental) {
+      return Colors.green;
+    }
+    
+    final info = book.queueInfo;
+    
+    if (info?.hasReservation ?? false) {
+      return Colors.green;
+    }
+    
+    if (info?.userInQueue ?? false) {
+      return Colors.orange;
+    }
+    
+    if (book.isAvailable) {
+      return Theme.of(context).colorScheme.secondary;
+    }
+    
+    return Theme.of(context).colorScheme.error;
   }
-
-  return book.isAvailable ? 'Available' : 'Currently unavailable';
 }
-
-Color _getQueueStatusColor(BuildContext context, Book book) {
-  // First check if user has rented this book
-  if (book.userHasRental) {
-    return Colors.green;
-  }
-  
-  final info = book.queueInfo;
-  
-  if (info?.hasReservation ?? false) {
-    return Colors.green;
-  }
-  
-  if (info?.userInQueue ?? false) {
-    return Colors.orange;
-  }
-  
-  if (book.isAvailable) {
-    return Theme.of(context).colorScheme.secondary;
-  }
-  
-  return Theme.of(context).colorScheme.error;
-}}
 
 class _BookCover extends StatelessWidget {
   const _BookCover({this.coverImagePath});
