@@ -443,91 +443,115 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     
     return Colors.grey;
   }
-
-  Widget _buildAvailabilityBadge() {
-    final info = widget.book.queueInfo;
-    
-    // User has active reservation
-    if (info?.hasReservation ?? false) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.access_time, size: 14, color: Colors.green),
-            const SizedBox(width: 4),
-            Text(
-              'RESERVED',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+Widget _buildAvailabilityBadge() {
+  final info = widget.book.queueInfo;
+  
+  // User has active rental - show RENTED status
+  if (_activeRental != null) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.library_books, size: 14, color: Colors.green),
+          const SizedBox(width: 4),
+          Text(
+            'RENTED',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
             ),
-          ],
-        ),
-      );
-    }
-    
-    // User is first in queue and book is available
-    if (info?.userPosition == 1 && widget.book.isAvailable) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.emoji_events, size: 14, color: Colors.blue),
-            const SizedBox(width: 4),
-            Text(
-              'YOUR TURN!',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // User has active reservation
+  if (info?.hasReservation ?? false) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.access_time, size: 14, color: Colors.green),
+          const SizedBox(width: 4),
+          Text(
+            'RESERVED',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
             ),
-          ],
-        ),
-      );
-    }
-    
-    // Book is generally available
-    if (widget.book.isAvailable) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, size: 14, color: Colors.blue),
-            const SizedBox(width: 4),
-            Text(
-              'AVAILABLE',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+ 
+  // Book is generally available
+  if (widget.book.isAvailable) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle, size: 14, color: Colors.blue),
+          const SizedBox(width: 4),
+          Text(
+            'AVAILABLE',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+      // User is first in queue and book is available
+  if (info?.userPosition == 1 && widget.book.isAvailable) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.orange.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.orange),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.schedule, size: 14, color: Colors.orange),
+        const SizedBox(width: 4),
+        Text(
+          'JOIN QUEUE',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.orange,
+          ),
         ),
-      );
-    }
-    
+      ],
+    ),
+  );
+}
     // Book is unavailable - show join queue
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
