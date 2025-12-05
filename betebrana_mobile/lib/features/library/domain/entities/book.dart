@@ -10,7 +10,10 @@ class Book {
   final int availableCopies;
   final BookQueueInfo? queueInfo;
   final bool userHasRental;
-
+  final DateTime? downloadExpiryDate;
+  final DateTime? downloadDate;
+  final bool isDownloaded;
+  final String? localFilePath;
   const Book({
     required this.id,
     required this.title,
@@ -23,6 +26,10 @@ class Book {
     this.availableCopies = 0,
     this.queueInfo,
     this.userHasRental = false,
+    this.downloadExpiryDate,
+    this.downloadDate,
+    this.isDownloaded = false,  
+    this.localFilePath,       
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -46,6 +53,12 @@ class Book {
           ? BookQueueInfo.fromJson(json['queueInfo'] as Map<String, dynamic>)
           : null,
           userHasRental: json['userHasRental'] as bool? ?? false,
+                downloadExpiryDate: json['downloadExpiryDate'] != null 
+          ? DateTime.parse(json['downloadExpiryDate'])
+          : null,
+      downloadDate: json['downloadDate'] != null 
+          ? DateTime.parse(json['downloadDate'])
+          : null,
     );
   }
 

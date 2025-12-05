@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-
+import 'package:betebrana_mobile/features/library/data/book_download_service.dart';
 import 'package:betebrana_mobile/core/config/app_config.dart';
 import 'package:betebrana_mobile/features/library/data/queue_repository.dart';
 import 'package:betebrana_mobile/features/library/data/rental_repository.dart';
+import 'package:betebrana_mobile/features/library/data/book_download_service.dart'; // Add this import
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/rental.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/user_queue_item.dart';
 import 'reader_page.dart';
+
 
 class BookDetailsPage extends StatefulWidget {
   const BookDetailsPage({super.key, required this.book});
@@ -22,26 +24,48 @@ class BookDetailsPage extends StatefulWidget {
 class _BookDetailsPageState extends State<BookDetailsPage> {
   late final RentalRepository _rentalRepository;
   late final QueueRepository _queueRepository;
+  late final BookDownloadService _downloadService; 
   Timer? _countdownTimer;
 
   Rental? _activeRental;
   UserQueueItem? _queueItem;
   bool _loadingStatus = true;
   bool _actionInProgress = false;
+  bool _isDownloaded = false; 
+  bool _downloading = false; 
 
   @override
   void initState() {
     super.initState();
     _rentalRepository = RentalRepository();
     _queueRepository = QueueRepository();
+    _downloadService = BookDownloadService(); 
     _loadStatus();
+    _checkIfDownloaded(); 
     _startCountdownTimer();
+    _downloadService.syncWithServerAndCleanup();
   }
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _checkIfDownloaded() async {
+    final bookId = int.tryParse(widget.book.id);
+    if (bookId == null) return;
+    
+    try {
+      final downloaded = await _downloadService.isBookDownloaded(bookId);
+      if (mounted) {
+        setState(() {
+          _isDownloaded = downloaded;
+        });
+      }
+    } catch (e) {
+      print('Error checking download status: $e');
+    }
   }
 
   void _startCountdownTimer() {
@@ -145,6 +169,131 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     return hasFile && _activeRental != null;
   }
 
+  // Add this method for download
+  bool get _canDownload => _activeRental != null;
+
+  Future<void> _downloadCurrentBook() async {
+    final bookId = int.tryParse(widget.book.id);
+    if (bookId == null || _activeRental == null) return;
+
+    if (!_canDownload) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You need to rent this book first to download it'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _downloading = true;
+    });
+
+    try {
+      await _downloadService.downloadAndEncryptBook(
+        widget.book,
+        _activeRental!.dueDate,
+      );
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isDownloaded = true;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${widget.book.title}" downloaded for offline reading'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to download: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _downloading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _removeDownloadedBook() async {
+    final bookId = int.tryParse(widget.book.id);
+    if (bookId == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Download'),
+        content: Text('Remove "${widget.book.title}" from downloaded books?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _confirmRemoveDownload(bookId);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmRemoveDownload(int bookId) async {
+    setState(() {
+      _actionInProgress = true;
+    });
+
+    try {
+      await _downloadService.deleteBook(bookId);
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isDownloaded = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${widget.book.title}" removed from downloads'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to remove: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _actionInProgress = false;
+        });
+      }
+    }
+  }
+
   Future<void> _rentCurrentBook() async {
     final bookId = int.tryParse(widget.book.id);
     if (bookId == null) return;
@@ -226,39 +375,61 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     );
   }
 
-  Future<void> _returnCurrentBook() async {
-    final rental = _activeRental;
-    final bookId = int.tryParse(widget.book.id);
-    if (rental == null || bookId == null) return;
+// In _BookDetailsPageState class, update the _returnCurrentBook method:
 
-    setState(() {
-      _actionInProgress = true;
-    });
+Future<void> _returnCurrentBook() async {
+  final rental = _activeRental;
+  final bookId = int.tryParse(widget.book.id);
+  if (rental == null || bookId == null) return;
 
-    try {
-      await _rentalRepository.returnBook(rentalId: rental.id, bookId: bookId);
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Book returned successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      await _loadStatus();
-    } catch (e) {
-      if (!mounted) return;
+  setState(() {
+    _actionInProgress = true;
+  });
+
+  try {
+    await _rentalRepository.returnBook(rentalId: rental.id, bookId: bookId);
+    
+    // Remove downloaded book if it exists
+    await _downloadService.removeDownloadIfExists(bookId);
+    
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Book returned successfully. Download removed if existed.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    
+    // IMPORTANT: Force a complete refresh of all data
+    await _loadStatus(); // This updates rental status
+    await _checkIfDownloaded(); // This updates download status
+    await _downloadService.syncWithServerAndCleanup(); // Clean up any other expired downloads
+    
+    // Also update the book's availability status
+    // You might need to notify parent widgets too
+    if (mounted) {
+      // Trigger a rebuild to update UI
       setState(() {
-        _actionInProgress = false;
+        // This will cause the UI to rebuild
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to return: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
+    
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _actionInProgress = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to return: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
+
 
   Future<void> _joinQueueForCurrentBook() async {
     final bookId = int.tryParse(widget.book.id);
@@ -443,140 +614,141 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     
     return Colors.grey;
   }
-Widget _buildAvailabilityBadge() {
-  final info = widget.book.queueInfo;
-  
-  // User has active rental - show RENTED status
-  if (_activeRental != null) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.library_books, size: 14, color: Colors.green),
-          const SizedBox(width: 4),
-          Text(
-            'RENTED',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  // User has active reservation
-  if (info?.hasReservation ?? false) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.access_time, size: 14, color: Colors.green),
-          const SizedBox(width: 4),
-          Text(
-            'RESERVED',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
- 
-  // Book is generally available
-  if (widget.book.isAvailable) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.check_circle, size: 14, color: Colors.blue),
-          const SizedBox(width: 4),
-          Text(
-            'AVAILABLE',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-      // User is first in queue and book is available
-  if (info?.userPosition == 1 && widget.book.isAvailable) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: Colors.orange.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.orange),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.schedule, size: 14, color: Colors.orange),
-        const SizedBox(width: 4),
-        Text(
-          'JOIN QUEUE',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.orange,
-          ),
+
+  Widget _buildAvailabilityBadge() {
+    final info = widget.book.queueInfo;
+    
+    // User has active rental - show RENTED status
+    if (_activeRental != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green),
         ),
-      ],
-    ),
-  );
-}
-    // Book is unavailable - show join queue
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.schedule, size: 14, color: Colors.orange),
-          const SizedBox(width: 4),
-          Text(
-            'JOIN QUEUE',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.orange,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.library_books, size: 14, color: Colors.green),
+            const SizedBox(width: 4),
+            Text(
+              'RENTED',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      );
+    }
+    
+    // User has active reservation
+    if (info?.hasReservation ?? false) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.access_time, size: 14, color: Colors.green),
+            const SizedBox(width: 4),
+            Text(
+              'RESERVED',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+   
+    // Book is generally available
+    if (widget.book.isAvailable) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle, size: 14, color: Colors.blue),
+            const SizedBox(width: 4),
+            Text(
+              'AVAILABLE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+        // User is first in queue and book is available
+    if (info?.userPosition == 1 && widget.book.isAvailable) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.schedule, size: 14, color: Colors.orange),
+            const SizedBox(width: 4),
+            Text(
+              'JOIN QUEUE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+      // Book is unavailable - show join queue
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.schedule, size: 14, color: Colors.orange),
+            const SizedBox(width: 4),
+            Text(
+              'JOIN QUEUE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -599,8 +771,11 @@ Widget _buildAvailabilityBadge() {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_actionInProgress || _loadingStatus) ...[
-              const LinearProgressIndicator(minHeight: 2),
+            if (_actionInProgress || _loadingStatus || _downloading) ...[
+              LinearProgressIndicator(
+                minHeight: 2,
+                value: _downloading ? null : 0, // Indeterminate for download
+              ),
               const SizedBox(height: 16),
             ],
             
@@ -628,6 +803,33 @@ Widget _buildAvailabilityBadge() {
                       // Availability badge
                       _buildAvailabilityBadge(),
                       const SizedBox(height: 12),
+                      
+                      // Download status badge
+                      if (_isDownloaded)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.green),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.download_done, size: 14, color: Colors.green),
+                              const SizedBox(width: 4),
+                              Text(
+                                'DOWNLOADED',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 8),
                       
                       // Copies information
                       Text(
@@ -720,6 +922,44 @@ Widget _buildAvailabilityBadge() {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            
+            // Download/Remove button
+            SizedBox(
+              width: double.infinity,
+              child: _isDownloaded
+                  ? ElevatedButton.icon(
+                      onPressed: (!_actionInProgress) ? _removeDownloadedBook : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.1),
+                        foregroundColor: Colors.red,
+                      ),
+                      icon: const Icon(Icons.delete),
+                      label: const Text('Remove Download'),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: (!_actionInProgress && !_downloading && _canDownload) 
+                          ? _downloadCurrentBook 
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _canDownload 
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey.withOpacity(0.5),
+                        foregroundColor: _canDownload ? Colors.white : Colors.grey,
+                      ),
+                      icon: _downloading 
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.download),
+                      label: Text(_downloading ? 'Downloading...' : 'Download for Offline'),
+                    ),
             ),
             const SizedBox(height: 24),
             

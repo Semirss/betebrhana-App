@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:betebrana_mobile/features/library/data/book_download_service.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/presentation/pages/reader_page.dart';
+import 'package:betebrana_mobile/core/config/app_config.dart'; // Add this import
 
 class DownloadedBooksPage extends StatefulWidget {
   const DownloadedBooksPage({super.key});
@@ -18,8 +19,15 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
   @override
   void initState() {
     super.initState();
-    _downloadedBooksFuture = _downloadService.getDownloadedBooks();
+    _loadDownloadedBooks();
     _downloadService.cleanupExpiredBooks();
+    _downloadService.syncWithServerAndCleanup(); 
+  }
+
+  Future<void> _loadDownloadedBooks() async {
+    setState(() {
+      _downloadedBooksFuture = _downloadService.getDownloadedBooks();
+    });
   }
 
   Future<void> _refreshBooks() async {
@@ -60,7 +68,11 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
     });
 
     try {
-      // await _downloadService._deleteBook(int.parse(book.id));
+      final bookId = int.tryParse(book.id);
+      if (bookId != null) {
+        await _downloadService.deleteBook(bookId); // Uncommented and fixed
+      }
+      
       await _refreshBooks();
       
       if (!mounted) return;
@@ -87,6 +99,19 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
         });
       }
     }
+  }
+
+  // Navigate to reader page directly (no need for BookDetailsPage)
+  void _openReaderPage(Book book) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReaderPage(
+          book: book,
+          rentalDueDate: null, // Will use local expiry from downloaded book
+        ),
+      ),
+    );
   }
 
   @override
@@ -162,77 +187,136 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
                   itemCount: books.length,
                   itemBuilder: (context, index) {
                     final book = books[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: book.coverImagePath != null
-                            ? Image.network(
-                                '${AppConfig.apiBaseUrl}/covers/${book.coverImagePath}',
-                                width: 40,
-                                height: 60,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.book),
-                              )
-                            : const Icon(Icons.book),
-                        title: Text(book.title),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(book.author),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.green),
-                              ),
-                              child: const Text(
-                                'OFFLINE',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _showRemoveConfirmationDialog(book),
-                              tooltip: 'Remove',
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.menu_book),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ReaderPage(
-                                      book: book,
-                                      rentalDueDate: null, // Will use local expiry
-                                      // isOffline: true,
-                                    ),
-                                  ),
-                                );
-                              },
-                              tooltip: 'Read',
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                   // Update the list tile builder in DownloadedBooksPage:
+
+return Card(
+  margin: const EdgeInsets.only(bottom: 12),
+  child: ListTile(
+    leading: book.coverImagePath != null
+        ? Image.network(
+            '${AppConfig.coversBaseUrl}/${book.coverImagePath}',
+            width: 40,
+            height: 60,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 40,
+              height: 60,
+              color: Colors.grey[200],
+              child: const Icon(Icons.book, color: Colors.grey),
+            ),
+          )
+        : Container(
+            width: 40,
+            height: 60,
+            color: Colors.grey[200],
+            child: const Icon(Icons.book, color: Colors.grey),
+          ),
+    title: Text(
+      book.title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+    subtitle: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          book.author,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        
+        // Show expiry information
+        if (book.downloadExpiryDate != null)
+          _buildExpiryInfo(book.downloadExpiryDate!),
+        
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 2,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Colors.green),
+          ),
+          child: const Text(
+            'DOWNLOADED',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.green,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    ),
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () => _showRemoveConfirmationDialog(book),
+          tooltip: 'Remove',
+        ),
+        IconButton(
+          icon: const Icon(Icons.menu_book),
+          onPressed: () => _openReaderPage(book),
+          tooltip: 'Read',
+        ),
+      ],
+    ),
+    onTap: () => _openReaderPage(book),
+  ),
+);
+}
+
                 );
               },
             ),
     );
   }
+}  Widget _buildExpiryInfo(DateTime expiryDate) {
+  final now = DateTime.now();
+  final difference = expiryDate.difference(now);
+  
+  Color textColor = Colors.green;
+  String statusText = '';
+  
+  if (difference.isNegative) {
+    textColor = Colors.red;
+    statusText = 'EXPIRED ${difference.inDays.abs()} days ago';
+  } else if (difference.inDays <= 1) {
+    textColor = Colors.orange;
+    if (difference.inHours <= 2) {
+      statusText = 'Expires in ${difference.inMinutes} minutes';
+    } else {
+      statusText = 'Expires in ${difference.inHours} hours';
+    }
+  } else if (difference.inDays <= 7) {
+    statusText = 'Expires in ${difference.inDays} days';
+  } else {
+    statusText = 'Expires on ${expiryDate.day}/${expiryDate.month}';
+  }
+  
+  return Row(
+    children: [
+      Icon(
+        Icons.access_time,
+        size: 14,
+        color: textColor,
+      ),
+      const SizedBox(width: 4),
+      Text(
+        statusText,
+        style: TextStyle(
+          fontSize: 12,
+          color: textColor,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ],
+  );
 }
+

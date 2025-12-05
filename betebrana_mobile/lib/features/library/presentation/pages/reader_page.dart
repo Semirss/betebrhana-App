@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:betebrana_mobile/features/library/data/book_download_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -69,23 +72,79 @@ class _ReaderPageState extends State<ReaderPage>
     _initTxtFuture();
   }
 
-  void _initTxtFuture() {
-    final type = (widget.book.fileType ?? '').toLowerCase();
-    if (type == 'txt') {
-      _txtFuture = _loadTxtContent(widget.book);
-    } else {
-      _txtFuture = Future.value('');
-    }
-  }
+ // Replace the _initTxtFuture method in ReaderPage:
 
-  Future<void> _refreshOfflineState() async {
-    final entry = await _offlineBookService.getEntryForBook(widget.book.id);
-    if (!mounted) return;
-    setState(() {
-      _hasOfflineCopy = entry != null;
-      _offlineExpiresAt = entry?.expiresAt;
-    });
+void _initTxtFuture() {
+  final type = (widget.book.fileType ?? '').toLowerCase();
+  
+  // If book is downloaded and has local file path, read from local
+  if (widget.book.isDownloaded == true && widget.book.localFilePath != null) {
+    _txtFuture = _loadLocalTxtContent(widget.book);
+  } else if (type == 'txt') {
+    // Fall back to server loading if not downloaded
+    _txtFuture = _loadTxtContent(widget.book);
+  } else {
+    _txtFuture = Future.value('');
   }
+}
+
+// Add this new method to load from local file:
+Future<String> _loadLocalTxtContent(Book book) async {
+  try {
+    if (book.localFilePath == null) {
+      throw Exception('No local file path available');
+    }
+    
+    final localFile = File(book.localFilePath!);
+    if (!await localFile.exists()) {
+      throw Exception('Local file not found');
+    }
+    
+    // Read directly from the local file
+    final content = await localFile.readAsString();
+    return content;
+  } catch (e) {
+    // print('Error reading local file: $e');
+    
+    // Fall back to the offline book service if direct file reading fails
+    try {
+      final text = await _offlineBookService.readTxtContent(book.id);
+      if (text.isNotEmpty) {
+        return text;
+      }
+    } catch (_) {
+      // Continue to the next fallback
+    }
+    
+    // Final fallback: try the download service
+    try {
+      final bookId = int.tryParse(book.id);
+      if (bookId != null) {
+        final downloadService = BookDownloadService();
+        final content = await downloadService.getBookContent(bookId);
+        return content;
+      }
+    } catch (_) {
+      // All methods failed
+    }
+    
+    throw Exception('Failed to load local book content: $e');
+  }
+}
+
+Future<void> _refreshOfflineState() async {
+  // If book is already marked as downloaded, don't check the offline service
+  if (widget.book.isDownloaded == true) {
+    return;
+  }
+  
+  final entry = await _offlineBookService.getEntryForBook(widget.book.id);
+  if (!mounted) return;
+  setState(() {
+    _hasOfflineCopy = entry != null;
+    _offlineExpiresAt = entry?.expiresAt;
+  });
+}
 
   Future<String> _loadTxtContent(Book book) async {
     // Prefer offline encrypted copy if available and not expired.
@@ -335,12 +394,13 @@ Widget build(BuildContext context) {
             
             // Offline download/delete
             if (type == 'txt') ...[
-              IconButton(
+                IconButton(
                 onPressed: _downloadInProgress
                     ? null
                     : () {
-                        if (_hasOfflineCopy) {
-                          _deleteOfflineCopy();
+                        if (widget.book.isDownloaded == true || _hasOfflineCopy) {
+                          // Book is already downloaded, show info or delete
+                          _showDownloadedInfoDialog();
                         } else {
                           _downloadForOffline();
                         }
@@ -352,14 +412,15 @@ Widget build(BuildContext context) {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Icon(
-                        _hasOfflineCopy
+                        (widget.book.isDownloaded == true || _hasOfflineCopy)
                             ? Icons.cloud_done
                             : Icons.download,
                       ),
-                tooltip: _hasOfflineCopy
-                    ? 'Delete offline copy'
+                tooltip: (widget.book.isDownloaded == true || _hasOfflineCopy)
+                    ? 'Book is downloaded locally'
                     : 'Download for offline',
-              ),
+                ),
+
             ],
           ],
         ),
@@ -405,7 +466,21 @@ Widget build(BuildContext context) {
     ),
   );
 }
-
+void _showDownloadedInfoDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Book Already Downloaded'),
+      content: const Text('This book is already downloaded on your device and can be read offline.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
   String? _buildDocumentUrl(String? filePath) {
     if (filePath == null || filePath.isEmpty) return null;
     var path = filePath.trim();
