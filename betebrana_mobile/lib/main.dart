@@ -1,3 +1,4 @@
+import 'package:betebrana_mobile/main_library_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -58,7 +59,7 @@ class _AppWrapper extends StatelessWidget {
         
         // If authenticated, show library
         if (state is AuthAuthenticated) {
-          return const LibraryPage();
+          return const MainLibraryPage();
         }
         
         // Otherwise show login

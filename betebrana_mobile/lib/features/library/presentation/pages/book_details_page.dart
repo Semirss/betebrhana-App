@@ -10,7 +10,7 @@ import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/rental.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/user_queue_item.dart';
 import 'reader_page.dart';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class BookDetailsPage extends StatefulWidget {
   const BookDetailsPage({super.key, required this.book});
@@ -25,6 +25,8 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   late final RentalRepository _rentalRepository;
   late final QueueRepository _queueRepository;
   late final BookDownloadService _downloadService; 
+  late final Connectivity _connectivity;
+  bool _isOffline = false;
   Timer? _countdownTimer;
 
   Rental? _activeRental;
@@ -34,24 +36,50 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   bool _isDownloaded = false; 
   bool _downloading = false; 
 
-  @override
-  void initState() {
-    super.initState();
-    _rentalRepository = RentalRepository();
-    _queueRepository = QueueRepository();
-    _downloadService = BookDownloadService(); 
-    _loadStatus();
-    _checkIfDownloaded(); 
-    _startCountdownTimer();
-    _downloadService.syncWithServerAndCleanup();
-  }
+@override
+void initState() {
+  super.initState();
+  _rentalRepository = RentalRepository();
+  _queueRepository = QueueRepository();
+  _downloadService = BookDownloadService();
+  _connectivity = Connectivity();
+  _checkConnectivity(); 
+  _loadStatus();
+  _checkIfDownloaded();
+  _startCountdownTimer();
+  _downloadService.syncWithServerAndCleanup();
+  
+  // Listen for connectivity changes
+  _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
+    _updateConnectivityStatus(result);
+  });
+}
 
   @override
   void dispose() {
     _countdownTimer?.cancel();
     super.dispose();
   }
+Future<void> _checkConnectivity() async {
+  try {
+    final connectivityResult = await _connectivity.checkConnectivity();
+    _updateConnectivityStatus(connectivityResult);
+  } catch (e) {
+    if (mounted) {
+      setState(() {
+        _isOffline = true;
+      });
+    }
+  }
+}
 
+void _updateConnectivityStatus(ConnectivityResult result) {
+  if (mounted) {
+    setState(() {
+      _isOffline = result == ConnectivityResult.none;
+    });
+  }
+}
   Future<void> _checkIfDownloaded() async {
     final bookId = int.tryParse(widget.book.id);
     if (bookId == null) return;
@@ -614,142 +642,169 @@ Future<void> _returnCurrentBook() async {
     
     return Colors.grey;
   }
-
-  Widget _buildAvailabilityBadge() {
-    final info = widget.book.queueInfo;
-    
-    // User has active rental - show RENTED status
-    if (_activeRental != null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.library_books, size: 14, color: Colors.green),
-            const SizedBox(width: 4),
-            Text(
-              'RENTED',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+Widget _buildAvailabilityBadge() {
+  // Show OFFLINE status when there's no internet
+  if (_isOffline) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.wifi_off, size: 14, color: Colors.grey),
+          const SizedBox(width: 4),
+          Text(
+            'OFFLINE',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
             ),
-          ],
-        ),
-      );
-    }
-    
-    // User has active reservation
-    if (info?.hasReservation ?? false) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.access_time, size: 14, color: Colors.green),
-            const SizedBox(width: 4),
-            Text(
-              'RESERVED',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  final info = widget.book.queueInfo;
+  
+  // User has active rental - show RENTED status
+  if (_activeRental != null) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.library_books, size: 14, color: Colors.green),
+          const SizedBox(width: 4),
+          Text(
+            'RENTED',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
             ),
-          ],
-        ),
-      );
-    }
-   
-    // Book is generally available
-    if (widget.book.isAvailable) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, size: 14, color: Colors.blue),
-            const SizedBox(width: 4),
-            Text(
-              'AVAILABLE',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // User has active reservation
+  if (info?.hasReservation ?? false) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.access_time, size: 14, color: Colors.green),
+          const SizedBox(width: 4),
+          Text(
+            'RESERVED',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
             ),
-          ],
-        ),
-      );
-    }
-        // User is first in queue and book is available
-    if (info?.userPosition == 1 && widget.book.isAvailable) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.schedule, size: 14, color: Colors.orange),
-            const SizedBox(width: 4),
-            Text(
-              'JOIN QUEUE',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Book is generally available
+  if (widget.book.isAvailable) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle, size: 14, color: Colors.blue),
+          const SizedBox(width: 4),
+          Text(
+            'AVAILABLE',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
             ),
-          ],
-        ),
-      );
-    }
-      // Book is unavailable - show join queue
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.schedule, size: 14, color: Colors.orange),
-            const SizedBox(width: 4),
-            Text(
-              'JOIN QUEUE',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // User is first in queue and book is available
+  if (info?.userPosition == 1 && widget.book.isAvailable) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.schedule, size: 14, color: Colors.orange),
+          const SizedBox(width: 4),
+          Text(
+            'JOIN QUEUE',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.orange,
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Book is unavailable - show join queue
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.orange.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.orange),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.schedule, size: 14, color: Colors.orange),
+        const SizedBox(width: 4),
+        Text(
+          'JOIN QUEUE',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.orange,
+          ),
         ),
-      );
-    }
-
+      ],
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
@@ -866,63 +921,63 @@ Future<void> _returnCurrentBook() async {
             
             const SizedBox(height: 24),
             
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: (!_actionInProgress && _canRent) ? _rentCurrentBook : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: (widget.book.queueInfo?.hasReservation ?? false) 
-                          ? Colors.green 
-                          : Theme.of(context).primaryColor,
-                    ),
-                    child: Text(
-                      (widget.book.queueInfo?.hasReservation ?? false)
-                          ? 'BORROW NOW (Reserved!)'
-                          : 'Borrow (21 days)',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: (widget.book.queueInfo?.hasReservation ?? false)
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: (!_actionInProgress && _canReturn)
-                        ? _returnCurrentBook
-                        : null,
-                    child: const Text('Return'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: (!_actionInProgress && _canJoinQueue)
-                        ? _joinQueueForCurrentBook
-                        : null,
-                    child: const Text('Join queue'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: (!_actionInProgress && _canLeaveQueue)
-                        ? _leaveQueueForCurrentBook
-                        : null,
-                    child: const Text('Leave queue'),
-                  ),
-                ),
-              ],
-            ),
+            // Action buttons - disabled when offline
+Row(
+  children: [
+    Expanded(
+      child: ElevatedButton(
+        onPressed: (!_actionInProgress && _canRent && !_isOffline) ? _rentCurrentBook : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: (widget.book.queueInfo?.hasReservation ?? false) 
+              ? Colors.green 
+              : Theme.of(context).primaryColor,
+        ),
+        child: Text(
+          (widget.book.queueInfo?.hasReservation ?? false)
+              ? 'BORROW NOW (Reserved!)'
+              : 'Borrow (21 days)',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: (widget.book.queueInfo?.hasReservation ?? false)
+                ? FontWeight.bold
+                : FontWeight.normal,
+          ),
+        ),
+      ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+      child: OutlinedButton(
+        onPressed: (!_actionInProgress && _canReturn && !_isOffline)
+            ? _returnCurrentBook
+            : null,
+        child: const Text('Return'),
+      ),
+    ),
+  ],
+),
+const SizedBox(height: 12),
+Row(
+  children: [
+    Expanded(
+      child: OutlinedButton(
+        onPressed: (!_actionInProgress && _canJoinQueue && !_isOffline)
+            ? _joinQueueForCurrentBook
+            : null,
+        child: const Text('Join queue'),
+      ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+      child: OutlinedButton(
+        onPressed: (!_actionInProgress && _canLeaveQueue && !_isOffline)
+            ? _leaveQueueForCurrentBook
+            : null,
+        child: const Text('Leave queue'),
+      ),
+    ),
+  ],
+),
             const SizedBox(height: 12),
             
             // Download/Remove button
