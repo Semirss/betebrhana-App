@@ -5,7 +5,6 @@ import 'package:betebrana_mobile/features/library/data/book_download_service.dar
 import 'package:betebrana_mobile/core/config/app_config.dart';
 import 'package:betebrana_mobile/features/library/data/queue_repository.dart';
 import 'package:betebrana_mobile/features/library/data/rental_repository.dart';
-import 'package:betebrana_mobile/features/library/data/book_download_service.dart'; // Add this import
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/rental.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/user_queue_item.dart';
@@ -36,6 +35,10 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   bool _isDownloaded = false; 
   bool _downloading = false; 
 
+  // Scroll controller for parallax effect
+  final ScrollController _scrollController = ScrollController();
+  double _scrollOffset = 0;
+
 @override
 void initState() {
   super.initState();
@@ -43,6 +46,14 @@ void initState() {
   _queueRepository = QueueRepository();
   _downloadService = BookDownloadService();
   _connectivity = Connectivity();
+  
+  // Listen to scroll position for parallax effect
+  _scrollController.addListener(() {
+    setState(() {
+      _scrollOffset = _scrollController.offset;
+    });
+  });
+  
   _checkConnectivity(); 
   _loadStatus();
   _checkIfDownloaded();
@@ -58,8 +69,10 @@ void initState() {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
+
 Future<void> _checkConnectivity() async {
   try {
     final connectivityResult = await _connectivity.checkConnectivity();
@@ -80,6 +93,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
     });
   }
 }
+
   Future<void> _checkIfDownloaded() async {
     final bookId = int.tryParse(widget.book.id);
     if (bookId == null) return;
@@ -331,7 +345,6 @@ void _updateConnectivityStatus(ConnectivityResult result) {
     print('Can rent: $_canRent');
     print('Active rental: $_activeRental');
     print('Book available: ${widget.book.isAvailable}');
-    // print('Queue info: ${widget.book.queueInfo?.toJson()}');
 
     if (!_canRent) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -403,8 +416,6 @@ void _updateConnectivityStatus(ConnectivityResult result) {
     );
   }
 
-// In _BookDetailsPageState class, update the _returnCurrentBook method:
-
 Future<void> _returnCurrentBook() async {
   final rental = _activeRental;
   final bookId = int.tryParse(widget.book.id);
@@ -456,8 +467,6 @@ Future<void> _returnCurrentBook() async {
     );
   }
 }
-
-
 
   Future<void> _joinQueueForCurrentBook() async {
     final bookId = int.tryParse(widget.book.id);
@@ -642,119 +651,146 @@ Future<void> _returnCurrentBook() async {
     
     return Colors.grey;
   }
-Widget _buildAvailabilityBadge() {
-  // Show OFFLINE status when there's no internet
-  if (_isOffline) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.wifi_off, size: 14, color: Colors.grey),
-          const SizedBox(width: 4),
-          Text(
-            'OFFLINE',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey,
+
+  Widget _buildAvailabilityBadge() {
+    // Show OFFLINE status when there's no internet
+    if (_isOffline) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.wifi_off, size: 14, color: Colors.grey),
+            const SizedBox(width: 4),
+            Text(
+              'OFFLINE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  final info = widget.book.queueInfo;
-  
-  // User has active rental - show RENTED status
-  if (_activeRental != null) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.library_books, size: 14, color: Colors.green),
-          const SizedBox(width: 4),
-          Text(
-            'RENTED',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
+          ],
+        ),
+      );
+    }
+    
+    final info = widget.book.queueInfo;
+    
+    // User has active rental - show RENTED status
+    if (_activeRental != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.library_books, size: 14, color: Colors.green),
+            const SizedBox(width: 4),
+            Text(
+              'RENTED',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  // User has active reservation
-  if (info?.hasReservation ?? false) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.access_time, size: 14, color: Colors.green),
-          const SizedBox(width: 4),
-          Text(
-            'RESERVED',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
+          ],
+        ),
+      );
+    }
+    
+    // User has active reservation
+    if (info?.hasReservation ?? false) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.access_time, size: 14, color: Colors.green),
+            const SizedBox(width: 4),
+            Text(
+              'RESERVED',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  // Book is generally available
-  if (widget.book.isAvailable) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.check_circle, size: 14, color: Colors.blue),
-          const SizedBox(width: 4),
-          Text(
-            'AVAILABLE',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue,
+          ],
+        ),
+      );
+    }
+    
+    // Book is generally available
+    if (widget.book.isAvailable) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle, size: 14, color: Colors.blue),
+            const SizedBox(width: 4),
+            Text(
+              'AVAILABLE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  // User is first in queue and book is available
-  if (info?.userPosition == 1 && widget.book.isAvailable) {
+          ],
+        ),
+      );
+    }
+    
+    // User is first in queue and book is available
+    if (info?.userPosition == 1 && widget.book.isAvailable) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.orange),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.schedule, size: 14, color: Colors.orange),
+            const SizedBox(width: 4),
+            Text(
+              'JOIN QUEUE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Book is unavailable - show join queue
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -779,336 +815,557 @@ Widget _buildAvailabilityBadge() {
       ),
     );
   }
-  
-  // Book is unavailable - show join queue
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: Colors.orange.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.orange),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.schedule, size: 14, color: Colors.orange),
-        const SizedBox(width: 4),
-        Text(
-          'JOIN QUEUE',
+
+  Widget _buildKeyInfoBadges() {
+    final book = widget.book;
+    final badges = <Widget>[];
+    
+    // Availability badge
+    badges.add(_buildAvailabilityBadge());
+    
+    // Downloaded badge
+    if (_isDownloaded) {
+      badges.add(
+        Container(
+          margin: const EdgeInsets.only(left: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.download_done, size: 14, color: Colors.green),
+              const SizedBox(width: 4),
+              Text(
+                'DOWNLOADED',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Copies information as a badge
+    badges.add(
+      Container(
+        margin: const EdgeInsets.only(left: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.purple.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.purple),
+        ),
+        child: Text(
+          '${book.availableCopies}/${book.totalCopies} copies',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: Colors.orange,
+            color: Colors.purple,
+          ),
+        ),
+      ),
+    );
+    
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: badges,
+    );
+  }
+
+  Widget _buildActionButton() {
+    if (_activeRental != null) {
+      // Return button when book is rented
+      return ElevatedButton.icon(
+        onPressed: (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color.fromARGB(176, 172, 88, 9),
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 4,
+          shadowColor: Colors.red.withOpacity(0.3),
+        ),
+        icon: const Icon(Icons.undo),
+        label: const Text(
+          'Return Book',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      );
+    } else if (_canRent) {
+      // Rent/borrow button
+      return ElevatedButton.icon(
+        onPressed: (!_actionInProgress && !_isOffline) ? _rentCurrentBook : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: (widget.book.queueInfo?.hasReservation ?? false) 
+              ? Colors.green 
+              : Color(0xFFF5F5F7),
+
+          foregroundColor: const Color.fromARGB(255, 0, 0, 0),
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 4,
+          shadowColor: (widget.book.queueInfo?.hasReservation ?? false)
+              ? Colors.green.withOpacity(0.3)
+              : Theme.of(context).primaryColor.withOpacity(0.3),
+        ),
+        icon: (widget.book.queueInfo?.hasReservation ?? false)
+            ? const Icon(Icons.access_time_filled)
+            : const Icon(Icons.library_add),
+        label: Text(
+          (widget.book.queueInfo?.hasReservation ?? false)
+              ? 'BORROW NOW (Reserved!)'
+              : 'Borrow (21 days)',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      );
+    } else if (_canJoinQueue) {
+      // Join queue button
+      return ElevatedButton.icon(
+        onPressed: (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 4,
+          shadowColor: Colors.orange.withOpacity(0.3),
+        ),
+        icon: const Icon(Icons.schedule),
+        label: const Text(
+          'Join Queue',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      );
+    } else if (_canLeaveQueue) {
+      // Leave queue button
+      return ElevatedButton.icon(
+        onPressed: (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.grey.shade700,
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 4,
+          shadowColor: Colors.grey.withOpacity(0.3),
+        ),
+        icon: const Icon(Icons.cancel),
+        label: const Text(
+          'Leave Queue',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      );
+    } else {
+      // Disabled state
+      return ElevatedButton.icon(
+        onPressed: null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.grey.shade800,
+          foregroundColor: Colors.grey.shade400,
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+        ),
+        icon: const Icon(Icons.block),
+        label: const Text(
+          'Not Available',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      );
+    }
+  }
+
+  Widget _buildSecondaryActions() {
+    return Column(
+      children: [
+        // Download/Remove download button
+        SizedBox(
+          width: double.infinity,
+          child: _isDownloaded
+              ? ElevatedButton.icon(
+                  onPressed: (!_actionInProgress) ? _removeDownloadedBook : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.withOpacity(0.1),
+                    foregroundColor: Colors.red,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                      side: BorderSide(color: Colors.red.withOpacity(0.3)),
+                    ),
+                  ),
+                  icon: const Icon(Icons.delete),
+                  label: const Text('Remove Download'),
+                )
+              : ElevatedButton.icon(
+                  onPressed: (!_actionInProgress && !_downloading && _canDownload) 
+                      ? _downloadCurrentBook 
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _canDownload 
+                        ?  Colors.white
+                        : Colors.grey.withOpacity(0.1),
+                    foregroundColor: _canDownload 
+                        ? Colors.black 
+                        : Colors.grey,
+                    minimumSize: const Size.fromHeight(50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                      side: BorderSide(
+                        color: _canDownload 
+                            ? Theme.of(context).primaryColor.withOpacity(0.3)
+                            : Colors.grey.withOpacity(0.3),
+                      ),
+                    ),
+                  ),
+                  icon: _downloading 
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.download),
+                  label: Text(_downloading ? 'Downloading...' : 'Download for Offline'),
+                ),
+        ),
+        const SizedBox(height: 12),
+        
+        // Read button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: (!_actionInProgress && _canRead) ? () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ReaderPage(
+                    book: widget.book,
+                    rentalDueDate: _activeRental?.dueDate,
+                  ),
+                ),
+              );
+            } : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(211, 241, 126, 19).withOpacity(0.5),
+              foregroundColor: _canRead ? const Color.fromARGB(255, 255, 255, 255) : const Color.fromARGB(255, 231, 227, 224),
+              minimumSize: const Size.fromHeight(50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+                side: BorderSide(
+                  color: _canRead 
+                      ? Colors.blue.withOpacity(0.3)
+                      : Colors.grey.withOpacity(0.3),
+                ),
+              ),
+            ),
+            icon: const Icon(Icons.menu_book),
+            label: const Text('Read Book'),
           ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(book.title.isEmpty ? 'Book details' : book.title),
-        actions: [
-          IconButton(
-            onPressed: _loadStatus,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh status',
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_actionInProgress || _loadingStatus || _downloading) ...[
-              LinearProgressIndicator(
-                minHeight: 2,
-                value: _downloading ? null : 0, // Indeterminate for download
-              ),
-              const SizedBox(height: 16),
-            ],
-            
-            // Book header with cover and basic info
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _DetailsCover(coverImagePath: book.coverImagePath),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Custom Scroll View for immersive header
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // Parallax header with book cover
+              SliverAppBar(
+                expandedHeight: 350,
+                collapsedHeight: 0,
+                toolbarHeight: 0,
+                pinned: false,
+                floating: false,
+                snap: false,
+                stretch: true,
+                backgroundColor: Colors.transparent,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Text(
-                        book.title.isEmpty ? 'Untitled' : book.title,
-                        style: theme.textTheme.titleLarge,
+                      // Book cover with parallax effect
+                      Transform.translate(
+                        offset: Offset(0, -_scrollOffset * 0.3),
+                        child: _buildCoverImage(book),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        book.author.isEmpty ? 'Unknown author' : book.author,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Availability badge
-                      _buildAvailabilityBadge(),
-                      const SizedBox(height: 12),
-                      
-                      // Download status badge
-                      if (_isDownloaded)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.green),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.download_done, size: 14, color: Colors.green),
-                              const SizedBox(width: 4),
-                              Text(
-                                'DOWNLOADED',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                ),
-                              ),
+                      // Gradient overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.5),
+                              Colors.black,
                             ],
+                            stops: const [0.4, 0.8, 1.0],
                           ),
-                        ),
-                      const SizedBox(height: 8),
-                      
-                      // Copies information
-                      Text(
-                        '${book.availableCopies}/${book.totalCopies} copies available',
-                        style: theme.textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Rental status with color coding
-                      Text(
-                        _rentalStatusText(),
-                        style: theme.textTheme.bodySmall!.copyWith(
-                          color: _rentalStatusColor(),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      
-                      // Queue status with color coding
-                      Text(
-                        _queueStatusText(),
-                        style: theme.textTheme.bodySmall!.copyWith(
-                          color: _queueStatusColor(),
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
+              
+              // Floating content card
+              SliverToBoxAdapter(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(32),
+                      topRight: Radius.circular(32),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Book title and author
+                        Text(
+                          book.title.isEmpty ? 'Untitled' : book.title,
+                          style: theme.textTheme.headlineMedium!.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        Text(
+                          book.author.isEmpty ? 'Unknown author' : book.author,
+                          style: theme.textTheme.titleMedium!.copyWith(
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Key info badges
+                        _buildKeyInfoBadges(),
+                        const SizedBox(height: 24),
+                        
+                        // Status indicators
+                        if (_rentalStatusText().isNotEmpty)
+                          _buildStatusIndicator(
+                            Icons.library_books,
+                            _rentalStatusText(),
+                            _rentalStatusColor(),
+                          ),
+                        
+                        if (_queueStatusText().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _buildStatusIndicator(
+                              Icons.groups,
+                              _queueStatusText(),
+                              _queueStatusColor(),
+                            ),
+                          ),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Secondary actions
+                        _buildSecondaryActions(),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Description section
+                        if ((book.description ?? '').isNotEmpty) ...[
+                          Text(
+                            'About this book',
+                            style: theme.textTheme.titleLarge!.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            book.description!,
+                            style: theme.textTheme.bodyLarge!.copyWith(
+                              color: Colors.grey.shade300,
+                              height: 1.6,
+                            ),
+                          ),
+                        ],
+                        
+                        // Bottom padding for floating action button
+                        const SizedBox(height: 80),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // App bar with back button
+          Positioned(
+            top: MediaQuery.of(context).padding.top,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_loadingStatus || _downloading || _actionInProgress)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.white),
+                      onPressed: _loadStatus,
+                      tooltip: 'Refresh status',
+                    ),
+                  ),
+                ],
+              ),
             ),
-            
-            const SizedBox(height: 24),
-            
-            // Action buttons - disabled when offline
-Row(
-  children: [
-    Expanded(
-      child: ElevatedButton(
-        onPressed: (!_actionInProgress && _canRent && !_isOffline) ? _rentCurrentBook : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: (widget.book.queueInfo?.hasReservation ?? false) 
-              ? Colors.green 
-              : Theme.of(context).primaryColor,
+          ),
+          
+          // Floating action button at bottom
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            child: _buildActionButton(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoverImage(Book book) {
+    if (book.coverImagePath == null || book.coverImagePath!.isEmpty) {
+      return Container(
+        color: Colors.grey.shade900,
+        child: const Center(
+          child: Icon(
+            Icons.book,
+            size: 100,
+            color: Colors.grey,
+          ),
         ),
-        child: Text(
-          (widget.book.queueInfo?.hasReservation ?? false)
-              ? 'BORROW NOW (Reserved!)'
-              : 'Borrow (21 days)',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: (widget.book.queueInfo?.hasReservation ?? false)
-                ? FontWeight.bold
-                : FontWeight.normal,
+      );
+    }
+
+    final url = '${AppConfig.coversBaseUrl}/${book.coverImagePath}';
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Container(
+        color: Colors.grey.shade900,
+        child: const Center(
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
           ),
         ),
       ),
-    ),
-    const SizedBox(width: 12),
-    Expanded(
-      child: OutlinedButton(
-        onPressed: (!_actionInProgress && _canReturn && !_isOffline)
-            ? _returnCurrentBook
-            : null,
-        child: const Text('Return'),
-      ),
-    ),
-  ],
-),
-const SizedBox(height: 12),
-Row(
-  children: [
-    Expanded(
-      child: OutlinedButton(
-        onPressed: (!_actionInProgress && _canJoinQueue && !_isOffline)
-            ? _joinQueueForCurrentBook
-            : null,
-        child: const Text('Join queue'),
-      ),
-    ),
-    const SizedBox(width: 12),
-    Expanded(
-      child: OutlinedButton(
-        onPressed: (!_actionInProgress && _canLeaveQueue && !_isOffline)
-            ? _leaveQueueForCurrentBook
-            : null,
-        child: const Text('Leave queue'),
-      ),
-    ),
-  ],
-),
-            const SizedBox(height: 12),
-            
-            // Download/Remove button
-            SizedBox(
-              width: double.infinity,
-              child: _isDownloaded
-                  ? ElevatedButton.icon(
-                      onPressed: (!_actionInProgress) ? _removeDownloadedBook : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.withOpacity(0.1),
-                        foregroundColor: Colors.red,
-                      ),
-                      icon: const Icon(Icons.delete),
-                      label: const Text('Remove Download'),
-                    )
-                  : ElevatedButton.icon(
-                      onPressed: (!_actionInProgress && !_downloading && _canDownload) 
-                          ? _downloadCurrentBook 
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _canDownload 
-                            ? Theme.of(context).primaryColor
-                            : Colors.grey.withOpacity(0.5),
-                        foregroundColor: _canDownload ? Colors.white : Colors.grey,
-                      ),
-                      icon: _downloading 
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.download),
-                      label: Text(_downloading ? 'Downloading...' : 'Download for Offline'),
-                    ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Read button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: (!_actionInProgress && _canRead) ? () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ReaderPage(
-                        book: book,
-                        rentalDueDate: _activeRental?.dueDate,
-                      ),
-                    ),
-                  );
-                } : null,
-                icon: const Icon(Icons.menu_book),
-                label: const Text('Read'),
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Description
-            if ((book.description ?? '').isNotEmpty) ...[
-              Text(
-                'Description',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                book.description!,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ],
-          ],
+      errorWidget: (context, url, error) => Container(
+        color: Colors.grey.shade900,
+        child: const Center(
+          child: Icon(
+            Icons.book,
+            size: 100,
+            color: Colors.grey,
+          ),
         ),
       ),
     );
   }
-}
 
-class _DetailsCover extends StatelessWidget {
-  const _DetailsCover({this.coverImagePath});
-
-  final String? coverImagePath;
-
-  @override
-  Widget build(BuildContext context) {
-    if (coverImagePath == null || coverImagePath!.isEmpty) {
-      return Container(
-        width: 80,
-        height: 120,
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(8),
+  Widget _buildStatusIndicator(IconData icon, String text, Color color) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: color,
         ),
-        child: const Icon(Icons.book, size: 40, color: Colors.grey),
-      );
-    }
-
-    final url = '${AppConfig.coversBaseUrl}/$coverImagePath';
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: CachedNetworkImage(
-        imageUrl: url,
-        width: 80,
-        height: 120,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Container(
-          width: 80,
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
-        errorWidget: (context, url, error) => Container(
-          width: 80,
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.book, size: 40, color: Colors.grey),
-        ),
-      ),
+      ],
     );
   }
 }

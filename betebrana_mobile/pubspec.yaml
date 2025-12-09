@@ -26,6 +26,7 @@ dependencies:
   cached_network_image: ^3.3.0
   connectivity_plus: ^5.0.1
   pull_to_refresh: ^2.0.0
+  font_awesome_flutter: ^10.5.0
   
   # UPDATED: Use compatible versions
   file_picker: ^10.3.7
@@ -39,6 +40,7 @@ dependencies:
   http: ^1.2.0
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
   flutter_test:
     sdk: flutter
 
@@ -51,3 +53,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+assets:
+  - lib/features/auth/image/unnamed.jpg
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"

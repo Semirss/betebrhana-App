@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:betebrana_mobile/core/config/app_config.dart';
+import 'package:betebrana_mobile/core/theme/theme_bloc.dart';
 import 'package:betebrana_mobile/features/auth/domain/entities/auth_user.dart';
 import 'package:betebrana_mobile/features/auth/presentation/bloc/authentication_bloc.dart';
 import 'package:betebrana_mobile/features/auth/presentation/bloc/authentication_event.dart';
@@ -20,42 +21,72 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // --- MAIN ENTRY POINT ---
-
 class MainLibraryPage extends StatelessWidget {
   const MainLibraryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // We apply a dark theme override here to match the requested UI style
-    // You might want to move this to your main.dart Theme config later
-    return Theme(
-      data: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        primaryColor: const Color(0xFFE50914), // Netflix-like red accent
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFE50914),
-          secondary: Colors.white,
-          surface: Color(0xFF1E1E1E),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ThemeBloc>(
+          create: (_) => ThemeBloc(),
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          systemOverlayStyle: SystemUiOverlayStyle.light,
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF000000), // Pure black for contrast
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey,
-          type: BottomNavigationBarType.fixed,
-        ),
-      ),
-      child: RepositoryProvider(
-        create: (_) => BookRepository(),
-        child: BlocProvider(
-          create: (context) => LibraryBloc(context.read<BookRepository>())
-            ..add(const LibraryStarted()),
-          child: const _MainLibraryView(),
-        ),
+      ],
+      child: BlocBuilder<ThemeBloc, ThemeState>(
+        builder: (context, themeState) {
+          return MaterialApp(
+            theme: themeState.isDarkMode 
+                ? ThemeData.dark().copyWith(
+                    scaffoldBackgroundColor: const Color(0xFF121212),
+                    primaryColor: const Color.fromARGB(255, 236, 125, 34),
+                    normaldark: const Color.fromARGB(255, 0, 0, 0),
+                    colorScheme: const ColorScheme.dark(
+                      primary: Color.fromARGB(255, 255, 255, 255),
+                      secondary: Color.fromARGB(255, 255, 255, 255),
+                      surface: Color(0xFF1E1E1E),
+                    ),
+                    appBarTheme: const AppBarTheme(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      systemOverlayStyle: SystemUiOverlayStyle.light,
+                    ),
+                    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                      backgroundColor: Color(0xFF000000),
+                      selectedItemColor: Colors.white,
+                      unselectedItemColor: Colors.grey,
+                      type: BottomNavigationBarType.fixed,
+                    ),
+                  )
+                : ThemeData.light().copyWith(
+                    scaffoldBackgroundColor: const Color.fromARGB(255, 248, 222, 173),
+                    primaryColor: const Color.fromARGB(255, 236, 125, 34),
+                    colorScheme: const ColorScheme.light(
+                      primary: Color.fromARGB(255, 236, 125, 34),
+                      secondary: Colors.black87,
+                      surface: Color.fromARGB(255, 255, 255, 255),
+                    ),
+                    appBarTheme: const AppBarTheme(
+                      backgroundColor:   Color.fromARGB(255, 248, 222, 173),
+                      elevation: 0,
+                      systemOverlayStyle: SystemUiOverlayStyle.dark,
+                    ),
+                    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                      backgroundColor: Color(0xFF000000),
+                      selectedItemColor: Color.fromARGB(255, 236, 125, 34),
+                      unselectedItemColor: Colors.grey,
+                      type: BottomNavigationBarType.fixed,
+                    ),
+                  ),
+            home: RepositoryProvider(
+              create: (_) => BookRepository(),
+              child: BlocProvider(
+                create: (context) => LibraryBloc(context.read<BookRepository>())
+                  ..add(const LibraryStarted()),
+                child: const _MainLibraryView(),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -112,56 +143,61 @@ class _MainLibraryViewState extends State<_MainLibraryView> with WidgetsBindingO
       _currentIndex = index;
     });
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          _HomeTab(),     // 0: Home (Carousel)
-          _LibraryTab(),  // 1: Library (All Books Grid)
-          _ProfileTab(),  // 2: Profile (User + Borrowed + Downloads)
-          _SettingsTab(), // 3: Settings (Theme)
+@override
+Widget build(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  
+  return Scaffold(
+    body: IndexedStack(
+      index: _currentIndex,
+      children: const [
+        _HomeTab(),
+        _LibraryTab(),
+        _ProfileTab(),
+        _SettingsTab(),
+      ],
+    ),
+    bottomNavigationBar: Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(
+          color: isDark ? Colors.white10 : Colors.grey.shade200, 
+          width: 0.5,
+        )),
+      ),
+      child: BottomNavigationBar(
+        backgroundColor: isDark ? const Color(0xFF000000) : const Color.fromARGB(255, 253, 218, 153),
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        selectedItemColor: Theme.of(context).primaryColor,
+        unselectedItemColor: isDark ? Colors.grey : Colors.grey.shade600,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.grid_view),
+            activeIcon: Icon(Icons.grid_view_rounded),
+            label: 'Library',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.white10, width: 0.5)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view),
-              activeIcon: Icon(Icons.grid_view_rounded),
-              label: 'Library',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
-              activeIcon: Icon(Icons.settings),
-              label: 'Settings',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
+    ),
+  );
+}}
 // --- TAB 1: HOME (CAROUSEL & RECOMMENDED) ---
 
 class _HomeTab extends StatelessWidget {
@@ -192,22 +228,30 @@ class _HomeTab extends StatelessWidget {
 
         return Scaffold(
           extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 4, 
-                  height: 20, 
-                  color: Theme.of(context).primaryColor,
-                  margin: const EdgeInsets.only(right: 8),
-                ),
-                const Text(
-                  'BeteBrana',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-                ),
-              ],
-            ),
+appBar: AppBar(
+  title: Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Container(
+        width: 4, 
+        height: 20, 
+        color: Theme.of(context).primaryColor,
+        margin: const EdgeInsets.only(right: 8),
+      ),
+      Text(
+        'BeteBrana',
+        style: TextStyle(
+          fontWeight: FontWeight.bold, 
+          fontSize: 22,
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? Colors.white 
+              : Colors.black,
+        ),
+      ),
+    ],
+  ),
+    backgroundColor: Colors.transparent,
+  elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.search),
               onPressed: () {
@@ -240,7 +284,7 @@ class _HomeTab extends StatelessWidget {
                   child: Text(
                     "Read today",
                     style: TextStyle(
-                      color: Colors.grey[400],
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -250,7 +294,8 @@ class _HomeTab extends StatelessWidget {
 
                 // 3D Carousel
                 SizedBox(
-                  height: 400,
+                  height: 350,
+                
                   child: _CoverFlowCarousel(books: featuredBooks),
                 ),
                 
@@ -292,7 +337,8 @@ class _HomeTab extends StatelessWidget {
           ),
           TextButton(
             onPressed: onSeeAll, 
-            child: const Text("See all")
+       
+            child: const Text("See all", style: TextStyle(color: Color.fromARGB(255, 252, 160, 55)),)
           ),
         ],
       ),
@@ -334,7 +380,7 @@ class _HomeTab extends StatelessWidget {
                   book.author,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                  style: TextStyle(color: const Color.fromARGB(255, 82, 80, 80), fontSize: 12),
                 ),
               ],
             ),
@@ -451,7 +497,6 @@ class BookSearchDelegate extends SearchDelegate {
     );
   }
 }
-
 // --- CAROUSEL WIDGET (3D EFFECT) ---
 
 class _CoverFlowCarousel extends StatefulWidget {
@@ -465,118 +510,223 @@ class _CoverFlowCarousel extends StatefulWidget {
 class _CoverFlowCarouselState extends State<_CoverFlowCarousel> {
   late PageController _controller;
   double _currentPage = 0;
+  Timer? _autoScrollTimer;
+  int _currentIndex = 1; // Start at second book (index 1)
+  bool _isUserInteracting = false;
+  bool _isAnimating = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = PageController(viewportFraction: 0.65, initialPage: 0);
+    _controller = PageController(
+      viewportFraction: 0.65, 
+      initialPage: _currentIndex,
+    );
+    
     _controller.addListener(() {
       setState(() {
         _currentPage = _controller.page!;
       });
     });
+
+    // Start auto-scroll after a short delay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startAutoScroll();
+    });
   }
 
   @override
   void dispose() {
+    _autoScrollTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _startAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!_isUserInteracting && 
+          !_isAnimating && 
+          _controller.hasClients && 
+          widget.books.isNotEmpty) {
+        
+        final nextPage = (_currentIndex + 1) % widget.books.length;
+        _animateToPage(nextPage);
+      }
+    });
+  }
+
+  void _animateToPage(int page, {bool isUserInteraction = false}) {
+    if (_isAnimating) return;
+    
+    setState(() {
+      _isAnimating = true;
+    });
+    
+    _controller.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeInOut,
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _isAnimating = false;
+          _currentIndex = page;
+        });
+        
+        // Only restart auto-scroll if it wasn't a user interaction
+        if (!isUserInteraction && !_isUserInteracting) {
+          _restartAutoScroll();
+        }
+      }
+    });
+  }
+
+  void _onUserInteractionStart() {
+    if (!_isUserInteracting) {
+      setState(() {
+        _isUserInteracting = true;
+      });
+      _autoScrollTimer?.cancel();
+    }
+  }
+
+  void _onUserInteractionEnd() {
+    if (_isUserInteracting) {
+      // Wait a bit before restarting auto-scroll
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && _isUserInteracting) {
+          setState(() {
+            _isUserInteracting = false;
+          });
+          _startAutoScroll();
+        }
+      });
+    }
+  }
+
+  void _restartAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _startAutoScroll();
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.books.isEmpty) return const SizedBox();
 
-    return PageView.builder(
-      controller: _controller,
-      itemCount: widget.books.length,
-      physics: const BouncingScrollPhysics(),
-      itemBuilder: (context, index) {
-        double diff = index - _currentPage;
-        final scale = (1 - (diff.abs() * 0.2)).clamp(0.8, 1.0);
-        final rotation = diff * -0.3;
-        final opacity = (1 - (diff.abs() * 0.5)).clamp(0.4, 1.0);
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        // Detect when user starts scrolling
+        if (notification is ScrollStartNotification) {
+          _onUserInteractionStart();
+        }
+        // Detect when user stops scrolling
+        else if (notification is ScrollEndNotification) {
+          _onUserInteractionEnd();
+        }
+        return false;
+      },
+      child: PageView.builder(
+        controller: _controller,
+        itemCount: widget.books.length,
+        physics: const BouncingScrollPhysics(),
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          // Don't restart timer immediately on page change
+        },
+        itemBuilder: (context, index) {
+          double diff = index - _currentPage;
+          final scale = (1 - (diff.abs() * 0.2)).clamp(0.8, 1.0);
+          final rotation = diff * -0.3;
+          final opacity = (1 - (diff.abs() * 0.5)).clamp(0.4, 1.0);
 
-        return Transform(
-          transform: Matrix4.identity()
-            ..setEntry(3, 2, 0.002) 
-            ..rotateY(rotation), 
-          alignment: Alignment.center,
-          child: Transform.scale(
-            scale: scale,
-            child: Opacity(
-              opacity: opacity,
-              child: GestureDetector(
-                onTap: () {
-                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => BookDetailsPage(book: widget.books[index])),
-                  );
-                },
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 20),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(context).primaryColor.withOpacity(0.4),
-                              blurRadius: 20,
-                              spreadRadius: -10,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: _BookCoverImage(
-                          path: widget.books[index].coverImagePath,
-                          borderRadius: 20,
-                        ),
+          return Transform(
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.002) 
+              ..rotateY(rotation), 
+            alignment: Alignment.center,
+            child: Transform.scale(
+              scale: scale,
+              child: Opacity(
+                opacity: opacity,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => BookDetailsPage(book: widget.books[index])
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 200),
-                      opacity: diff.abs() < 0.5 ? 1.0 : 0.0,
-                      child: Column(
-                        children: [
-                          Text(
-                            widget.books[index].title,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 18, 
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.star, color: Colors.amber, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                "4.5", 
-                                style: TextStyle(color: Colors.green[400], fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                " • ${widget.books[index].author}",
-                                style: const TextStyle(color: Colors.grey),
+                    );
+                  },
+                  onTapDown: (_) => _onUserInteractionStart(),
+                  onTapCancel: _onUserInteractionEnd,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 20),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).cardColor.withOpacity(0.4),
+                                blurRadius: 20,
+                                spreadRadius: -10,
+                                offset: const Offset(0, 10),
                               ),
                             ],
                           ),
-                        ],
+                          child: _BookCoverImage(
+                            path: widget.books[index].coverImagePath,
+                            borderRadius: 20,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 200),
+                        opacity: diff.abs() < 0.5 ? 1.0 : 0.0,
+                        child: Column(
+                          children: [
+                            Text(
+                              widget.books[index].title,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18, 
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "4.5", 
+                                  style: TextStyle(color: Colors.green[400], fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  " • ${widget.books[index].author}",
+                                  style: const TextStyle(color: Color.fromARGB(255, 53, 52, 52)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -689,13 +839,13 @@ class _LibraryGridItem extends StatelessWidget {
               Icon(
                 Icons.copy_rounded,
                 size: 12,
-                color: isAvailable ? Colors.grey[400] : Colors.red[300],
+                color: isAvailable ?Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface,
               ),
               const SizedBox(width: 4),
               Text(
                 "$available Available",
                 style: TextStyle(
-                  color: isAvailable ? Colors.grey[400] : Colors.red[300],
+                color: isAvailable ?Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface,
                   fontSize: 12,
                 ),
               ),
@@ -740,7 +890,8 @@ class _ProfileTab extends StatelessWidget {
               ),
               Text(
                 user?.email ?? 'Sign in to sync your library',
-                style: TextStyle(color: Colors.grey[400]),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface,
+),
               ),
               const SizedBox(height: 30),
 
@@ -750,10 +901,10 @@ class _ProfileTab extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: Theme.of(context).cardColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.download_done_rounded, color: Theme.of(context).primaryColor),
+                  child: Icon(Icons.download_done_rounded, color: Theme.of(context).colorScheme.onSurface,),
                 ),
                 title: const Text("Downloaded Books", style: TextStyle(fontWeight: FontWeight.bold)),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
@@ -773,7 +924,7 @@ class _ProfileTab extends StatelessWidget {
                 child: Text(
                   "Currently Borrowed",
                   style: TextStyle(
-                    color: Theme.of(context).primaryColor,
+                      color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.1,
                   ),
@@ -796,7 +947,7 @@ class _ProfileTab extends StatelessWidget {
                         child: const Column(
                           children: [
                             Icon(Icons.book_outlined, size: 40, color: Colors.grey),
-                            SizedBox(height: 10),
+                            SizedBox(height: 30),
                             Text("No active rentals"),
                           ],
                         ),
@@ -812,12 +963,13 @@ class _ProfileTab extends StatelessWidget {
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: SizedBox(
-                            width: 40, 
+                            width: 100, 
+
                             child: _BookCoverImage(path: borrowed[index].coverImagePath)
                           ),
                           title: Text(borrowed[index].title),
                           subtitle: const Text(
-                            "Return due: Soon", 
+                            "Borrowed", 
                             style: TextStyle(color: Colors.orange)
                           ),
                           trailing: const Icon(Icons.arrow_forward_ios, size: 14),
@@ -844,7 +996,7 @@ class _ProfileTab extends StatelessWidget {
 }
 
 // --- TAB 4: SETTINGS (THEME) ---
-
+// Update _SettingsTab class in your main_library_page.dart
 class _SettingsTab extends StatelessWidget {
   const _SettingsTab();
 
@@ -855,26 +1007,29 @@ class _SettingsTab extends StatelessWidget {
       body: ListView(
         children: [
           const SizedBox(height: 20),
-          ListTile(
-            leading: const Icon(Icons.dark_mode),
-            title: const Text('Dark Mode'),
-            subtitle: const Text('Toggle application theme'),
-            trailing: Switch(
-              value: true, // Mock value since we forced dark mode in MainLibraryPage
-              activeColor: Theme.of(context).primaryColor,
-              onChanged: (val) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Theme switching requires root state management")),
-                );
-              },
-            ),
+          // Theme toggle that actually works
+          BlocBuilder<ThemeBloc, ThemeState>(
+            builder: (context, themeState) {
+              return ListTile(
+                leading: const Icon(Icons.dark_mode),
+                title: const Text('Dark Mode'),
+                subtitle: Text(themeState.isDarkMode ? 'Dark mode enabled' : 'Light mode enabled'),
+                trailing: Switch(
+                  value: themeState.isDarkMode,
+                  activeColor: Theme.of(context).primaryColor,
+                  onChanged: (val) {
+                    context.read<ThemeBloc>().add( ToggleThemeEvent());
+                  },
+                ),
+              );
+            },
           ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
             title: const Text('Log Out', style: TextStyle(color: Colors.redAccent)),
             onTap: () {
-               context.read<AuthBloc>().add(const AuthLogoutRequested());
+              context.read<AuthBloc>().add(const AuthLogoutRequested());
             },
           ),
         ],
@@ -882,7 +1037,6 @@ class _SettingsTab extends StatelessWidget {
     );
   }
 }
-
 // --- HELPER WIDGETS ---
 
 class _UserAvatarIcon extends StatelessWidget {
@@ -909,14 +1063,16 @@ class _BookCoverImage extends StatelessWidget {
   final String? path;
   final double borderRadius;
 
-  const _BookCoverImage({this.path, this.borderRadius = 0});
 
+  const _BookCoverImage({this.path, this.borderRadius = 0});
   @override
   Widget build(BuildContext context) {
     if (path == null || path!.isEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
-        child: Container(color: Colors.grey[800], child: const Icon(Icons.book)),
+        child: Container(color: Colors.grey[800], child: const Icon(Icons.book)
+        
+        ),
       );
     }
 
