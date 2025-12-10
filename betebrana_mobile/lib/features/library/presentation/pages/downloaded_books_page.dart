@@ -37,18 +37,28 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
     });
   }
 
-  void _showRemoveConfirmationDialog(Book book) {
-    showDialog(
+  void _showRemoveConfirmationDialog(Book book, BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+ showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text('Remove Book', style: TextStyle(color: Colors.white)),
-        content: Text('Remove "${book.title}" from downloaded books?', 
-            style: const TextStyle(color: Colors.grey)),
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          'Remove Book', 
+          style: TextStyle(color: isDark ? Colors.white : Colors.black)
+        ),
+        content: Text(
+          'Remove "${book.title}" from downloaded books?', 
+          style: TextStyle(color: isDark ? Colors.grey : Colors.black54)
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'Cancel', 
+              style: TextStyle(color: isDark ? Colors.grey : Colors.black54)
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -118,38 +128,53 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color.fromARGB(255, 248, 222, 173),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(
+            Icons.arrow_back, 
+            color: isDark ? Colors.white : Colors.black
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Downloaded Books',
           style: TextStyle(
-            color: Colors.white,
+            color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
             onPressed: _refreshBooks,
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: Icon(
+              Icons.refresh, 
+              color: isDark ? Colors.white : Colors.black
+            ),
             tooltip: 'Refresh',
           ),
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          ? Center(
+              child: CircularProgressIndicator(
+                color: isDark ? Colors.white : Theme.of(context).primaryColor,
+              ),
+            )
           : FutureBuilder<List<Book>>(
               future: _downloadedBooksFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: isDark ? Colors.white : Theme.of(context).primaryColor,
+                    ),
                   );
                 }
 
@@ -158,19 +183,30 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error, color: Colors.red, size: 48),
+                        Icon(
+                          Icons.error, 
+                          color: Colors.red, 
+                          size: 48
+                        ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Failed to load downloaded books',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(
+                            color: isDark ? Colors.grey : Colors.black54,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _refreshBooks,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E1E1E),
+                            backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey[200],
                           ),
-                          child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                          child: Text(
+                            'Retry', 
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black
+                            )
+                          ),
                         ),
                       ],
                     ),
@@ -184,11 +220,18 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.download, size: 64, color: Colors.grey[600]),
+                        Icon(
+                          Icons.download, 
+                          size: 64, 
+                          color: isDark ? Colors.grey[600] : Colors.grey[400]
+                        ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'No downloaded books',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                          style: TextStyle(
+                            fontSize: 18, 
+                            color: isDark ? Colors.grey : Colors.black54
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Padding(
@@ -196,7 +239,9 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
                           child: Text(
                             'Download books from the Library for offline reading',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey[600]),
+                            style: TextStyle(
+                              color: isDark ? Colors.grey[600] : Colors.grey[600]
+                            ),
                           ),
                         ),
                       ],
@@ -204,12 +249,11 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
                   );
                 }
 
-                // 2-Column Grid Layout
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.65, // Similar to library grid
+                    childAspectRatio: 0.65,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
@@ -219,7 +263,7 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
                     return _DownloadedBookGridItem(
                       book: book,
                       onRead: () => _openReaderPage(book),
-                      onRemove: () => _showRemoveConfirmationDialog(book),
+                      onRemove: () => _showRemoveConfirmationDialog(book, context),
                     );
                   },
                 );
@@ -242,20 +286,24 @@ class _DownloadedBookGridItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: onRead,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Book Cover with Action Overlay
           Expanded(
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Book Cover
-                _BookCoverImage(path: book.coverImagePath, borderRadius: 12),
+                _BookCoverImage(
+                  path: book.coverImagePath, 
+                  borderRadius: 12,
+                  isDark: isDark,
+                ),
                 
-                // Expiry Badge
                 if (book.downloadExpiryDate != null)
                   Positioned(
                     top: 8,
@@ -263,7 +311,6 @@ class _DownloadedBookGridItem extends StatelessWidget {
                     child: _buildExpiryBadge(book.downloadExpiryDate!),
                   ),
                 
-                // Action Buttons Overlay
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
@@ -287,15 +334,13 @@ class _DownloadedBookGridItem extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Read Button
                               FloatingActionButton.small(
                                 onPressed: onRead,
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
+                                backgroundColor: isDark ? Colors.white : Colors.black87,
+                                foregroundColor: isDark ? Colors.black : Colors.white,
                                 child: const Icon(Icons.play_arrow, size: 20),
                               ),
                               
-                              // Remove Button
                               FloatingActionButton.small(
                                 onPressed: onRemove,
                                 backgroundColor: Colors.red,
@@ -315,13 +360,12 @@ class _DownloadedBookGridItem extends StatelessWidget {
           
           const SizedBox(height: 8),
           
-          // Book Title
           Text(
             book.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black87,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -329,35 +373,15 @@ class _DownloadedBookGridItem extends StatelessWidget {
           
           const SizedBox(height: 2),
           
-          // Author
           Text(
             book.author,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Colors.grey[400],
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
               fontSize: 12,
             ),
           ),
-          
-          const SizedBox(height: 4),
-          
-          // Container(
-          //   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          //   decoration: BoxDecoration(
-          //     color: Colors.green.withOpacity(0.1),
-          //     borderRadius: BorderRadius.circular(4),
-          //     border: Border.all(color: Colors.green),
-          //   ),
-          //   child: Text(
-          //     'DOWNLOADED',
-          //     style: TextStyle(
-          //       fontSize: 10,
-          //       color: Colors.green,
-          //       fontWeight: FontWeight.bold,
-          //     ),
-          //   ),
-          // ),
         ],
       ),
     );
@@ -416,8 +440,13 @@ class _DownloadedBookGridItem extends StatelessWidget {
 class _BookCoverImage extends StatelessWidget {
   final String? path;
   final double borderRadius;
+  final bool isDark;
 
-  const _BookCoverImage({this.path, this.borderRadius = 0});
+  const _BookCoverImage({
+    this.path, 
+    this.borderRadius = 0,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -425,11 +454,11 @@ class _BookCoverImage extends StatelessWidget {
       return ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: Container(
-          color: const Color(0xFF1E1E1E),
-          child: const Center(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey[200],
+          child: Center(
             child: Icon(
               Icons.book,
-              color: Colors.grey,
+              color: isDark ? Colors.grey : Colors.grey[600],
               size: 40,
             ),
           ),
@@ -437,7 +466,7 @@ class _BookCoverImage extends StatelessWidget {
       );
     }
 
-    final url = '${AppConfig.coversBaseUrl}/$path'; // Fixed: Use 'path' parameter
+    final url = '${AppConfig.coversBaseUrl}/$path';
     
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
@@ -447,28 +476,27 @@ class _BookCoverImage extends StatelessWidget {
         height: double.infinity,
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
-          color: const Color(0xFF1E1E1E),
-          child: const Center(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey[200],
+          child: Center(
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: Colors.grey,
+              color: isDark ? Colors.grey : Theme.of(context).primaryColor,
             ),
           ),
         ),
         errorWidget: (context, url, error) => Container(
-          color: const Color(0xFF1E1E1E),
-          child: const Center(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.grey[200],
+          child: Center(
             child: Icon(
               Icons.error_outline,
-              color: Colors.grey,
+              color: isDark ? Colors.grey : Colors.grey[600],
             ),
           ),
         ),
       ),
     );
-  }
+    
 }
-
 // Helper widget for expiry info (keep for reference, but now using badge)
 Widget _buildExpiryInfo(DateTime expiryDate) {
   final now = DateTime.now();
@@ -511,4 +539,4 @@ Widget _buildExpiryInfo(DateTime expiryDate) {
       ),
     ],
   );
-}
+}}

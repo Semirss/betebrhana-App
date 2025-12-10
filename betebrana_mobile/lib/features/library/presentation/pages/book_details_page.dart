@@ -275,26 +275,41 @@ void _updateConnectivityStatus(ConnectivityResult result) {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Download'),
-        content: Text('Remove "${widget.book.title}" from downloaded books?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          title: Text(
+            'Remove Download',
+            style: TextStyle(color: isDark ? Colors.white : Colors.black),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _confirmRemoveDownload(bookId);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+          content: Text(
+            'Remove "${widget.book.title}" from downloaded books?',
+            style: TextStyle(color: isDark ? Colors.grey : Colors.black54),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: isDark ? Colors.grey : Colors.black54),
+              ),
             ),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _confirmRemoveDownload(bookId);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Remove'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -394,15 +409,28 @@ void _updateConnectivityStatus(ConnectivityResult result) {
   }
 
   void _showQueueSuggestionDialog() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Book Unavailable'),
-        content: Text('"${widget.book.title}" is currently unavailable. Would you like to join the queue?'),
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          'Book Unavailable',
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+        ),
+        content: Text(
+          '"${widget.book.title}" is currently unavailable. Would you like to join the queue?',
+          style: TextStyle(color: isDark ? Colors.grey : Colors.black54),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: isDark ? Colors.grey : Colors.black54),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -993,6 +1021,9 @@ Future<void> _returnCurrentBook() async {
   }
 
   Widget _buildSecondaryActions() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Column(
       children: [
         // Download/Remove download button
@@ -1019,10 +1050,10 @@ Future<void> _returnCurrentBook() async {
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _canDownload 
-                        ?  Colors.white
+                        ? (isDark ? Colors.white : Colors.black87)
                         : Colors.grey.withOpacity(0.1),
                     foregroundColor: _canDownload 
-                        ? Colors.black 
+                        ? (isDark ? Colors.black : Colors.white)
                         : Colors.grey,
                     minimumSize: const Size.fromHeight(50),
                     shape: RoundedRectangleBorder(
@@ -1035,12 +1066,12 @@ Future<void> _returnCurrentBook() async {
                     ),
                   ),
                   icon: _downloading 
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         )
                       : const Icon(Icons.download),
@@ -1088,9 +1119,10 @@ Future<void> _returnCurrentBook() async {
   Widget build(BuildContext context) {
     final book = widget.book;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: isDark ? Colors.black : const Color.fromARGB(255, 248, 222, 173),
       body: Stack(
         children: [
           // Custom Scroll View for immersive header
@@ -1114,7 +1146,7 @@ Future<void> _returnCurrentBook() async {
                       // Book cover with parallax effect
                       Transform.translate(
                         offset: Offset(0, -_scrollOffset * 0.3),
-                        child: _buildCoverImage(book),
+                        child: _buildCoverImage(book, isDark),
                       ),
                       // Gradient overlay
                       Container(
@@ -1124,8 +1156,8 @@ Future<void> _returnCurrentBook() async {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withOpacity(0.5),
-                              Colors.black,
+                              isDark ? Colors.black.withOpacity(0.5) : const Color.fromARGB(255, 248, 222, 173).withOpacity(0.7),
+                              isDark ? Colors.black : const Color.fromARGB(255, 248, 222, 173),
                             ],
                             stops: const [0.4, 0.8, 1.0],
                           ),
@@ -1140,7 +1172,7 @@ Future<void> _returnCurrentBook() async {
               SliverToBoxAdapter(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(32),
                       topRight: Radius.circular(32),
@@ -1163,7 +1195,7 @@ Future<void> _returnCurrentBook() async {
                         Text(
                           book.title.isEmpty ? 'Untitled' : book.title,
                           style: theme.textTheme.headlineMedium!.copyWith(
-                            color: Colors.white,
+                            color: isDark ? Colors.white : Colors.black87,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1172,7 +1204,7 @@ Future<void> _returnCurrentBook() async {
                         Text(
                           book.author.isEmpty ? 'Unknown author' : book.author,
                           style: theme.textTheme.titleMedium!.copyWith(
-                            color: Colors.grey.shade400,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -1211,7 +1243,7 @@ Future<void> _returnCurrentBook() async {
                           Text(
                             'About this book',
                             style: theme.textTheme.titleLarge!.copyWith(
-                              color: Colors.white,
+                              color: isDark ? Colors.white : Colors.black87,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1219,7 +1251,7 @@ Future<void> _returnCurrentBook() async {
                           Text(
                             book.description!,
                             style: theme.textTheme.bodyLarge!.copyWith(
-                              color: Colors.grey.shade300,
+                              color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                               height: 1.6,
                             ),
                           ),
@@ -1247,11 +1279,14 @@ Future<void> _returnCurrentBook() async {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: (isDark ? Colors.black : Colors.white).withOpacity(0.6),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: Icon(
+                        Icons.arrow_back, 
+                        color: isDark ? Colors.white : Colors.black
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -1260,26 +1295,29 @@ Future<void> _returnCurrentBook() async {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: (isDark ? Colors.black : Colors.white).withOpacity(0.6),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const SizedBox(
+                      child: SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
                     ),
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: (isDark ? Colors.black : Colors.white).withOpacity(0.6),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.white),
+                      icon: Icon(
+                        Icons.refresh, 
+                        color: isDark ? Colors.white : Colors.black
+                      ),
                       onPressed: _loadStatus,
                       tooltip: 'Refresh status',
                     ),
@@ -1301,15 +1339,15 @@ Future<void> _returnCurrentBook() async {
     );
   }
 
-  Widget _buildCoverImage(Book book) {
+  Widget _buildCoverImage(Book book, bool isDark) {
     if (book.coverImagePath == null || book.coverImagePath!.isEmpty) {
       return Container(
-        color: Colors.grey.shade900,
-        child: const Center(
+        color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+        child: Center(
           child: Icon(
             Icons.book,
             size: 100,
-            color: Colors.grey,
+            color: isDark ? Colors.grey : Colors.grey[600],
           ),
         ),
       );
@@ -1320,25 +1358,25 @@ Future<void> _returnCurrentBook() async {
       imageUrl: url,
       fit: BoxFit.cover,
       placeholder: (context, url) => Container(
-        color: Colors.grey.shade900,
-        child: const Center(
+        color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+        child: Center(
           child: SizedBox(
             width: 40,
             height: 40,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: Colors.white,
+              color: isDark ? Colors.white : Colors.black,
             ),
           ),
         ),
       ),
       errorWidget: (context, url, error) => Container(
-        color: Colors.grey.shade900,
-        child: const Center(
+        color: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+        child: Center(
           child: Icon(
             Icons.book,
             size: 100,
-            color: Colors.grey,
+            color: isDark ? Colors.grey : Colors.grey[600],
           ),
         ),
       ),
