@@ -9,6 +9,7 @@ import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/rental.dart';
 import 'package:betebrana_mobile/features/library/data/rental_repository.dart';
 import 'package:betebrana_mobile/core/config/app_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BookDownloadService {
   static const String _storageKeyPrefix = 'book_key_';
@@ -19,7 +20,32 @@ class BookDownloadService {
   BookDownloadService() {
     _rentalRepository = RentalRepository();
   }
-  
+    Future<String?> _getCurrentUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('current_user_id');
+    } catch (e) {
+      print('Error getting current user ID: $e');
+      return null;
+    }
+  }
+   Future<void> clearDownloadsForPreviousUser() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final currentUserId = await _getCurrentUserId();
+    
+    // If no current user ID is set (first time or logged out), do nothing
+    if (currentUserId == null) return;
+    
+    // Store the current user ID
+    await prefs.setString('last_user_id', currentUserId);
+    
+    // DO NOT DELETE FILES - just mark them with user ID
+    // This way they persist across sessions
+  } catch (e) {
+    print('Error in clearDownloadsForPreviousUser: $e');
+  }
+}
   Future<String> getDownloadDirectory() async {
     final directory = await getApplicationDocumentsDirectory();
     final downloadsDir = Directory('${directory.path}/downloaded_books');
@@ -145,22 +171,24 @@ class BookDownloadService {
       throw Exception('Failed to download book: $e');
     }
   }
-
-  Future<void> _storeBookMetadata(Book book, DateTime rentalExpiry) async {
-    final dirPath = await getDownloadDirectory();
-    final metadataFile = File('$dirPath/book_${book.id}_metadata.json');
-    
-    await metadataFile.writeAsString(json.encode({
-      'id': book.id,
-      'title': book.title,
-      'author': book.author,
-      'coverImagePath': book.coverImagePath,
-      'downloadDate': DateTime.now().toIso8601String(),
-      'expiryDate': rentalExpiry.toIso8601String(),
-      'description': book.description,
-      'fileType': 'txt',
-    }));
-  }
+Future<void> _storeBookMetadata(Book book, DateTime rentalExpiry) async {
+  final dirPath = await getDownloadDirectory();
+  final metadataFile = File('$dirPath/book_${book.id}_metadata.json');
+  
+  final currentUserId = await _getCurrentUserId();
+  
+  await metadataFile.writeAsString(json.encode({
+    'id': book.id,
+    'title': book.title,
+    'author': book.author,
+    'coverImagePath': book.coverImagePath,
+    'downloadDate': DateTime.now().toIso8601String(),
+    'expiryDate': rentalExpiry.toIso8601String(),
+    'description': book.description,
+    'fileType': 'txt',
+    'userId': currentUserId, // ADD THIS LINE
+  }));
+}
 
   Future<String?> getDecryptedBookContent(int bookId) async {
     try {
@@ -255,8 +283,12 @@ class BookDownloadService {
       print('Error deleting book: $e');
     }
   }
-
-  Future<List<Book>> getDownloadedBooks() async {
+Future<List<Book>> getDownloadedBooks() async {
+    // First, check if we need to clear previous user's downloads
+     final currentUserId = await _getCurrentUserId();
+  if (currentUserId == null) return []; // No user logged in
+    await clearDownloadsForPreviousUser();
+    
     final List<Book> books = [];
     final dirPath = await getDownloadDirectory();
     final directory = Directory(dirPath);
@@ -271,7 +303,11 @@ class BookDownloadService {
           final metadataFile = File(file.path);
           final content = await metadataFile.readAsString();
           final metadata = json.decode(content);
-          
+            // ADD THIS CHECK: Only return books for current user
+        final bookUserId = metadata['userId'];
+        if (bookUserId != currentUserId) {
+          continue; // Skip books from other users
+        }
           // Check if still valid
           final expiryDate = DateTime.parse(metadata['expiryDate']);
           if (expiryDate.isBefore(DateTime.now())) {
@@ -313,6 +349,7 @@ class BookDownloadService {
     
     return books;
   }
+
 
   Future<bool> isBookDownloaded(int bookId) async {
     // Check if TXT file exists

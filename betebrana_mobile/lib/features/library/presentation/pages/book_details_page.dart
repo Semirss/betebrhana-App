@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:betebrana_mobile/features/library/presentation/bloc/library_bloc.dart';
+import 'package:betebrana_mobile/features/library/presentation/bloc/library_event.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:betebrana_mobile/features/library/data/book_download_service.dart';
@@ -8,6 +11,7 @@ import 'package:betebrana_mobile/features/library/data/rental_repository.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/rental.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/user_queue_item.dart';
+import 'package:http/http.dart';
 import 'reader_page.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
@@ -443,7 +447,6 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       ),
     );
   }
-
 Future<void> _returnCurrentBook() async {
   final rental = _activeRental;
   final bookId = int.tryParse(widget.book.id);
@@ -468,18 +471,16 @@ Future<void> _returnCurrentBook() async {
       ),
     );
     
-    // IMPORTANT: Force a complete refresh of all data
-    await _loadStatus(); // This updates rental status
-    await _checkIfDownloaded(); // This updates download status
-    await _downloadService.syncWithServerAndCleanup(); // Clean up any other expired downloads
+    // IMPORTANT: Force immediate refresh
+    // 1. Refresh local status immediately
+    await _loadStatus(); 
+    await _checkIfDownloaded();
     
-    // Also update the book's availability status
-    // You might need to notify parent widgets too
+    
+    
+    // 3. If we're in Profile tab context, also trigger a rebuild
     if (mounted) {
-      // Trigger a rebuild to update UI
-      setState(() {
-        // This will cause the UI to rebuild
-      });
+      setState(() {});
     }
     
   } catch (e) {
@@ -937,7 +938,7 @@ Future<void> _returnCurrentBook() async {
         style: ElevatedButton.styleFrom(
           backgroundColor: (widget.book.queueInfo?.hasReservation ?? false) 
               ? Colors.green 
-              : Color(0xFFF5F5F7),
+              : Color.fromARGB(255, 245, 152, 45),
 
           foregroundColor: const Color.fromARGB(255, 0, 0, 0),
           minimumSize: const Size.fromHeight(56),

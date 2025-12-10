@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../presentation/bloc/authentication_bloc.dart';
 import '../../presentation/bloc/authentication_event.dart';
 import '../../presentation/bloc/authentication_state.dart';
+import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -19,10 +20,19 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  String? _errorMessage;
+  bool _isLoading = false;
+
   // Custom colors derived from the design image
   static const Color primaryGreen = Color.fromARGB(255, 230, 159, 7);
   static const Color darkBackground = Color(0xFF121212);
   static const Color inputFieldColor = Color(0xFF1E1E1E);
+
+  @override
+  void initState() {
+    super.initState();
+    _setupAuthListener();
+  }
 
   @override
   void dispose() {
@@ -33,8 +43,82 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
+  void _setupAuthListener() {
+    // This ensures we listen to the bloc even during rebuilds
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authBloc = context.read<AuthBloc>();
+      authBloc.stream.listen((state) {
+        if (state is AuthFailure) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = state.message;
+          });
+          _showErrorSnackbar(state.message);
+        } else if (state is AuthAuthenticated) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = null;
+          });
+          _showSuccessAndNavigate();
+        } else if (state is AuthLoading) {
+          setState(() {
+            _isLoading = true;
+            _errorMessage = null;
+          });
+        }
+      });
+    });
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showSuccessAndNavigate() {
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Registration successful! Welcome to BeteBrana!'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    // Navigate back to login page after a short delay
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        // Navigate to login page with a fresh context
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false, // Remove all previous routes
+        );
+      }
+    });
+  }
+
+  void _clearError() {
+    if (mounted) {
+      setState(() {
+        _errorMessage = null;
+      });
+    }
+  }
+
   void _onSubmit() {
     if (!_formKey.currentState!.validate()) return;
+    
+    // Clear previous errors
+    _clearError();
+    
+    // Close keyboard
+    FocusScope.of(context).unfocus();
+    
     context.read<AuthBloc>().add(
           AuthRegisterRequested(
             name: _nameController.text.trim(),
@@ -44,71 +128,92 @@ class _RegisterPageState extends State<RegisterPage> {
         );
   }
 
+  void _navigateToLogin() {
+    if (_isLoading) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
+  }
+
+  void _navigateBack() {
+    if (_isLoading) return;
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: darkBackground,
-      // Removed AppBar for the full-screen immersive design
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.only(left: 24, right: 24, top: 80, bottom: 24),
-          child: BlocConsumer<AuthBloc, AuthState>(
-            listener: (context, state) {
-              if (state is AuthFailure) {
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(content: Text(state.message)),
-                  );
-              } else if (state is AuthAuthenticated) {
-                // Assuming successful registration navigates back or to main screen
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    const SnackBar(content: Text('Registration successful!')),
-                  );
-              }
-            },
-            builder: (context, state) {
-              final isLoading = state is AuthLoading;
-              return Form(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Back button to match the image style
+              Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                  onPressed: _isLoading ? null : _navigateBack,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // BeteBrana Logo/Icon placeholder
+              const Icon(Icons.menu_book_rounded, color: primaryGreen, size: 50),
+              const SizedBox(height: 32),
+
+              // Title
+              const Text(
+                'Sign up',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Subtitle
+              const Text(
+                'Create your account to access your full library.',
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              const SizedBox(height: 32),
+
+              // Error message display
+              if (_errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade400),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red.shade400),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red.shade400,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              Form(
                 key: _formKey,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Back button to match the image style
-                    Align(
-                      alignment: Alignment.topLeft,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                        onPressed: isLoading ? null : () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // BeteBrana Logo/Icon placeholder
-                    const Icon(Icons.menu_book_rounded, color: primaryGreen, size: 50),
-                    const SizedBox(height: 32),
-
-                    // Title
-                    const Text(
-                      'Sign up',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Subtitle
-                    const Text(
-                      'Create your account to access your full library.',
-                      style: TextStyle(color: Colors.white70, fontSize: 16),
-                    ),
-                    const SizedBox(height: 32),
-
                     // Name Field
                     TextFormField(
                       controller: _nameController,
@@ -121,8 +226,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your name';
                         }
+                        if (value.trim().length < 2) {
+                          return 'Name must be at least 2 characters';
+                        }
                         return null;
                       },
+                      onChanged: (_) => _clearError(),
                     ),
                     const SizedBox(height: 16),
 
@@ -131,19 +240,22 @@ class _RegisterPageState extends State<RegisterPage> {
                       controller: _emailController,
                       style: const TextStyle(color: Colors.white),
                       decoration: _inputDecoration(
-                        labelText: 'Email or Phone',
-                        hintText: 'Email or Phone',
+                        labelText: 'Email',
+                        hintText: 'example@email.com',
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
-                        if (!value.contains('@')) {
+                        final emailRegex = RegExp(
+                            r'^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+');
+                        if (!emailRegex.hasMatch(value.trim())) {
                           return 'Please enter a valid email address';
                         }
                         return null;
                       },
+                      onChanged: (_) => _clearError(),
                     ),
                     const SizedBox(height: 16),
 
@@ -166,16 +278,17 @@ class _RegisterPageState extends State<RegisterPage> {
                         }
                         return null;
                       },
+                      onChanged: (_) => _clearError(),
                     ),
                     const SizedBox(height: 16),
 
-                    // Confirm Password Field (kept as per original logic, updated style)
+                    // Confirm Password Field
                     TextFormField(
                       controller: _confirmPasswordController,
                       style: const TextStyle(color: Colors.white),
                       decoration: _inputDecoration(
                         labelText: 'Confirm password',
-                        hintText: 'Confirm password',
+                        hintText: 'Confirm your password',
                       ),
                       obscureText: true,
                       validator: (value) {
@@ -187,33 +300,46 @@ class _RegisterPageState extends State<RegisterPage> {
                         }
                         return null;
                       },
+                      onChanged: (_) => _clearError(),
                     ),
                     const SizedBox(height: 24),
 
                     // Register Button
                     SizedBox(
                       height: 56,
-                      child: FilledButton(
-                        onPressed: isLoading ? null : _onSubmit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryGreen,
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        child: isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                              )
-                            : const Text('Sign up'),
-                      ),
+                      child: _isLoading
+                          ? Center(
+                              child: Column(
+                                children: [
+                                  const CircularProgressIndicator(
+                                    color: primaryGreen,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Creating your account...',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : FilledButton(
+                              onPressed: _onSubmit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryGreen,
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              child: const Text('Sign up'),
+                            ),
                     ),
                     const SizedBox(height: 32),
 
@@ -236,22 +362,26 @@ class _RegisterPageState extends State<RegisterPage> {
                       children: [
                         _SocialButton(
                           icon: FontAwesomeIcons.google,
-                          onPressed: () {/* Google Register */},
+                          onPressed: _isLoading ? null : () {/* Google Register */},
+                          isLoading: _isLoading,
                         ),
                         const SizedBox(width: 20),
                         _SocialButton(
                           icon: FontAwesomeIcons.facebookF,
-                          onPressed: () {/* Facebook Register */},
+                          onPressed: _isLoading ? null : () {/* Facebook Register */},
+                          isLoading: _isLoading,
                         ),
                         const SizedBox(width: 20),
                         _SocialButton(
                           icon: FontAwesomeIcons.apple,
-                          onPressed: () {/* Apple Register */},
+                          onPressed: _isLoading ? null : () {/* Apple Register */},
+                          isLoading: _isLoading,
                         ),
                         const SizedBox(width: 20),
                         _SocialButton(
                           icon: FontAwesomeIcons.instagram,
-                          onPressed: () {/* Instagram Register */},
+                          onPressed: _isLoading ? null : () {/* Instagram Register */},
+                          isLoading: _isLoading,
                         ),
                       ],
                     ),
@@ -266,11 +396,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           style: TextStyle(color: Colors.white70),
                         ),
                         GestureDetector(
-                          onTap: isLoading ? null : () => Navigator.of(context).pop(),
-                          child: const Text(
+                          onTap: _isLoading ? null : _navigateToLogin,
+                          child: Text(
                             'Login',
                             style: TextStyle(
-                              color: primaryGreen,
+                              color: _isLoading ? Colors.white54 : primaryGreen,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -279,8 +409,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                   ],
                 ),
-              );
-            },
+              ),
+            ],
           ),
         ),
       ),
@@ -312,6 +442,7 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Colors.red, width: 2),
       ),
+      errorStyle: const TextStyle(color: Colors.red),
     );
   }
 }
@@ -319,27 +450,39 @@ class _RegisterPageState extends State<RegisterPage> {
 // Widget for the Social Login Buttons
 class _SocialButton extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
-  const _SocialButton({required this.icon, required this.onPressed});
+  const _SocialButton({
+    required this.icon, 
+    required this.onPressed,
+    required this.isLoading,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: _RegisterPageState.inputFieldColor,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Center(
-          child: FaIcon(
-            icon,
-            color: Colors.white,
-            size: 24,
+    return Opacity(
+      opacity: isLoading ? 0.5 : 1.0,
+      child: InkWell(
+        onTap: isLoading ? null : onPressed,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: _RegisterPageState.inputFieldColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isLoading ? Colors.white30 : Colors.white54,
+              width: 1,
+            ),
+          ),
+          child: Center(
+            child: FaIcon(
+              icon,
+              color: isLoading ? Colors.white54 : Colors.white,
+              size: 24,
+            ),
           ),
         ),
       ),

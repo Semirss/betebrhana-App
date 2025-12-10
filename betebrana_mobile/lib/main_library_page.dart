@@ -712,7 +712,7 @@ class _CoverFlowCarouselState extends State<_CoverFlowCarousel> {
                                 ),
                                 Text(
                                   " • ${widget.books[index].author}",
-                                  style: const TextStyle(color: Color.fromARGB(255, 53, 52, 52)),
+                                  style: const TextStyle(color: Color.fromARGB(255, 116, 115, 115)), 
                                 ),
                               ],
                             ),
@@ -858,7 +858,6 @@ class _LibraryGridItem extends StatelessWidget {
 }
 
 // --- TAB 3: PROFILE (USER + BORROWED) ---
-
 class _ProfileTab extends StatelessWidget {
   const _ProfileTab();
 
@@ -869,125 +868,152 @@ class _ProfileTab extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              // Profile Header
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.grey[800],
-                child: Text(
-                  user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : '?',
-                  style: const TextStyle(fontSize: 40, color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                user?.name ?? 'Guest User',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                user?.email ?? 'Sign in to sync your library',
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface,
-),
-              ),
-              const SizedBox(height: 30),
-
-              // --- New Downloaded Books Navigation ---
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.download_done_rounded, color: Theme.of(context).colorScheme.onSurface,),
-                ),
-                title: const Text("Downloaded Books", style: TextStyle(fontWeight: FontWeight.bold)),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const DownloadedBooksPage()),
-                  );
-                },
-              ),
-              const SizedBox(height: 10),
-
-              // Borrowed Books Section
-              const Divider(height: 30),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Currently Borrowed",
-                  style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.1,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            // Force immediate refresh of LibraryBloc
+            context.read<LibraryBloc>().add(const LibraryRefreshed());
+            // Wait a bit for the refresh to complete
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                // Profile Header
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey[800],
+                  child: Text(
+                    user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : '?',
+                    style: const TextStyle(fontSize: 40, color: Colors.white),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              
-              BlocBuilder<LibraryBloc, LibraryState>(
-                builder: (context, state) {
-                  if (state is LibraryLoaded) {
-                    final borrowed = state.books.where((b) => b.userHasRental).toList();
-                    
-                    if (borrowed.isEmpty) {
-                      return Container(
-                        padding: const EdgeInsets.all(30),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[900],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Column(
-                          children: [
-                            Icon(Icons.book_outlined, size: 40, color: Colors.grey),
-                            SizedBox(height: 30),
-                            Text("No active rentals"),
-                          ],
-                        ),
-                      );
+                const SizedBox(height: 16),
+                Text(
+                  user?.name ?? 'Guest User',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  user?.email ?? 'Sign in to sync your library',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                ),
+                const SizedBox(height: 30),
+
+                // --- New Downloaded Books Navigation ---
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.download_done_rounded, color: Theme.of(context).colorScheme.onSurface,),
+                  ),
+                  title: const Text("Downloaded Books", style: TextStyle(fontWeight: FontWeight.bold)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DownloadedBooksPage()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+
+                // Borrowed Books Section
+                const Divider(height: 30),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Currently Borrowed",
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () {
+                        // Immediate refresh
+                        context.read<LibraryBloc>().add(const LibraryRefreshed());
+                      },
+                      tooltip: 'Refresh borrowed books',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                BlocConsumer<LibraryBloc, LibraryState>(
+                  listener: (context, state) {
+                    // This will be called immediately when LibraryBloc state changes
+                    if (state is LibraryLoaded) {
+                      print('Profile: Library state updated with ${state.books.where((b) => b.userHasRental).length} borrowed books');
                     }
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: borrowed.length,
-                      separatorBuilder: (_,__) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: SizedBox(
-                            width: 100, 
-
-                            child: _BookCoverImage(path: borrowed[index].coverImagePath)
+                  },
+                  builder: (context, state) {
+                    if (state is LibraryLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    
+                    if (state is LibraryLoaded) {
+                      final borrowed = state.books.where((b) => b.userHasRental).toList();
+                      
+                      if (borrowed.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(30),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          title: Text(borrowed[index].title),
-                          subtitle: const Text(
-                            "Borrowed", 
-                            style: TextStyle(color: Colors.orange)
+                          child: const Column(
+                            children: [
+                              Icon(Icons.book_outlined, size: 40, color: Colors.grey),
+                              SizedBox(height: 30),
+                              Text("No active rentals"),
+                            ],
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                          onTap: () {
-                             Navigator.of(context).push(
+                        );
+                      }
+
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: borrowed.length,
+                        separatorBuilder: (_,__) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: SizedBox(
+                              width: 100,
+                              child: _BookCoverImage(path: borrowed[index].coverImagePath)
+                            ),
+                            title: Text(borrowed[index].title),
+                            subtitle: const Text(
+                              "Borrowed", 
+                              style: TextStyle(color: Colors.orange)
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                            onTap: () {
+                              Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => BookDetailsPage(book: borrowed[index])
                                 ),
-                             );
-                          },
-                        );
-                      },
-                    );
-                  }
-                  return const CircularProgressIndicator();
-                },
-              ),
-            ],
+                              );
+                            },
+                          );
+                        },
+                      );
+                    }
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

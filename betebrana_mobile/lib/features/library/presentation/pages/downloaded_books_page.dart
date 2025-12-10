@@ -21,10 +21,15 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
   void initState() {
     super.initState();
     _loadDownloadedBooks();
+    _clearPreviousUserDownloads().then((_) {
+      _loadDownloadedBooks();
+    });
     _downloadService.cleanupExpiredBooks();
     _downloadService.syncWithServerAndCleanup(); 
   }
-
+  Future<void> _clearPreviousUserDownloads() async {
+    await _downloadService.clearDownloadsForPreviousUser();
+  }
   Future<void> _loadDownloadedBooks() async {
     setState(() {
       _downloadedBooksFuture = _downloadService.getDownloadedBooks();
