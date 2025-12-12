@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 
 import '../../domain/entities/auth_user.dart';
@@ -21,7 +20,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthStarted event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
     final hasSession = await _authRepository.hasValidSession();
     if (!hasSession) {
       emit(const AuthUnauthenticated());
@@ -50,27 +48,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthAuthenticated(user));
     } catch (e) {
       emit(AuthFailure(e.toString()));
-      emit(const AuthUnauthenticated());
+      // Don't emit AuthUnauthenticated here - keep showing the login page
+      // The error will be displayed and user can try again
     }
   }
 
-  Future<void> _onRegisterRequested(
-    AuthRegisterRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(const AuthLoading());
-    try {
-      final AuthUser user = await _authRepository.register(
-        name: event.name,
-        email: event.email,
-        password: event.password,
-      );
-      emit(AuthAuthenticated(user));
-    } catch (e) {
-      emit(AuthFailure(e.toString()));
-      emit(const AuthUnauthenticated());
-    }
+Future<void> _onRegisterRequested(
+  AuthRegisterRequested event,
+  Emitter<AuthState> emit,
+) async {
+  emit(const AuthLoading());
+  try {
+    // Register (which now clears all sessions)
+    await _authRepository.register(
+      name: event.name,
+      email: event.email,
+      password: event.password,
+    );
+    
+    // Emit registration success
+    emit(const AuthRegistrationSuccess());
+    
+
+    await _authRepository.logout(); // Double-check logout
+    emit(const AuthUnauthenticated());
+    
+  } catch (e) {
+    emit(AuthFailure(e.toString()));
+    emit(const AuthUnauthenticated());
   }
+}
 
   Future<void> _onLogoutRequested(
     AuthLogoutRequested event,

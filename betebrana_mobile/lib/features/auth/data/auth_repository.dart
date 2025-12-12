@@ -136,89 +136,69 @@ class AuthRepository {
       throw Exception('Login failed: ${e.toString().split(':').last.trim()}');
     }
   }
+Future<void> register({
+  required String name,
+  required String email,
+  required String password,
+}) async {
+  try {
+    // COMPLETELY clear any existing session
+    await _secureStorage.clearAll();
+    await _clearCurrentUserId();
+    await _downloadService.clearDownloadsForPreviousUser();
+    
+    final response = await _dio.post(
+      '/auth/register',
+      data: {
+        'name': name,
+        'email': email,
+        'password': password,
+      },
+      options: Options(
+        validateStatus: (status) => true,
+      ),
+    );
 
-  Future<AuthUser> register({
-    required String name,
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final response = await _dio.post(
-        '/auth/register',
-        data: {
-          'name': name,
-          'email': email,
-          'password': password,
-        },
-        options: Options(
-          validateStatus: (status) => true, // Allow all status codes
-        ),
-      );
+    final data = response.data as Map<String, dynamic>;
 
-      final data = response.data as Map<String, dynamic>;
-
-      // Check for specific error status codes
-      if (response.statusCode == 400 || response.statusCode == 409) {
-        final error = data['error'] ?? data['message'] ?? 'Registration failed';
-        if (error.toString().toLowerCase().contains('already exists') ||
-            error.toString().toLowerCase().contains('duplicate')) {
-          throw Exception('Email already registered. Please use a different email or login.');
-        } else if (error.toString().toLowerCase().contains('weak') ||
-                  error.toString().toLowerCase().contains('password')) {
-          throw Exception('Password is too weak. Please use a stronger password.');
-        } else if (error.toString().toLowerCase().contains('invalid email')) {
-          throw Exception('Please enter a valid email address.');
-        }
-        throw Exception(error.toString());
+    // Check for specific error status codes
+    if (response.statusCode == 400 || response.statusCode == 409) {
+      final error = data['error'] ?? data['message'] ?? 'Registration failed';
+      if (error.toString().toLowerCase().contains('already exists') ||
+          error.toString().toLowerCase().contains('duplicate')) {
+        throw Exception('Email already registered. Please use a different email or login.');
+      } else if (error.toString().toLowerCase().contains('weak') ||
+                error.toString().toLowerCase().contains('password')) {
+        throw Exception('Password is too weak. Please use a stronger password.');
+      } else if (error.toString().toLowerCase().contains('invalid email')) {
+        throw Exception('Please enter a valid email address.');
       }
+      throw Exception(error.toString());
+    }
 
-      if (response.statusCode == 422) {
-        throw Exception('Invalid registration data. Please check your information.');
-      }
+    if (response.statusCode == 422) {
+      throw Exception('Invalid registration data. Please check your information.');
+    }
 
-      if (response.statusCode! >= 500) {
-        throw Exception('Server error. Please try again later.');
-      }
+    if (response.statusCode! >= 500) {
+      throw Exception('Server error. Please try again later.');
+    }
 
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        final error = data['error'] ?? data['message'] ?? 'Registration failed';
-        throw Exception(error.toString());
-      }
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final error = data['error'] ?? data['message'] ?? 'Registration failed';
+      throw Exception(error.toString());
+    }
 
-      if (data['success'] == false) {
-        final error = data['error'] ?? data['message'] ?? 'Registration failed';
-        throw Exception(error.toString());
-      }
+    if (data['success'] == false) {
+      final error = data['error'] ?? data['message'] ?? 'Registration failed';
+      throw Exception(error.toString());
+    }
 
-      final token = (data['token'] ?? data['accessToken']) as String?;
-      if (token == null || token.isEmpty) {
-        throw Exception('Registration response did not contain a valid token');
-      }
-
-      final refreshToken = data['refreshToken'] as String?;
-      final userJson = (data['user'] as Map<String, dynamic>?) ?? {};
-      
-      if (userJson.isEmpty || userJson['id'] == null) {
-        throw Exception('Invalid user data received from server');
-      }
-
-      final user = AuthUser.fromJson(userJson);
-
-      final tokens = AuthTokens.fromRaw(
-        accessToken: token,
-        refreshToken: refreshToken,
-      );
-
-      await _persistSession(tokens: tokens, user: user);
-      
-      // Set current user ID for downloaded books management
-      await _setCurrentUserId(user.id);
-      
-      // Clear previous user's downloads
-      await _downloadService.clearDownloadsForPreviousUser();
-
-      return user;
-    } on DioException catch (e) {
+    // IMPORTANT: DO NOT set any user ID or session after registration
+    // Registration should NOT log the user in
+    print('Registration successful for: $email');
+  }
+     on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
@@ -299,25 +279,24 @@ class AuthRepository {
     }
   }
 
-  Future<AuthUser?> getCurrentUser() async {
-    try {
-      final hasSession = await hasValidSession();
-      if (!hasSession) return null;
-      final userMap = await _secureStorage.getUser();
-      final id = userMap['id'];
-      final email = userMap['email'];
-      final name = userMap['name'];
-      if (id == null || email == null || name == null) return null;
-      
-      // Also set the current user ID if not already set
-      await _setCurrentUserId(id);
-      
-      return AuthUser(id: id, email: email, name: name);
-    } catch (e) {
-      print('Error getting current user: $e');
-      return null;
-    }
+Future<AuthUser?> getCurrentUser() async {
+  try {
+    final hasSession = await hasValidSession();
+    if (!hasSession) return null;
+    final userMap = await _secureStorage.getUser();
+    final id = userMap['id'];
+    final email = userMap['email'];
+    final name = userMap['name'];
+    if (id == null || email == null || name == null) return null;
+    
+    // IMPORTANT: Only return user, don't set ID here
+    // This prevents automatic login after registration
+    return AuthUser(id: id, email: email, name: name);
+  } catch (e) {
+    print('Error getting current user: $e');
+    return null;
   }
+}
 
   // Helper method to set current user ID in SharedPreferences
   Future<void> _setCurrentUserId(String userId) async {

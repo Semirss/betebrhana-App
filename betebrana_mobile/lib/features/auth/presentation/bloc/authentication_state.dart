@@ -31,6 +31,9 @@ class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
 }
 
+class AuthRegistrationSuccess extends AuthState {
+  const AuthRegistrationSuccess();
+}
 class AuthFailure extends AuthState {
   const AuthFailure(this.message);
 

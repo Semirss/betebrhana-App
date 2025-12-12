@@ -42,29 +42,61 @@ class BeteBranaApp extends StatelessWidget {
   }
 }
 
-// This wrapper ensures BlocBuilder is in the widget tree
-class _AppWrapper extends StatelessWidget {
+class _AppWrapper extends StatefulWidget {
   const _AppWrapper();
 
   @override
+  State<_AppWrapper> createState() => _AppWrapperState();
+}
+
+class _AppWrapperState extends State<_AppWrapper> {
+  bool _justRegistered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
-      builder: (context, state) {
-        // Show loading while checking auth
-        if (state is AuthLoading || state is AuthInitial) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthRegistrationSuccess) {
+          // Set flag to prevent auto-login
+          _justRegistered = true;
+          
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration successful! Please login.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // Navigate to login
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+            (route) => false,
           );
         }
-        
-        // If authenticated, show library
-        if (state is AuthAuthenticated) {
-          return const MainLibraryPage();
-        }
-        
-        // Otherwise show login
-        return const LoginPage();
       },
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          // Show loading while checking auth
+          if (state is AuthLoading || state is AuthInitial) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          
+          if (_justRegistered) {
+            return const MainLibraryPage();
+          }
+          
+          // If authenticated, show library
+          if (state is AuthAuthenticated) {
+            return const MainLibraryPage();
+          }
+          
+          // Otherwise show login
+          return const LoginPage();
+        },
+      ),
     );
   }
   // Helper functions for navigation (add these outside the BeteBranaApp class)
