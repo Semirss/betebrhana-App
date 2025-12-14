@@ -39,13 +39,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
     try {
       final AuthUser user = await _authRepository.login(
         email: event.email,
         password: event.password,
       );
       emit(AuthAuthenticated(user));
+      // emit(const AuthLoading());
+
     } catch (e) {
       emit(AuthFailure(e.toString()));
       // Don't emit AuthUnauthenticated here - keep showing the login page

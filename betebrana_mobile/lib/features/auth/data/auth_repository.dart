@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:universal_html/js.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/storage/secure_storage_service.dart';
@@ -54,7 +56,7 @@ class AuthRepository {
         throw Exception(error.toString());
       }
 
-      if (response.statusCode == 404) {
+      if (response.statusCode == 404 || response.statusCode == 400) {
         throw Exception('Account not found. Please check your email.');
       }
 
@@ -91,7 +93,7 @@ class AuthRepository {
       }
 
       final user = AuthUser.fromJson(userJson);
-
+   
       final tokens = AuthTokens.fromRaw(
         accessToken: token,
         refreshToken: refreshToken,
@@ -249,7 +251,6 @@ Future<void> register({
       
     } catch (e) {
       print('Error during logout: $e');
-      // Even if there's an error, we should try to clear as much as possible
       await _secureStorage.clearAll();
       await _clearCurrentUserId();
     }

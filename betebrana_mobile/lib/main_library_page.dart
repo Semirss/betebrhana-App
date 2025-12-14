@@ -302,15 +302,32 @@ appBar: AppBar(
                 const SizedBox(height: 30),
 
                 // Recommended Section
-                _buildSectionHeader("Recommended for you", () {}),
+_buildSectionHeader(
+  "Recommended for you",
+  () {
+    context.findAncestorStateOfType<_MainLibraryViewState>()?.switchToTab(1);
+  },
+),
                 _buildBookList(context, recommendedBooks),
 
                 // Trending Section
-                _buildSectionHeader("Trending Now", () {}),
+               _buildSectionHeader(
+  "Trending Now",
+  () {
+    context.findAncestorStateOfType<_MainLibraryViewState>()?.switchToTab(1);
+  },
+),
+
                 _buildBookList(context, trendingBooks),
 
                 // Classics Section
-                _buildSectionHeader("Classics", () {}),
+                _buildSectionHeader(
+  "Classics",
+  () {
+    context.findAncestorStateOfType<_MainLibraryViewState>()?.switchToTab(1);
+  },
+),
+
                 _buildBookList(context, classicBooks),
                 
                 const SizedBox(height: 100), // Bottom padding for nav bar
@@ -951,9 +968,9 @@ class _ProfileTab extends StatelessWidget {
                 BlocConsumer<LibraryBloc, LibraryState>(
                   listener: (context, state) {
                     // This will be called immediately when LibraryBloc state changes
-                    if (state is LibraryLoaded) {
-                      print('Profile: Library state updated with ${state.books.where((b) => b.userHasRental).length} borrowed books');
-                    }
+                    // if (state is LibraryLoaded) {
+                    //   print('Profile: Library state updated with ${state.books.where((b) => b.userHasRental).length} borrowed books');
+                    // }
                   },
                   builder: (context, state) {
                     if (state is LibraryLoading) {

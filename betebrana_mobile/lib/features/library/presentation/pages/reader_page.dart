@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:betebrana_mobile/features/library/data/book_download_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:betebrana_mobile/core/config/app_config.dart';
 import 'package:betebrana_mobile/core/network/dio_client.dart';
@@ -27,127 +30,136 @@ class _ReaderPageState extends State<ReaderPage>
   bool _hasOfflineCopy = false;
   bool _downloadInProgress = false;
   DateTime? _offlineExpiresAt;
-  
+
   // New state variables
   double _textScale = 1.0;
   static const double _minTextScale = 0.8;
-  static const double _maxTextScale = 2.5;
+  static const double _maxTextScale = 2.0;
   static const double _textScaleStep = 0.1;
-  
+
   // Theme management
   int _currentThemeIndex = 0;
-  final List<ThemeData> _themes = [
-    AppTheme.light(),
-    AppTheme.dark(),
-    ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppTheme.tanForeground,
-        background: AppTheme.tanBackground,
-        onBackground: AppTheme.tanForeground,
-      ),
-    ),
-    ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppTheme.blueForeground,
-        background: AppTheme.blueBackground,
-        onBackground: AppTheme.blueForeground,
-      ),
-    ),
-    ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppTheme.greenForeground,
-        background: AppTheme.greenBackground,
-        onBackground: AppTheme.greenForeground,
-      ),
-    ),
-  ];
+  late List<ThemeData> _themes;
 
   @override
   void initState() {
     super.initState();
+    _initThemes();
     _offlineBookService = OfflineBookService();
     _initTxtFuture();
+    _refreshOfflineState();
+    // Hide status bar for immersive reading
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   }
 
- // Replace the _initTxtFuture method in ReaderPage:
-
-void _initTxtFuture() {
-  final type = (widget.book.fileType ?? '').toLowerCase();
-  
-  // If book is downloaded and has local file path, read from local
-  if (widget.book.isDownloaded == true && widget.book.localFilePath != null) {
-    _txtFuture = _loadLocalTxtContent(widget.book);
-  } else if (type == 'txt') {
-    // Fall back to server loading if not downloaded
-    _txtFuture = _loadTxtContent(widget.book);
-  } else {
-    _txtFuture = Future.value('');
+  void _initThemes() {
+    _themes = [
+      AppTheme.light().copyWith(
+        scaffoldBackgroundColor: const Color(0xFFFDFDFD),
+        textTheme: AppTheme.light().textTheme.apply(fontFamily: 'Georgia'),
+      ),
+      AppTheme.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF1A1A1A),
+        textTheme: AppTheme.dark().textTheme.apply(fontFamily: 'Georgia'),
+      ),
+      ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF5EFE1), // Sepia background
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.brown,
+          background: const Color(0xFFF5EFE1),
+          surface: const Color(0xFFF5EFE1),
+          onBackground: const Color(0xFF4E342E),
+          onSurface: const Color(0xFF4E342E),
+        ),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Color(0xFF4E342E), fontFamily: 'Georgia'),
+        ),
+      ),
+      ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF000000), // OLED Black
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.grey,
+          background: Color(0xFF000000),
+          surface: Color(0xFF000000),
+          onBackground: Color(0xFFB0B0B0),
+          onSurface: Color(0xFFB0B0B0),
+        ),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Color(0xFFB0B0B0), fontFamily: 'Georgia'),
+        ),
+      ),
+    ];
   }
-}
 
-// Add this new method to load from local file:
-Future<String> _loadLocalTxtContent(Book book) async {
-  try {
-    if (book.localFilePath == null) {
-      throw Exception('No local file path available');
+  @override
+  void dispose() {
+    // Restore system UI overlays
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
+        overlays: SystemUiOverlay.values);
+    super.dispose();
+  }
+
+  void _initTxtFuture() {
+    final type = (widget.book.fileType ?? '').toLowerCase();
+
+    // If book is downloaded and has local file path, read from local
+    if (widget.book.isDownloaded == true && widget.book.localFilePath != null) {
+      _txtFuture = _loadLocalTxtContent(widget.book);
+    } else if (type == 'txt') {
+      // Fall back to server loading if not downloaded
+      _txtFuture = _loadTxtContent(widget.book);
+    } else {
+      _txtFuture = Future.value('');
     }
-    
-    final localFile = File(book.localFilePath!);
-    if (!await localFile.exists()) {
-      throw Exception('Local file not found');
-    }
-    
-    // Read directly from the local file
-    final content = await localFile.readAsString();
-    return content;
-  } catch (e) {
-    // print('Error reading local file: $e');
-    
-    // Fall back to the offline book service if direct file reading fails
+  }
+
+  Future<String> _loadLocalTxtContent(Book book) async {
     try {
-      final text = await _offlineBookService.readTxtContent(book.id);
-      if (text.isNotEmpty) {
-        return text;
+      if (book.localFilePath == null) {
+        throw Exception('No local file path available');
       }
-    } catch (_) {
-      // Continue to the next fallback
-    }
-    
-    // Final fallback: try the download service
-    try {
-      final bookId = int.tryParse(book.id);
-      if (bookId != null) {
-        final downloadService = BookDownloadService();
-        final content = await downloadService.getBookContent(bookId);
-        return content;
-      }
-    } catch (_) {
-      // All methods failed
-    }
-    
-    throw Exception('Failed to load local book content: $e');
-  }
-}
 
-Future<void> _refreshOfflineState() async {
-  // If book is already marked as downloaded, don't check the offline service
-  if (widget.book.isDownloaded == true) {
-    return;
+      final localFile = File(book.localFilePath!);
+      if (!await localFile.exists()) {
+        throw Exception('Local file not found');
+      }
+
+      final content = await localFile.readAsString();
+      return content;
+    } catch (e) {
+      try {
+        final text = await _offlineBookService.readTxtContent(book.id);
+        if (text.isNotEmpty) return text;
+      } catch (_) {}
+
+      try {
+        final bookId = int.tryParse(book.id);
+        if (bookId != null) {
+          final downloadService = BookDownloadService();
+          return await downloadService.getBookContent(bookId);
+        }
+      } catch (_) {}
+
+      throw Exception('Failed to load local book content: $e');
+    }
   }
-  
-  final entry = await _offlineBookService.getEntryForBook(widget.book.id);
-  if (!mounted) return;
-  setState(() {
-    _hasOfflineCopy = entry != null;
-    _offlineExpiresAt = entry?.expiresAt;
-  });
-}
+
+  Future<void> _refreshOfflineState() async {
+    if (widget.book.isDownloaded == true) return;
+
+    final entry = await _offlineBookService.getEntryForBook(widget.book.id);
+    if (!mounted) return;
+    setState(() {
+      _hasOfflineCopy = entry != null;
+      _offlineExpiresAt = entry?.expiresAt;
+    });
+  }
 
   Future<String> _loadTxtContent(Book book) async {
-    // Prefer offline encrypted copy if available and not expired.
     try {
       final entry = await _offlineBookService.getEntryForBook(book.id);
       if (entry != null) {
@@ -160,14 +172,10 @@ Future<void> _refreshOfflineState() async {
         }
         return text;
       }
-    } catch (_) {
-      // If offline read fails for any reason, fall back to network below.
-    }
+    } catch (_) {}
 
     final url = _buildDocumentUrl(book.filePath);
-    if (url == null) {
-      throw Exception('This book has no associated file.');
-    }
+    if (url == null) throw Exception('This book has no associated file.');
 
     final dio = DioClient.instance.dio;
     final response = await dio.get<String>(
@@ -177,23 +185,19 @@ Future<void> _refreshOfflineState() async {
     return response.data ?? '';
   }
 
-  Future<void> _downloadForOffline() async {
-    setState(() {
-      _downloadInProgress = true;
-    });
+  String? _buildDocumentUrl(String? filePath) {
+    if (filePath == null || filePath.isEmpty) return null;
+    var path = filePath.trim();
+    if (path.startsWith('/')) path = path.substring(1);
+    if (path.startsWith('documents/')) path = path.substring('documents/'.length);
+    return '${AppConfig.documentsBaseUrl}/$path';
+  }
 
+  Future<void> _downloadForOffline() async {
+    setState(() => _downloadInProgress = true);
     try {
       final text = await _txtFuture;
-      if (text.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nothing to download: book is empty.')),
-        );
-        setState(() {
-          _downloadInProgress = false;
-        });
-        return;
-      }
+      if (text.isEmpty) throw Exception('Book is empty');
 
       final expiresAt = (widget.rentalDueDate ??
               DateTime.now().add(const Duration(days: 21)))
@@ -218,66 +222,25 @@ Future<void> _refreshOfflineState() async {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _downloadInProgress = false;
-      });
+      setState(() => _downloadInProgress = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to download book: $e')),
       );
     }
   }
 
-  Future<void> _deleteOfflineCopy() async {
-    setState(() {
-      _downloadInProgress = true;
-    });
-
-    try {
-      await _offlineBookService.deleteOfflineCopy(widget.book.id);
-      if (!mounted) return;
-      setState(() {
-        _hasOfflineCopy = false;
-        _offlineExpiresAt = null;
-        _downloadInProgress = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Offline copy deleted.')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _downloadInProgress = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete offline copy: $e')),
-      );
-    }
-  }
-
-  // Zoom methods
   void _zoomIn() {
     setState(() {
-      if (_textScale < _maxTextScale) {
-        _textScale += _textScaleStep;
-      }
+      if (_textScale < _maxTextScale) _textScale += _textScaleStep;
     });
   }
 
   void _zoomOut() {
     setState(() {
-      if (_textScale > _minTextScale) {
-        _textScale -= _textScaleStep;
-      }
+      if (_textScale > _minTextScale) _textScale -= _textScaleStep;
     });
   }
 
-  void _resetZoom() {
-    setState(() {
-      _textScale = 1.0;
-    });
-  }
-
-  // Theme methods
   void _changeTheme() {
     setState(() {
       _currentThemeIndex = (_currentThemeIndex + 1) % _themes.length;
@@ -286,214 +249,153 @@ Future<void> _refreshOfflineState() async {
 
   String _getThemeName() {
     switch (_currentThemeIndex) {
-      case 0:
-        return 'Light';
-      case 1:
-        return 'Dark';
-      case 2:
-        return 'Sepia';
-      case 3:
-        return 'Blue';
-      case 4:
-        return 'Green';
-      default:
-        return 'Light';
+      case 0: return 'Light';
+      case 1: return 'Dark';
+      case 2: return 'Sepia';
+      case 3: return 'OLED';
+      default: return 'Light';
     }
   }
 
-  IconData _getThemeIcon() {
-    switch (_currentThemeIndex) {
-      case 0:
-        return Icons.light_mode;
-      case 1:
-        return Icons.dark_mode;
-      case 2:
-        return Icons.filter_vintage;
-      case 3:
-        return Icons.water_drop;
-      case 4:
-        return Icons.nature;
-      default:
-        return Icons.light_mode;
-    }
-  }
-@override
-Widget build(BuildContext context) {
-  final type = (widget.book.fileType ?? '').toLowerCase();
+  @override
+  Widget build(BuildContext context) {
+    final type = (widget.book.fileType ?? '').toLowerCase();
+    final theme = _themes[_currentThemeIndex];
 
-  return Theme(
-    data: _themes[_currentThemeIndex],
-    child: DefaultTabController(
-      length: type == 'txt' ? 2 : 1,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.book.title.isEmpty
-              ? 'Reader'
-              : widget.book.title),
-          bottom: type == 'txt'
-              ? const TabBar(
-                  tabs: [
-                    Tab(text: 'Scroll'),
-                    Tab(text: 'Paged'),
-                  ],
-                )
-              : null,
-          actions: [
-            // Zoom controls - only for scroll view
-            if (type == 'txt') ...[
-              IconButton(
-                onPressed: _zoomOut,
-                icon: const Icon(Icons.zoom_out),
-                tooltip: 'Zoom Out',
-              ),
-              PopupMenuButton<double>(
-                icon: Text('${(_textScale * 100).round()}%'),
-                tooltip: 'Text Size',
-                onSelected: (value) {
-                  setState(() {
-                    _textScale = value;
-                  });
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 0.8,
-                    child: Text('80%'),
-                  ),
-                  const PopupMenuItem(
-                    value: 1.0,
-                    child: Text('100%'),
-                  ),
-                  const PopupMenuItem(
-                    value: 1.2,
-                    child: Text('120%'),
-                  ),
-                  const PopupMenuItem(
-                    value: 1.5,
-                    child: Text('150%'),
-                  ),
-                  const PopupMenuItem(
-                    value: 2.0,
-                    child: Text('200%'),
-                  ),
-                ],
-              ),
-              IconButton(
-                onPressed: _zoomIn,
-                icon: const Icon(Icons.zoom_in),
-                tooltip: 'Zoom In',
-              ),
-              const VerticalDivider(thickness: 1, indent: 10, endIndent: 10),
-            ],
-            
-            // Theme changer
-            IconButton(
-              onPressed: _changeTheme,
-              icon: Icon(_getThemeIcon()),
-              tooltip: 'Change Theme (${_getThemeName()})',
+    return Theme(
+      data: theme,
+      child: DefaultTabController(
+        length: type == 'txt' ? 2 : 1,
+        // Start with the Paged view (index 1) as it is the "premium" experience
+        initialIndex: type == 'txt' ? 1 : 0, 
+        child: Scaffold(
+          // Use a transparent app bar that reveals on tap in a real app,
+          // but here we keep it simple.
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: theme.scaffoldBackgroundColor,
+            foregroundColor: theme.colorScheme.onBackground,
+            title: Text(
+              widget.book.title.isEmpty ? 'Reader' : widget.book.title,
+              style: const TextStyle(fontSize: 16),
             ),
-            
-            // Offline download/delete
-            if (type == 'txt') ...[
-                IconButton(
-                onPressed: _downloadInProgress
-                    ? null
-                    : () {
-                        if (widget.book.isDownloaded == true || _hasOfflineCopy) {
-                          // Book is already downloaded, show info or delete
-                          _showDownloadedInfoDialog();
-                        } else {
-                          _downloadForOffline();
-                        }
-                      },
-                icon: _downloadInProgress
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        (widget.book.isDownloaded == true || _hasOfflineCopy)
-                            ? Icons.cloud_done
-                            : Icons.download,
-                      ),
-                tooltip: (widget.book.isDownloaded == true || _hasOfflineCopy)
-                    ? 'Book is downloaded locally'
-                    : 'Download for offline',
-                ),
-
-            ],
-          ],
-        ),
-        body: type == 'txt'
-            ? FutureBuilder<String>(
-                future: _txtFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Failed to load book: ${snapshot.error}',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    );
-                  }
-
-                  final text = snapshot.data ?? '';
-                  if (text.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('This book has no content.'),
-                      ),
-                    );
-                  }
-
-                  return TabBarView(
-                    children: [
-                      _TxtScrollView(text: text, textScale: _textScale),
-                      _TxtPagedView(text: text), // No zoom parameter
+            bottom: type == 'txt'
+                ? TabBar(
+                    labelColor: theme.colorScheme.primary,
+                    unselectedLabelColor: theme.colorScheme.onBackground.withOpacity(0.5),
+                    indicatorColor: theme.colorScheme.primary,
+                    tabs: const [
+                      Tab(text: 'Scroll'),
+                      Tab(text: 'Paged'),
                     ],
-                  );
-                },
-              )
-            : _UnsupportedTypeView(type: type),
-      ),
-    ),
-  );
-}
-void _showDownloadedInfoDialog() {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Book Already Downloaded'),
-      content: const Text('This book is already downloaded on your device and can be read offline.'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('OK'),
+                  )
+                : null,
+            actions: [
+              if (type == 'txt') ...[
+                IconButton(
+                  onPressed: _zoomOut,
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                ),
+                Center(
+                    child: Text(
+                  '${(_textScale * 100).round()}%',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                )),
+                IconButton(
+                  onPressed: _zoomIn,
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _changeTheme,
+                  icon: Icon(
+                    _currentThemeIndex == 1 || _currentThemeIndex == 3 
+                        ? Icons.light_mode 
+                        : Icons.dark_mode
+                  ),
+                  tooltip: 'Theme: ${_getThemeName()}',
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) {
+                    if (value == 'download') {
+                      if (!(widget.book.isDownloaded == true || _hasOfflineCopy)) {
+                         _downloadForOffline();
+                      }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'download',
+                      enabled: !_downloadInProgress,
+                      child: Row(
+                        children: [
+                          Icon(
+                            (widget.book.isDownloaded == true || _hasOfflineCopy)
+                                ? Icons.check
+                                : Icons.download,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          const SizedBox(width: 12),
+                          Text((widget.book.isDownloaded == true || _hasOfflineCopy)
+                              ? 'Available Offline'
+                              : 'Download'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+          body: type == 'txt'
+              ? FutureBuilder<String>(
+                  future: _txtFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+                    final text = snapshot.data ?? '';
+                    if (text.isEmpty) {
+                      return const Center(child: Text('Book is empty.'));
+                    }
+
+                    return TabBarView(
+                      physics: const NeverScrollableScrollPhysics(), // Disable swipe between tabs
+                      children: [
+                        _TxtScrollView(text: text, textScale: _textScale),
+                        _TxtPagedView(
+                          text: text, 
+                          textScale: _textScale,
+                          // Pass text style to ensure pagination calculation uses correct metrics
+                          textStyle: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 18 * _textScale,
+                            height: 1.6,
+                            color: theme.colorScheme.onBackground,
+                          ) ?? TextStyle(
+                             fontSize: 18 * _textScale,
+                             height: 1.6,
+                             color: theme.colorScheme.onBackground,
+                             fontFamily: 'Georgia'
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                )
+              : const Center(child: Text('Format not supported')),
         ),
-      ],
-    ),
-  );
-}
-  String? _buildDocumentUrl(String? filePath) {
-    if (filePath == null || filePath.isEmpty) return null;
-    var path = filePath.trim();
-    if (path.startsWith('/')) {
-      path = path.substring(1);
-    }
-    if (path.startsWith('documents/')) {
-      path = path.substring('documents/'.length);
-    }
-    return '${AppConfig.documentsBaseUrl}/$path';
+      ),
+    );
   }
 }
 
+// -----------------------------------------------------------------------------
+// SCROLL VIEW (Standard)
+// -----------------------------------------------------------------------------
 class _TxtScrollView extends StatelessWidget {
   const _TxtScrollView({required this.text, required this.textScale});
 
@@ -504,12 +406,13 @@ class _TxtScrollView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scrollbar(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Text(
           text,
-          style: TextStyle(
-            fontSize: 16 * textScale,
-            height: 1.4,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontSize: 18 * textScale,
+            height: 1.6,
+            fontFamily: 'Georgia', // Serif is better for reading
           ),
         ),
       ),
@@ -517,10 +420,19 @@ class _TxtScrollView extends StatelessWidget {
   }
 }
 
+// -----------------------------------------------------------------------------
+// PAGED VIEW (Advanced E-Reader Style)
+// -----------------------------------------------------------------------------
 class _TxtPagedView extends StatefulWidget {
-  const _TxtPagedView({required this.text});
+  const _TxtPagedView({
+    required this.text,
+    required this.textScale,
+    required this.textStyle,
+  });
 
   final String text;
+  final double textScale;
+  final TextStyle textStyle;
 
   @override
   State<_TxtPagedView> createState() => _TxtPagedViewState();
@@ -528,228 +440,256 @@ class _TxtPagedView extends StatefulWidget {
 
 class _TxtPagedViewState extends State<_TxtPagedView> {
   late PageController _pageController;
-  late List<String> _pages;
+  List<String> _pages = [];
+  bool _isPaginating = true;
   int _currentPage = 0;
+  Size? _lastSize;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    _pages = _paginate(widget.text);
   }
 
-  List<String> _paginate(String content) {
-    if (content.isEmpty) return [''];
+  @override
+  void didUpdateWidget(covariant _TxtPagedView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Repaginate if text style (scale/font) or content changes
+    if (oldWidget.textScale != widget.textScale || 
+        oldWidget.textStyle != widget.textStyle ||
+        oldWidget.text != widget.text) {
+      _isPaginating = true; // Trigger layout builder to recalculate
+    }
+  }
+
+  /// The magic happens here: Calculates pages based on ACTUAL layout dimensions
+  Future<void> _paginate(Size size) async {
+    // If size hasn't changed materially, don't re-calculate
+    if (_lastSize != null && 
+        (size.width - _lastSize!.width).abs() < 1 && 
+        (size.height - _lastSize!.height).abs() < 1 &&
+        !_isPaginating) {
+      return;
+    }
     
-    // Fixed character count for consistent 100% zoom
-    const int charsPerPage = 1500; // Optimized for readability at 100%
+    _lastSize = size;
     
+    // Defer to next frame to allow UI to show loading state
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    if (!mounted) return;
+
     final pages = <String>[];
-    var start = 0;
-    final contentLength = content.length;
+    final text = widget.text;
+    final textSpan = TextSpan(text: text, style: widget.textStyle);
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+    );
+
+    int start = 0;
+    int end = text.length;
     
-    while (start < contentLength) {
-      int end = start + charsPerPage;
+    // Safety margin to prevent edge clipping
+    final double pageHeight = size.height;
+    final double pageWidth = size.width;
+
+    while (start < end) {
+      // Create a painter for the remaining text
+      // We take a chunk to avoid processing huge strings at once
+      int estimatedChunkSize = 3000; // Heuristic
+      int chunkEnd = math.min(start + estimatedChunkSize, end);
+      String chunk = text.substring(start, chunkEnd);
       
-      // If we're at the end of content
-      if (end >= contentLength) {
-        pages.add(content.substring(start).trim());
-        break;
+      textPainter.text = TextSpan(text: chunk, style: widget.textStyle);
+      textPainter.layout(maxWidth: pageWidth);
+
+      // If the whole chunk fits, great. If not, we need to find where to cut.
+      // But typically, the chunk is bigger than a page.
+      
+      // Get the offset position at the bottom-right corner of the available space
+      // We look for the character index at the very end of the box
+      final textPosition = textPainter.getPositionForOffset(Offset(pageWidth, pageHeight));
+      
+      // The offset is relative to the chunk start
+      int splitIndex = start + textPosition.offset;
+
+      // Ensure we make progress
+      if (splitIndex <= start) {
+        // Fallback: just take next 100 chars if layout fails (shouldn't happen)
+        splitIndex = math.min(start + 100, end);
       }
       
-      // Find the best break point
-      int bestBreak = -1;
-      
-      // Priority 1: Paragraph break
-      int paragraphBreak = content.lastIndexOf('\n\n', end);
-      if (paragraphBreak > start + (charsPerPage * 0.4)) {
-        bestBreak = paragraphBreak + 2;
-      }
-      
-      // Priority 2: Single newline
-      if (bestBreak == -1) {
-        int newlineBreak = content.lastIndexOf('\n', end);
-        if (newlineBreak > start + (charsPerPage * 0.6)) {
-          bestBreak = newlineBreak + 1;
+      // If we haven't reached the end of the book, we need to snap to a word boundary
+      if (splitIndex < end) {
+        // Find the last whitespace before the split point to avoid cutting words
+        int safeSplit = text.lastIndexOf(RegExp(r'\s'), splitIndex);
+        
+        // If no whitespace found in reasonable distance, just hard cut
+        if (safeSplit > start) {
+          splitIndex = safeSplit;
         }
       }
+
+      pages.add(text.substring(start, splitIndex).trim());
+      start = splitIndex;
       
-      // Priority 3: Sentence break
-      if (bestBreak == -1) {
-        int sentenceBreak = content.lastIndexOf('. ', end);
-        if (sentenceBreak > start + (charsPerPage * 0.7)) {
-          bestBreak = sentenceBreak + 2;
-        }
+      // Skip leading whitespace for the next page
+      while (start < end && RegExp(r'\s').hasMatch(text[start])) {
+        start++;
       }
-      
-      // Priority 4: Word break
-      if (bestBreak == -1) {
-        int wordBreak = content.lastIndexOf(' ', end);
-        if (wordBreak > start + (charsPerPage * 0.8)) {
-          bestBreak = wordBreak + 1;
-        }
-      }
-      
-      // If no good break found, break at calculated position
-      if (bestBreak == -1 || bestBreak <= start) {
-        bestBreak = end;
-      }
-      
-      // Ensure we don't go beyond content length
-      bestBreak = bestBreak.clamp(start + 1, contentLength);
-      
-      String pageContent = content.substring(start, bestBreak).trim();
-      if (pageContent.isNotEmpty) {
-        pages.add(pageContent);
-      }
-      
-      start = bestBreak;
     }
-    
-    if (pages.isEmpty) {
-      pages.add(content);
+
+    if (mounted) {
+      setState(() {
+        _pages = pages;
+        _isPaginating = false;
+        // Reset to page 0 if out of bounds, or keep current ratio
+        if (_currentPage >= _pages.length) _currentPage = 0;
+      });
     }
-    
-    return pages;
+  }
+
+  void _nextPage() {
+    if (_currentPage < _pages.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _previousPage() {
+    if (_currentPage > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        PageView.builder(
-          controller: _pageController,
-          itemCount: _pages.length,
-          onPageChanged: (page) {
-            setState(() {
-              _currentPage = page;
-            });
-          },
-          itemBuilder: (context, index) {
-            final pageText = _pages[index];
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border.all(
-                  color: Theme.of(context).dividerColor.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        pageText,
-                        style: const TextStyle(
-                          fontSize: 16, // Fixed at 100%
-                          height: 1.6,
+    // We use LayoutBuilder to get the EXACT size available for the text
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Define margins
+        const double horizontalMargin = 24.0;
+        const double verticalMargin = 32.0;
+        
+        // Calculate the actual box size for text
+        final Size textAreaSize = Size(
+          constraints.maxWidth - (horizontalMargin * 2),
+          constraints.maxHeight - (verticalMargin * 2) - 40, // -40 for footer
+        );
+
+        // Trigger pagination if needed
+        if (_isPaginating || _lastSize != textAreaSize) {
+           _paginate(textAreaSize);
+        }
+
+        if (_isPaginating) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Formatting book...'),
+              ],
+            ),
+          );
+        }
+
+        return Stack(
+          children: [
+            // The PageView
+            GestureDetector(
+              // Tap left/right logic
+              onTapUp: (details) {
+                final width = MediaQuery.of(context).size.width;
+                if (details.localPosition.dx > width * 0.66) {
+                  _nextPage();
+                } else if (details.localPosition.dx < width * 0.33) {
+                  _previousPage();
+                } else {
+                  // Center tap: toggle UI (optional, left empty here)
+                }
+              },
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _pages.length,
+                onPageChanged: (index) => setState(() => _currentPage = index),
+                physics: const BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  return Container(
+                    color: Colors.transparent, // Capture taps
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: horizontalMargin,
+                      vertical: verticalMargin,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _pages[index],
+                            style: widget.textStyle,
+                            textAlign: TextAlign.justify,
+                          ),
                         ),
-                        textAlign: TextAlign.justify,
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Footer (Progress)
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${((_currentPage + 1) / _pages.length * 100).toInt()}%',
+                       style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
                       ),
                     ),
-                    // Page number
-                    Container(
-                      margin: const EdgeInsets.only(top: 20),
-                      child: Text(
-                        '${index + 1}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                          fontStyle: FontStyle.italic,
-                        ),
+                    Text(
+                      '${_currentPage + 1} of ${_pages.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
                       ),
                     ),
                   ],
                 ),
               ),
-            );
-          },
-        ),
-        
-        // Bottom navigation
-        Positioned(
-          bottom: 20,
-          left: 0,
-          right: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Previous page arrow
-                if (_currentPage > 0)
-                  GestureDetector(
-                    onTap: () {
-                      _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.arrow_back,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                    ),
-                  )
-                else
-                  const SizedBox(width: 48),
-                
-                // Total pages indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    'Page ${_currentPage + 1} of ${_pages.length}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-                
-                // Next page arrow
-                if (_currentPage < _pages.length - 1)
-                  GestureDetector(
-                    onTap: () {
-                      _pageController.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 20,
-                      ),
-                    ),
-                  )
-                else
-                  const SizedBox(width: 48),
-              ],
             ),
-          ),
-        ),
-      ],
+            
+            // Progress Bar Line
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: LinearProgressIndicator(
+                value: (_currentPage + 1) / _pages.length,
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                ),
+                minHeight: 2,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -757,25 +697,5 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-}
-class _UnsupportedTypeView extends StatelessWidget {
-  const _UnsupportedTypeView({required this.type});
-
-  final String type;
-
-  @override
-  Widget build(BuildContext context) {
-    final display = type.isEmpty ? 'this file type' : type;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          'Reader for $display is not implemented yet. '
-          'TXT files are fully supported; PDF/EPUB/DOCX support will be added next.',
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
   }
 }

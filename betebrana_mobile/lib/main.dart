@@ -8,9 +8,6 @@ import 'features/auth/presentation/bloc/authentication_bloc.dart';
 import 'features/auth/presentation/bloc/authentication_event.dart';
 import 'features/auth/presentation/bloc/authentication_state.dart';
 import 'features/auth/presentation/pages/login_page.dart';
-import 'features/auth/presentation/pages/register_page.dart';
-import 'features/library/presentation/pages/library_page.dart';
-import 'features/library/presentation/pages/downloaded_books_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +32,7 @@ class BeteBranaApp extends StatelessWidget {
           theme: AppTheme.light(),
           darkTheme: AppTheme.dark(),
           themeMode: ThemeMode.system,
-          home: const _AppWrapper(), // Use a wrapper widget instead
+          home: const _AppWrapper(),
         ),
       ),
     );
@@ -50,29 +47,27 @@ class _AppWrapper extends StatefulWidget {
 }
 
 class _AppWrapperState extends State<_AppWrapper> {
-  bool _justRegistered = false;
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthRegistrationSuccess) {
-          // Set flag to prevent auto-login
-          _justRegistered = true;
-          
-          // Show success message
+          // Instead of pushing and destroying the wrapper, we just pop back to root
+          // effectively closing the RegisterPage if it's open.
+          Navigator.of(context).popUntil((route) => route.isFirst);
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Registration successful! Please login.'),
               backgroundColor: Colors.green,
             ),
           );
-          
-          // Navigate to login
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-            (route) => false,
-          );
+        }
+        
+        // If we somehow logged in while a different page was pushed on top,
+        // clear the stack so MainLibraryPage is visible.
+        if (state is AuthAuthenticated) {
+           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
@@ -83,29 +78,26 @@ class _AppWrapperState extends State<_AppWrapper> {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          
-          if (_justRegistered) {
-            return const MainLibraryPage();
-          }
-          
+
           // If authenticated, show library
           if (state is AuthAuthenticated) {
             return const MainLibraryPage();
           }
-          
-          // Otherwise show login
+
+          // Default state (Unauthenticated, RegistrationSuccess, Error) -> Show Login
           return const LoginPage();
         },
       ),
     );
   }
-  // Helper functions for navigation (add these outside the BeteBranaApp class)
+}
+
+// Helper functions for navigation
 void logoutAndNavigateToLogin(BuildContext context) {
   context.read<AuthBloc>().add(const AuthLogoutRequested());
-  // Navigation is handled by the root BlocBuilder
+  // The BlocBuilder in _AppWrapper will handle showing the LoginPage
 }
 
 void navigateTo(BuildContext context, String routeName, {Object? arguments}) {
   Navigator.pushNamed(context, routeName, arguments: arguments);
-}
 }

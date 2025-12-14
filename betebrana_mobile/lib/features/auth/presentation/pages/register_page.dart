@@ -289,18 +289,18 @@ class _RegisterPageState extends State<RegisterPage> {
                       
                       const SizedBox(height: 32),
 
-                      // --- Social Login ---
-                      const Row(
-                        children: [
-                          Expanded(child: Divider(color: _surfaceColor, thickness: 2)),
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text('Or sign up with', style: TextStyle(color: _textSecondary, fontSize: 12)),
-                          ),
-                          Expanded(child: Divider(color: _surfaceColor, thickness: 2)),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
+                      // // --- Social Login ---
+                      // const Row(
+                      //   children: [
+                      //     Expanded(child: Divider(color: _surfaceColor, thickness: 2)),
+                      //     Padding(
+                      //       padding: EdgeInsets.symmetric(horizontal: 16),
+                      //       child: Text('Or sign up with', style: TextStyle(color: _textSecondary, fontSize: 12)),
+                      //     ),
+                      //     Expanded(child: Divider(color: _surfaceColor, thickness: 2)),
+                      //   ],
+                      // ),
+                      // const SizedBox(height: 24),
 
                       const SizedBox(height: 32),
 
