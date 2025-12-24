@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'package:betebrana_mobile/features/library/presentation/bloc/library_bloc.dart';
-import 'package:betebrana_mobile/features/library/presentation/bloc/library_event.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:betebrana_mobile/features/library/data/book_download_service.dart';
@@ -11,7 +9,6 @@ import 'package:betebrana_mobile/features/library/data/rental_repository.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/rental.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/user_queue_item.dart';
-import 'package:http/http.dart';
 import 'reader_page.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
@@ -1123,7 +1120,7 @@ Future<void> _returnCurrentBook() async {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : const Color.fromARGB(255, 248, 222, 173),
+      backgroundColor: isDark ? Colors.black : const Color.fromARGB(255, 73, 73, 72),
       body: Stack(
         children: [
           // Custom Scroll View for immersive header
@@ -1157,8 +1154,8 @@ Future<void> _returnCurrentBook() async {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              isDark ? Colors.black.withOpacity(0.5) : const Color.fromARGB(255, 248, 222, 173).withOpacity(0.7),
-                              isDark ? Colors.black : const Color.fromARGB(255, 248, 222, 173),
+                              isDark ? Colors.black.withOpacity(0.5) : const Color.fromARGB(255, 39, 39, 39).withOpacity(0.7),
+                              isDark ? Colors.black : const Color.fromARGB(255, 73, 73, 72),
                             ],
                             stops: const [0.4, 0.8, 1.0],
                           ),

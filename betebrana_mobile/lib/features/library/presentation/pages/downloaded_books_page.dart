@@ -137,7 +137,7 @@ class _DownloadedBooksPageState extends State<DownloadedBooksPage> {
     final isDark = theme.brightness == Brightness.dark;
     
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : const Color.fromARGB(255, 248, 222, 173),
+      backgroundColor: isDark ? const Color(0xFF121212) : const Color.fromARGB(255, 247, 246, 246),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

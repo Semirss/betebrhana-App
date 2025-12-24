@@ -58,7 +58,7 @@ class MainLibraryPage extends StatelessWidget {
                     ),
                   )
                 : ThemeData.light().copyWith(
-                    scaffoldBackgroundColor: const Color.fromARGB(255, 248, 222, 173),
+                    scaffoldBackgroundColor: const Color.fromARGB(255, 247, 245, 245),
                     primaryColor: const Color.fromARGB(255, 236, 125, 34),
                     colorScheme: const ColorScheme.light(
                       primary: Color.fromARGB(255, 236, 125, 34),
@@ -66,7 +66,7 @@ class MainLibraryPage extends StatelessWidget {
                       surface: Color.fromARGB(255, 255, 255, 255),
                     ),
                     appBarTheme: const AppBarTheme(
-                      backgroundColor:   Color.fromARGB(255, 248, 222, 173),
+                      backgroundColor:   Color.fromARGB(255, 253, 253, 253),
                       elevation: 0,
                       systemOverlayStyle: SystemUiOverlayStyle.dark,
                     ),
@@ -165,7 +165,7 @@ Widget build(BuildContext context) {
         )),
       ),
       child: BottomNavigationBar(
-        backgroundColor: isDark ? const Color(0xFF000000) : const Color.fromARGB(255, 253, 218, 153),
+        backgroundColor: isDark ? const Color(0xFF000000) : const Color.fromARGB(255, 228, 227, 226),
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         showSelectedLabels: false,
@@ -1045,6 +1045,7 @@ class _SettingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -1069,8 +1070,8 @@ class _SettingsTab extends StatelessWidget {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text('Log Out', style: TextStyle(color: Colors.redAccent)),
+            leading: Icon(Icons.logout, color:isDark ? const Color.fromARGB(255, 255, 255, 255) : const Color.fromARGB(255, 0, 0, 0)),
+            title: Text('Log Out', style: TextStyle(color:isDark ? const Color.fromARGB(255, 255, 255, 255) : const Color.fromARGB(255, 0, 0, 0))),
             onTap: () {
               context.read<AuthBloc>().add(const AuthLogoutRequested());
             },
