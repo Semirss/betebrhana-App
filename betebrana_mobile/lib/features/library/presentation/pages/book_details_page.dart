@@ -576,7 +576,7 @@ Future<void> _returnCurrentBook() async {
   String _rentalStatusText() {
     if (_loadingStatus) return 'Loading your rental status...';
     final rental = _activeRental;
-    if (rental == null) return 'Not currently rented';
+    if (rental == null) return 'Not currently borrowed';
     
     final due = rental.dueDate.toLocal();
     final now = DateTime.now();
@@ -588,7 +588,7 @@ Future<void> _returnCurrentBook() async {
       return 'Due in ${difference.inDays} days - Return soon!';
     } else {
       final dateString = '${due.year}-${due.month.toString().padLeft(2, '0')}-${due.day.toString().padLeft(2, '0')}';
-      return 'Rented until $dateString (${difference.inDays} days left)';
+      return 'borrowed until $dateString (${difference.inDays} days left)';
     }
   }
 
@@ -711,7 +711,7 @@ Future<void> _returnCurrentBook() async {
     
     final info = widget.book.queueInfo;
     
-    // User has active rental - show RENTED status
+    // User has active rental - show borrowed status
     if (_activeRental != null) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -726,7 +726,7 @@ Future<void> _returnCurrentBook() async {
             Icon(Icons.library_books, size: 14, color: Colors.green),
             const SizedBox(width: 4),
             Text(
-              'RENTED',
+              'BORROWED',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -912,7 +912,7 @@ Future<void> _returnCurrentBook() async {
 
   Widget _buildActionButton() {
     if (_activeRental != null) {
-      // Return button when book is rented
+      // Return button when book is borrowed
       return ElevatedButton.icon(
         onPressed: (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null,
         style: ElevatedButton.styleFrom(
