@@ -147,60 +147,15 @@ class BookDownloadService {
     }
   }
 
-  Future<void> clearDownloadsForPreviousUser() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final currentUserId = await _getCurrentUserId();
-      final lastUserId = prefs.getString(_prefsKeyLastUserId);
-      
-      print('Current user ID: $currentUserId, Last user ID: $lastUserId');
-      
-      if (currentUserId == null) {
-        print('No current user ID, skipping clearDownloadsForPreviousUser');
-        return;
-      }
-      
-      // Store the current user ID as last user ID
-      await prefs.setString(_prefsKeyLastUserId, currentUserId);
-      
-      // Clear old downloads only if user has changed
-      if (lastUserId != null && lastUserId != currentUserId) {
-        print('User changed from $lastUserId to $currentUserId, clearing old downloads');
-        await _clearDownloadsForUser(lastUserId);
-      } else {
-        print('Same user ($currentUserId), keeping downloads');
-      }
-    } catch (e) {
-      print('Error in clearDownloadsForPreviousUser: $e');
-    }
-  }
+Future<void> clearDownloadsForPreviousUser() async {
+  // Do NOT clear anything when user changes
+  print('Downloads persist across user sessions - nothing cleared');
+}
 
-  Future<void> _clearDownloadsForUser(String userId) async {
-    try {
-      final entries = await _loadEntries();
-      final userEntries = entries.where((e) => e.userId == userId);
-      
-      for (final entry in userEntries) {
-        final file = File(entry.path);
-        if (await file.exists()) {
-          try {
-            await file.delete();
-            print('Deleted file for user $userId: ${entry.path}');
-          } catch (e) {
-            print('Error deleting file: $e');
-          }
-        }
-      }
-      
-      // Remove entries for this user
-      final remainingEntries = entries.where((e) => e.userId != userId).toList();
-      await _saveEntries(remainingEntries);
-      
-      print('Cleared downloads for user $userId');
-    } catch (e) {
-      print('Error clearing downloads for user: $e');
-    }
-  }
+Future<void> _clearDownloadsForUser(String userId) async {
+  // Do NOT clear anything - keep both files and metadata
+  print('Downloads preserved for user $userId - nothing cleared');
+}
 
   Future<String> getDownloadDirectory() async {
     return await _getDownloadsDirectory();
@@ -595,37 +550,32 @@ class BookDownloadService {
       rethrow;
     }
   }
+Future<void> syncWithServerAndCleanup() async {
+  try {
+    final userId = await _getCurrentUserId();
+    if (userId == null) return;
 
-  Future<void> syncWithServerAndCleanup() async {
-    try {
-      final userId = await _getCurrentUserId();
-      if (userId == null) return;
+    print('Syncing downloaded books for user $userId');
+    
+    final downloadedBooks = await getDownloadedBooks();
+    final activeRentals = await _rentalRepository.getUserRentals();
 
-      print('Syncing downloaded books with server for user $userId');
-      
-      final downloadedBooks = await getDownloadedBooks();
-      final activeRentals = await _rentalRepository.getUserRentals();
+    for (final book in downloadedBooks) {
+      final bookId = int.tryParse(book.id);
+      if (bookId == null) continue;
 
-      print('User has ${downloadedBooks.length} downloaded books and ${activeRentals.length} active rentals');
+      final isStillRented = activeRentals.any((rental) => 
+          rental.bookId == bookId && rental.isActive);
 
-      for (final book in downloadedBooks) {
-        final bookId = int.tryParse(book.id);
-        if (bookId == null) continue;
-
-        // Check if book is still rented
-        final isStillRented = activeRentals.any((rental) => 
-            rental.bookId == bookId && rental.isActive);
-
-        // If not rented anymore, delete downloaded book
-        if (!isStillRented) {
-          print('Book $bookId no longer rented, removing download...');
-          await deleteBook(bookId);
-        }
+      if (!isStillRented) {
+        print('Book $bookId no longer rented, removing download...');
+        await deleteBook(bookId);
       }
-    } catch (e) {
-      print('Error syncing downloads with server: $e');
     }
+  } catch (e) {
+    print('Error syncing downloads: $e');
   }
+}
 
   Future<void> removeDownloadIfExists(int bookId) async {
     final isDownloaded = await isBookDownloaded(bookId);
@@ -637,21 +587,20 @@ class BookDownloadService {
     }
   }
 
-  // Add this method to update user ID when user logs in/out
-  Future<void> updateUserSession(String? userId) async {
-    if (userId != null) {
-      await _setCurrentUserId(userId);
-      print('Updated user session to: $userId');
-      
-      // Clear downloads for previous user if needed
-      await clearDownloadsForPreviousUser();
-    } else {
-      // Clear current user ID on logout
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_prefsKeyCurrentUserId);
-      print('Cleared user session (logout)');
-    }
+Future<void> updateUserSession(String? userId) async {
+  if (userId != null) {
+    await _setCurrentUserId(userId);
+    print('Updated user session to: $userId');
+    
+    // Just track user change, don't clear downloads
+    await clearDownloadsForPreviousUser();
+  } else {
+    // Clear current user ID on logout
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefsKeyCurrentUserId);
+    print('Cleared user session (logout) - downloads preserved');
   }
+}
 
   // Debug method to list all encrypted files
   Future<void> debugListEncryptedFiles() async {
