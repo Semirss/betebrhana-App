@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Betebrana Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- LOGIN SECTION -->
+    <div id="login-section" class="flex items-center justify-center min-h-screen">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-96">
+            <h2 class="text-2xl font-bold mb-6 text-center text-blue-900">Admin Login</h2>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" class="w-full mt-1 p-2 border rounded" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="password" class="w-full mt-1 p-2 border rounded" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Login</button>
+            </form>
+            <p id="login-error" class="text-red-500 text-sm mt-2 hidden"></p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SECTION (Hidden by default) -->
+    <div id="dashboard-section" class="hidden flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-blue-900 text-white flex flex-col">
+            <div class="p-6 text-2xl font-bold border-b border-blue-800">Betebrana</div>
+            <nav class="flex-1 p-4 space-y-2">
+                <button onclick="showPage('books')" class="w-full text-left p-3 rounded hover:bg-blue-800 nav-btn"
+                    data-page="books">Books</button>
+                <button onclick="showPage('sponsors')" class="w-full text-left p-3 rounded hover:bg-blue-800 nav-btn"
+                    data-page="sponsors">Sponsors & Rates</button>
+                <button onclick="showPage('ads')" class="w-full text-left p-3 rounded hover:bg-blue-800 nav-btn"
+                    data-page="ads">Ads Management</button>
+            </nav>
+            <div class="p-4 border-t border-blue-800">
+                <button onclick="logout()" class="w-full text-left p-2 hover:text-gray-300">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 overflow-y-auto">
+
+            <!-- BOOKS PAGE -->
+            <section id="page-books" class="page-section hidden">
+                <h2 class="text-3xl font-bold mb-6">Book Management</h2>
+
+                <div class="mb-6 flex gap-4">
+                    <button onclick="openModal('upload-book-modal')" class="bg-green-600 text-white px-4 py-2 rounded">+
+                        Upload Book</button>
+                </div>
+
+                <div class="bg-white rounded shadow text-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b">
+                                <th class="p-4">Title</th>
+                                <th class="p-4">Author</th>
+                                <th class="p-4">Sponsors</th>
+                                <th class="p-4">Avail. Copies</th>
+                                <th class="p-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-list">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- SPONSORS PAGE -->
+            <section id="page-sponsors" class="page-section hidden">
+                <h2 class="text-3xl font-bold mb-6">Sponsors & Rates</h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Rates Config -->
+                    <div class="bg-white p-6 rounded shadow h-fit">
+                        <h3 class="text-xl font-bold mb-4">Sponsorship Settings</h3>
+                        <form id="rates-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium">Rate Amount (Birr)</label>
+                                <input type="number" id="setting-amount" class="w-full border p-2 rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium">Copies per Batch</label>
+                                <input type="number" id="setting-copies" class="w-full border p-2 rounded">
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Update Rates</button>
+                        </form>
+                    </div>
+
+                    <!-- Add Sponsor -->
+                    <div class="bg-white p-6 rounded shadow h-fit">
+                        <h3 class="text-xl font-bold mb-4">Add New Sponsor</h3>
+                        <form id="add-sponsor-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium">Sponsor Name</label>
+                                <input type="text" id="sponsor-name" class="w-full border p-2 rounded" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium">Contact Info</label>
+                                <textarea id="sponsor-contact" class="w-full border p-2 rounded"></textarea>
+                            </div>
+                            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Add Sponsor</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sponsor List -->
+                <div class="mt-8 bg-white rounded shadow">
+                    <div class="p-4 border-b font-bold">All Sponsors</div>
+                    <ul id="sponsors-list" class="divide-y">
+                        <!-- JS populated -->
+                    </ul>
+                </div>
+            </section>
+
+            <!-- ADS PAGE -->
+            <section id="page-ads" class="page-section hidden">
+                <h2 class="text-3xl font-bold mb-6">Ad Management</h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Upload Form -->
+                    <div class="bg-white p-6 rounded shadow">
+                        <h3 class="text-xl font-bold mb-4">Create New Ad</h3>
+                        <form id="create-ad-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium">Sponsor</label>
+                                <select id="ad-sponsor" class="w-full border p-2 rounded" required>
+                                    <option value="">Select Sponsor</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium">Ad Section</label>
+                                <select id="ad-section" name="section" class="w-full border p-2 rounded"
+                                    onchange="updateAdForm()">
+                                    <option value="A">Section A: Hero Slider (Homepage)</option>
+                                    <option value="B">Section B: Bottom Banner (Reading)</option>
+                                    <option value="C">Section C: Full Screen (Opening)</option>
+                                </select>
+                            </div>
+
+                            <div id="field-image">
+                                <label class="block text-sm font-medium">Main Image/Banner</label>
+                                <input type="file" id="ad-image" name="image" class="w-full border p-2 rounded"
+                                    accept="image/*">
+                            </div>
+
+                            <div id="field-logo">
+                                <label class="block text-sm font-medium">Logo (Optional)</label>
+                                <input type="file" id="ad-logo" name="logo" class="w-full border p-2 rounded"
+                                    accept="image/*">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium">Overlay Text</label>
+                                <input type="text" id="ad-text" name="u_text" class="w-full border p-2 rounded">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium">Redirect Link</label>
+                                <input type="text" id="ad-link" name="redirect_link" class="w-full border p-2 rounded">
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="ad-sticky" name="is_sticky" value="true">
+                                <label>Sticky / Urgent</label>
+                            </div>
+
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Upload &
+                                Publish</button>
+                        </form>
+                    </div>
+
+                    <!-- Live Preview -->
+                    <div class="bg-white p-6 rounded shadow">
+                        <h3 class="text-xl font-bold mb-4">Live Preview</h3>
+                        <div id="preview-container"
+                            class="border rounded h-[500px] overflow-hidden bg-gray-100 relative items-center justify-center flex">
+                            <p class="text-gray-400">Select Section to Preview</p>
+                            <!-- Preview Content -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="upload-book-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-6 rounded w-96">
+            <h3 class="text-xl font-bold mb-4">Upload Book</h3>
+            <form id="upload-book-form" class="space-y-4">
+                <input type="text" name="title" placeholder="Title" class="w-full border p-2 rounded" required>
+                <input type="text" name="author" placeholder="Author" class="w-full border p-2 rounded" required>
+                <textarea name="description" placeholder="Description" class="w-full border p-2 rounded"></textarea>
+                <input type="file" name="document" class="w-full border p-2 rounded" required>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('upload-book-modal')"
+                        class="text-gray-500">Cancel</button>
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="sponsor-book-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white p-6 rounded w-96">
+            <h3 class="text-xl font-bold mb-4">Add Sponsorship</h3>
+            <p id="sponsor-book-title" class="mb-4 text-gray-600 italic"></p>
+            <form id="sponsor-book-form" class="space-y-4">
+                <input type="hidden" id="sponsor-book-id">
+                <select id="sponsor-select" class="w-full border p-2 rounded" required>
+                    <!-- Populated -->
+                </select>
+                <div>
+                    <label class="text-sm">Amount (Birr)</label>
+                    <input type="number" id="sponsor-amount" class="w-full border p-2 rounded" placeholder="1000"
+                        required>
+                </div>
+                <div class="text-sm text-gray-500" id="sponsor-calc-info">Adds 10 copies per 1000 Birr</div>
+
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('sponsor-book-modal')"
+                        class="text-gray-500">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>

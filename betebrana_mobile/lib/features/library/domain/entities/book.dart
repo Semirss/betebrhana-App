@@ -13,7 +13,10 @@ class Book {
   final DateTime? downloadExpiryDate;
   final DateTime? downloadDate;
   final bool isDownloaded;
+
   final String? localFilePath;
+  final bool isSponsored;
+  final List<String> sponsors;
   const Book({
     required this.id,
     required this.title,
@@ -28,8 +31,10 @@ class Book {
     this.userHasRental = false,
     this.downloadExpiryDate,
     this.downloadDate,
-    this.isDownloaded = false,  
-    this.localFilePath,       
+    this.isDownloaded = false,
+    this.localFilePath, 
+    this.isSponsored = false,
+    this.sponsors = const [],      
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -52,13 +57,17 @@ class Book {
       queueInfo: json['queueInfo'] is Map<String, dynamic>
           ? BookQueueInfo.fromJson(json['queueInfo'] as Map<String, dynamic>)
           : null,
-          userHasRental: json['userHasRental'] as bool? ?? false,
-                downloadExpiryDate: json['downloadExpiryDate'] != null 
+      userHasRental: json['userHasRental'] as bool? ?? false,
+      downloadExpiryDate: json['downloadExpiryDate'] != null 
           ? DateTime.parse(json['downloadExpiryDate'])
           : null,
       downloadDate: json['downloadDate'] != null 
           ? DateTime.parse(json['downloadDate'])
           : null,
+      isDownloaded: json['isDownloaded'] as bool? ?? false,
+      localFilePath: json['localFilePath'] as String?,
+      isSponsored: json['isSponsored'] as bool? ?? false,
+      sponsors: (json['sponsors'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
     );
   }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -173,6 +174,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
   }
 
   bool get _canRent {
+    if (!widget.book.isSponsored) return false;
     if (_activeRental != null) return false;
     
     final info = widget.book.queueInfo;
@@ -363,6 +365,16 @@ void _updateConnectivityStatus(ConnectivityResult result) {
     print('Book available: ${widget.book.isAvailable}');
 
     if (!_canRent) {
+      if (!widget.book.isSponsored) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('This book is not sponsored and cannot be borrowed.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Cannot borrow this book at the moment'),
@@ -840,6 +852,49 @@ Future<void> _returnCurrentBook() async {
         ],
       ),
     );
+
+  }
+
+  Widget _buildSponsorBadge() {
+    if (!widget.book.isSponsored) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red),
+        ),
+        child: const Text(
+          'NOT SPONSORED',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+        ),
+      );
+    }
+    
+    final sponsors = widget.book.sponsors;
+    final sponsor = sponsors.isNotEmpty 
+        ? sponsors[math.Random().nextInt(sponsors.length)] 
+        : "Anonymous";
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+            const Icon(Icons.star, color: Colors.blue, size: 12),
+            const SizedBox(width:4),
+            Text(
+                'Sponsored by: $sponsor',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
+        ]
+      )
+    );
   }
 
   Widget _buildKeyInfoBadges() {
@@ -847,7 +902,9 @@ Future<void> _returnCurrentBook() async {
     final badges = <Widget>[];
     
     // Availability badge
+    // Availability badge
     badges.add(_buildAvailabilityBadge());
+    badges.add(_buildSponsorBadge());
     
     // Downloaded badge
     if (_isDownloaded) {

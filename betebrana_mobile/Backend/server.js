@@ -81,12 +81,12 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [".pdf", ".doc", ".docx", ".txt"];
+    const allowedTypes = [".pdf", ".doc", ".docx", ".txt", ".jpg", ".jpeg", ".png", ".gif", ".webp"];
     const fileExt = path.extname(file.originalname).toLowerCase();
     if (allowedTypes.includes(fileExt)) {
       cb(null, true);
     } else {
-      cb(new Error("Only PDF, Word, and text files are allowed"));
+      cb(new Error("Only PDF, Word, text, and image files are allowed"));
     }
   },
   limits: {
@@ -110,14 +110,44 @@ async function initializeDatabase() {
   try {
     const connection = await pool.getConnection();
 
-    // Just verify we can connect and tables exist by running a simple query
+    // Verify existing tables
     await connection.execute("SELECT 1 FROM users LIMIT 1");
     await connection.execute("SELECT 1 FROM books LIMIT 1");
     await connection.execute("SELECT 1 FROM rentals LIMIT 1");
     await connection.execute("SELECT 1 FROM queue LIMIT 1");
 
+    console.log("Basic tables verified. Running Admin Schema updates...");
+
+    // Read and execute admin_schema.sql
+    try {
+      const schemaPath = path.join(__dirname, 'admin_schema.sql');
+      const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+      const statements = schemaSql.split(';').filter(stmt => stmt.trim());
+
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await connection.execute(statement);
+        }
+      }
+      console.log("Admin schema applied successfully.");
+
+      // Check/Seed Default Admin
+      const [admins] = await connection.execute("SELECT * FROM admin_users WHERE email = ?", ['admin@betebrana.com']);
+      if (admins.length === 0) {
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        await connection.execute(
+          "INSERT INTO admin_users (email, password, name) VALUES (?, ?, ?)",
+          ['admin@betebrana.com', hashedPassword, 'Super Admin']
+        );
+        console.log("Default admin user created: admin@betebrana.com / admin123");
+      }
+
+    } catch (schemaError) {
+      console.error("Error applying admin schema:", schemaError);
+    }
+
     connection.release();
-    console.log("Database tables verified successfully");
+    console.log("Database initialized successfully");
   } catch (error) {
     console.error(
       "Database verification failed - tables may not exist:",
@@ -141,6 +171,30 @@ function authenticateToken(req, res, next) {
       return res.status(403).json({ error: "Invalid token" });
     }
     req.user = user;
+    next();
+  });
+}
+
+// Admin Middleware
+function authenticateAdmin(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Admin token required" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+    // Check if user has admin privileges (you might want a separate secret or role check)
+    // For now, we assume the token payload indicates role or we check DB if strictly separated
+    // Since we maintain a separate admin_users table, we might issue tokens signed with 'role: admin'
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    req.admin = user;
     next();
   });
 }
@@ -411,17 +465,244 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+// Admin Authentication
+app.post("/api/admin/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  try {
+    const [admins] = await pool.execute("SELECT * FROM admin_users WHERE email = ?", [email]);
+    if (admins.length === 0) {
+      return res.status(400).json({ error: "Invalid admin credentials" });
+    }
+
+    const admin = admins[0];
+    const validPassword = await bcrypt.compare(password, admin.password);
+    if (!validPassword) {
+      return res.status(400).json({ error: "Invalid admin credentials" });
+    }
+
+    const token = jwt.sign(
+      { id: admin.id, email: admin.email, name: admin.name, role: 'admin' },
+      process.env.JWT_SECRET,
+      { expiresIn: "12h" }
+    );
+
+    res.json({
+      admin: { id: admin.id, email: admin.email, name: admin.name },
+      token,
+      message: "Admin login successful"
+    });
+
+  } catch (error) {
+    console.error("Admin Login Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+// ==========================================
+// ADMIN ENDPOINTS
+// ==========================================
+
+// --- Sponsor Management ---
+app.get("/api/admin/sponsors", authenticateAdmin, async (req, res) => {
+  try {
+    const [sponsors] = await pool.execute("SELECT * FROM sponsors ORDER BY created_at DESC");
+    res.json(sponsors);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post("/api/admin/sponsors", authenticateAdmin, async (req, res) => {
+  const { name, contact_info } = req.body;
+  if (!name) return res.status(400).json({ error: "Name required" });
+  try {
+    const [result] = await pool.execute("INSERT INTO sponsors (name, contact_info) VALUES (?, ?)", [name, contact_info]);
+    res.json({ success: true, id: result.insertId });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Settings Management ---
+app.get("/api/admin/settings", authenticateAdmin, async (req, res) => {
+  try {
+    const [settings] = await pool.execute("SELECT * FROM system_settings");
+    const settingsObj = {};
+    settings.forEach(s => settingsObj[s.setting_key] = s.setting_value);
+    res.json(settingsObj);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post("/api/admin/settings", authenticateAdmin, async (req, res) => {
+  const { settings } = req.body; // { key: value, ... }
+  try {
+    for (const [key, value] of Object.entries(settings)) {
+      await pool.execute("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?", [key, String(value), String(value)]);
+    }
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Admin Book Management ---
+
+// Add Sponsorship to Book
+app.post("/api/admin/books/sponsor", authenticateAdmin, async (req, res) => {
+  const { bookId, sponsorId, amount } = req.body;
+  if (!bookId || !sponsorId || !amount) return res.status(400).json({ error: "Missing fields" });
+
+  try {
+    // Get rates
+    const [settingsRows] = await pool.execute("SELECT * FROM system_settings");
+    const settings = {};
+    settingsRows.forEach(s => settings[s.setting_key] = s.setting_value);
+
+    const rateAmount = parseFloat(settings['sponsorship_rate_amount'] || 1000);
+    const rateCopies = parseInt(settings['sponsorship_rate_copies'] || 10);
+
+    // Calculate copies
+    const copiesToAdd = Math.floor((amount / rateAmount) * rateCopies);
+
+    // Insert Record
+    await pool.execute("INSERT INTO book_sponsors (book_id, sponsor_id, amount_paid, copies_added) VALUES (?, ?, ?, ?)",
+      [bookId, sponsorId, amount, copiesToAdd]);
+
+    // Update Book
+    await pool.execute("UPDATE books SET total_copies = total_copies + ?, available_copies = available_copies + ? WHERE id = ?",
+      [copiesToAdd, copiesToAdd, bookId]);
+
+    // Process Queue if needed
+    await processQueue(bookId);
+
+    res.json({ success: true, copiesAdded: copiesToAdd });
+
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Get Admin Books (with sponsor data)
+app.get("/api/admin/books", authenticateAdmin, async (req, res) => {
+  try {
+    const [books] = await pool.execute(`
+            SELECT b.*, 
+            (SELECT COUNT(*) FROM book_sponsors bs WHERE bs.book_id = b.id) as sponsor_count,
+            (SELECT SUM(bs.amount_paid) FROM book_sponsors bs WHERE bs.book_id = b.id) as total_sponsored_amount
+            FROM books b ORDER BY b.id DESC
+        `);
+    res.json(books);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Delete Book
+app.delete("/api/admin/books/:id", authenticateAdmin, async (req, res) => {
+  // Basic delete
+  try {
+    await pool.execute("DELETE FROM books WHERE id = ?", [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- Ad Management ---
+
+// Public: Get Ads for Section
+app.get("/api/ads/section/:section", async (req, res) => {
+  const { section } = req.params; // A, B, C
+  try {
+    const [ads] = await pool.execute(
+      "SELECT * FROM advertisements WHERE section = ? AND is_active = TRUE ORDER BY created_at DESC",
+      [section]
+    );
+    res.json(ads);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: Get All Ads
+app.get("/api/admin/ads", authenticateAdmin, async (req, res) => {
+  try {
+    const [ads] = await pool.execute(`
+        SELECT a.*, s.name as sponsor_name 
+        FROM advertisements a 
+        LEFT JOIN sponsors s ON a.sponsor_id = s.id 
+        ORDER BY a.created_at DESC
+    `);
+    res.json(ads);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: Upload/Create Ad
+app.post("/api/admin/ads", authenticateAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'logo', maxCount: 1 }]), async (req, res) => {
+  try {
+    const { section, u_text, redirect_link, is_sticky, sponsor_id } = req.body;
+    const files = req.files || {};
+
+    let image_path = null;
+    let logo_path = null;
+
+    if (files['image'] && files['image'][0]) image_path = `/documents/${files['image'][0].filename}`;
+    if (files['logo'] && files['logo'][0]) logo_path = `/documents/${files['logo'][0].filename}`;
+
+    // Validate required fields based on section logic (optional but good practice)
+    // Section A needs image, C needs image, B needs logo? 
+
+    // Debug logging
+    console.log("Ad Upload Payload:", { section, u_text, redirect_link, is_sticky, sponsor_id });
+    console.log("Files:", files);
+
+    // Validate required fields
+    if (!section) {
+      return res.status(400).json({ error: "Ad Section is required" });
+    }
+
+    // Ensure params are not undefined (use null)
+    const safeText = u_text || null;
+    const safeLink = redirect_link || null;
+    const safeSticky = is_sticky === 'true'; // boolean (false if undefined)
+    const safeSponsorId = sponsor_id ? parseInt(sponsor_id) : null;
+
+    // Explicitly check section (though verified above)
+    const safeSection = section || null;
+
+    await pool.execute(
+      "INSERT INTO advertisements (section, image_path, logo_path, u_text, redirect_link, is_sticky, sponsor_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [safeSection, image_path, logo_path, safeText, safeLink, safeSticky, safeSponsorId]
+    );
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error("Ad Upload Error", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Admin: Toggle Ad Status
+app.post("/api/admin/ads/:id/toggle", authenticateAdmin, async (req, res) => {
+  try {
+    await pool.execute("UPDATE advertisements SET is_active = NOT is_active WHERE id = ?", [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // Books endpoints with queue information
 // Update the books endpoint to include queue information
 // Update the books endpoint to include proper queue information
+// Books endpoints with queue information
 app.get("/api/books", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const [books] = await pool.execute("SELECT * FROM books");
 
-    // Enhance each book with queue information for the current user
+    // Enhance each book with queue information for the current user AND sponsorship info
     const enhancedBooks = await Promise.all(
       books.map(async (book) => {
+        // Fetch Sponsors
+        const [sponsorsRows] = await pool.execute(
+          `SELECT DISTINCT s.name FROM sponsors s 
+             JOIN book_sponsors bs ON s.id = bs.sponsor_id 
+             WHERE bs.book_id = ?`,
+          [book.id]
+        );
+        const sponsors = sponsorsRows.map(r => r.name);
+        const isSponsored = sponsors.length > 0;
+
         // Check if user has active rental for this book
         const [activeRentals] = await pool.execute(
           'SELECT * FROM rentals WHERE book_id = ? AND user_id = ? AND status = "active"',
@@ -472,6 +753,8 @@ app.get("/api/books", authenticateToken, async (req, res) => {
 
         return {
           ...book,
+          sponsors,
+          isSponsored,
           userHasRental,
           queueInfo: {
             totalInQueue: queueItems.length,
@@ -503,6 +786,20 @@ app.get("/api/books/:id/read", authenticateToken, async (req, res) => {
   const userId = req.user.id;
 
   try {
+    // Check if user has rented this book, IF it is a rental logic
+    // But first, CHECK SPONSORSHIP STATUS
+    const [sponsorCount] = await pool.execute(
+      "SELECT COUNT(*) as count FROM book_sponsors WHERE book_id = ?",
+      [bookId]
+    );
+
+    if (sponsorCount[0].count === 0) {
+      return res.status(403).json({
+        error: "This book is not currently sponsored and cannot be accessed.",
+        isNotSponsored: true
+      });
+    }
+
     // Check if user has rented this book
     const [rentals] = await pool.execute(
       'SELECT * FROM rentals WHERE book_id = ? AND user_id = ? AND status = "active"',

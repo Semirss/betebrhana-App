@@ -8,6 +8,7 @@ import 'package:betebrana_mobile/features/auth/domain/entities/auth_user.dart';
 import 'package:betebrana_mobile/features/auth/presentation/bloc/authentication_bloc.dart';
 import 'package:betebrana_mobile/features/auth/presentation/bloc/authentication_event.dart';
 import 'package:betebrana_mobile/features/auth/presentation/bloc/authentication_state.dart';
+import 'package:betebrana_mobile/core/network/dio_client.dart';
 import 'package:betebrana_mobile/features/library/data/book_repository.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/presentation/bloc/library_bloc.dart';
@@ -298,6 +299,11 @@ appBar: AppBar(
                 
                   child: _CoverFlowCarousel(books: featuredBooks),
                 ),
+                
+                const SizedBox(height: 30),
+                
+                // --- AD SECTION A (Hero Slider) ---
+                const _HeroAdSlider(),
                 
                 const SizedBox(height: 30),
 
@@ -1131,6 +1137,126 @@ class _BookCoverImage extends StatelessWidget {
           child: const Icon(Icons.error_outline)
         ),
       ),
+    );
+  }
+}
+
+// --- AD SLIDER WIDGET ---
+class _HeroAdSlider extends StatefulWidget {
+  const _HeroAdSlider();
+
+  @override
+  State<_HeroAdSlider> createState() => _HeroAdSliderState();
+}
+
+class _HeroAdSliderState extends State<_HeroAdSlider> {
+  List<dynamic> _ads = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAds();
+  }
+
+  Future<void> _fetchAds() async {
+    try {
+      final response = await DioClient.instance.dio.get('/ads/section/A');
+      if (mounted) {
+        setState(() {
+          _ads = response.data;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _getImageUrl(String path) {
+    // Construct URL from AppConfig.baseApiUrl
+    final baseUrl = AppConfig.baseApiUrl.replaceAll('/api', '');
+    return "$baseUrl$path";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading || _ads.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
+          child: Text(
+            "Sponsored",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.withOpacity(0.6),
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: PageController(viewportFraction: 0.9),
+            itemCount: _ads.length,
+            itemBuilder: (context, index) {
+              final ad = _ads[index];
+              return GestureDetector(
+                onTap: () {
+                     if (ad['redirect_link'] != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Opening: ${ad['redirect_link']}'))
+                        );
+                     }
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    image: DecorationImage(
+                      image: NetworkImage(_getImageUrl(ad['image_path'])),
+                      fit: BoxFit.cover,
+                    ),
+                    boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5)
+                        )
+                    ]
+                  ),
+                  child: ad['u_text'] != null 
+                    ? Container(
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [Colors.black.withOpacity(0.7), Colors.transparent]
+                            )
+                        ),
+                        alignment: Alignment.bottomLeft,
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                            ad['u_text'],
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                            ),
+                        ),
+                      ) 
+                    : null,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

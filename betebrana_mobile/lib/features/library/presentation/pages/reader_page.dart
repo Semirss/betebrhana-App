@@ -12,6 +12,9 @@ import 'package:betebrana_mobile/core/network/dio_client.dart';
 import 'package:betebrana_mobile/features/library/data/offline_book_service.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/core/theme/app_theme.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage({super.key, required this.book, this.rentalDueDate});
@@ -30,6 +33,8 @@ class _ReaderPageState extends State<ReaderPage>
   bool _hasOfflineCopy = false;
   bool _downloadInProgress = false;
   DateTime? _offlineExpiresAt;
+  
+  String? _pdfPath;
 
   // New state variables
   double _textScale = 1.0;
@@ -41,6 +46,12 @@ class _ReaderPageState extends State<ReaderPage>
   int _currentThemeIndex = 0;
   late List<ThemeData> _themes;
 
+  // Ad State
+  Map<String, dynamic>? _bannerAd;
+  Map<String, dynamic>? _interstitialAd;
+  bool _showInterstitial = false;
+  bool _isLoadingAds = true;
+
   @override
   void initState() {
     super.initState();
@@ -48,9 +59,105 @@ class _ReaderPageState extends State<ReaderPage>
     _offlineBookService = OfflineBookService();
     _initTxtFuture();
     _refreshOfflineState();
+    _fetchAds();
     // Hide status bar for immersive reading
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   }
+
+  Future<void> _fetchAds() async {
+    print("Fetching Ads...");
+    try {
+      final dio = DioClient.instance.dio;
+      // Fetch Section C (Interstitial)
+      try {
+        final resC = await dio.get('/ads/section/C');
+        print("Ads C Response: ${resC.data}");
+        if (resC.data is List && resC.data.isNotEmpty) {
+           final ads = resC.data as List;
+           if (mounted) {
+             setState(() {
+               _interstitialAd = ads[math.Random().nextInt(ads.length)];
+               _showInterstitial = true;
+             });
+           }
+        }
+      } catch (e) {
+        print("Error fetching C ads: $e");
+      }
+
+      // Fetch Section B (Banner)
+      try {
+        final resB = await dio.get('/ads/section/B');
+        print("Ads B Response: ${resB.data}");
+        if (resB.data is List && resB.data.isNotEmpty) {
+           final ads = resB.data as List;
+           if (mounted) {
+             setState(() {
+               _bannerAd = ads[math.Random().nextInt(ads.length)];
+             });
+           }
+        }
+      } catch (e) {
+        print("Error fetching B ads: $e");
+      }
+
+    } catch (e) {
+      print("Error fetching ads: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingAds = false);
+    }
+  }
+
+  String _getImageUrl(String path) {
+    if (path.startsWith('http')) return path;
+    final baseUrl = AppConfig.baseApiUrl.replaceAll('/api', '');
+    return "$baseUrl$path";
+  }
+
+  Widget _buildBannerAd() {
+    if (_bannerAd == null) return const SizedBox.shrink();
+    final ad = _bannerAd!;
+    
+    return Container(
+      color: theme.colorScheme.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SafeArea( // Ensure it doesn't overlap home indicator
+        child: Row(
+          children: [
+            if (ad['logo_path'] != null)
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                width: 40, 
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  image: DecorationImage(image: NetworkImage(_getImageUrl(ad['logo_path'])), fit: BoxFit.cover)
+                ),
+              ),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   if (ad['u_text'] != null)
+                     Text(ad['u_text'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.colorScheme.onSurface)),
+                   if (ad['redirect_link'] != null)
+                     Text('Tap to visit', style: TextStyle(color: Colors.blue, fontSize: 10)),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.close, size: 18, color: theme.colorScheme.onSurface),
+              onPressed: () => setState(() => _bannerAd = null),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Need to use getter for theme in helper methods or pass it
+  ThemeData get theme => _themes[_currentThemeIndex];
 
   void _initThemes() {
     _themes = [
@@ -108,13 +215,38 @@ class _ReaderPageState extends State<ReaderPage>
 
     // If book is downloaded and has local file path, read from local
     if (widget.book.isDownloaded == true && widget.book.localFilePath != null) {
-      _txtFuture = _loadLocalTxtContent(widget.book);
+      if (type == 'pdf') {
+         setState(() => _pdfPath = widget.book.localFilePath);
+      } else {
+         _txtFuture = _loadLocalTxtContent(widget.book);
+      }
     } else if (type == 'txt') {
       // Fall back to server loading if not downloaded
       _txtFuture = _loadTxtContent(widget.book);
+    } else if (type == 'pdf') {
+       _downloadPdfForViewing();
+       _txtFuture = Future.value('');
     } else {
       _txtFuture = Future.value('');
     }
+  }
+
+  Future<void> _downloadPdfForViewing() async {
+      try {
+          final url = _buildDocumentUrl(widget.book.filePath);
+          if (url == null) throw Exception('No file path');
+          
+          final dio = DioClient.instance.dio;
+          final dir = await getApplicationDocumentsDirectory();
+          final file = File('${dir.path}/${widget.book.id}.pdf');
+          
+          // Verify if file already exists? Maybe just overwrite for now to be safe
+          await dio.download(url, file.path);
+          if(mounted) setState(() => _pdfPath = file.path);
+      } catch (e) {
+          print("Error downloading PDF for view: $e");
+          if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading PDF: $e')));
+      }
   }
 
   Future<String> _loadLocalTxtContent(Book book) async {
@@ -348,7 +480,17 @@ class _ReaderPageState extends State<ReaderPage>
               ],
             ],
           ),
-          body: type == 'txt'
+          bottomNavigationBar: _bannerAd != null ? GestureDetector(
+              onTap: () {
+                if (_bannerAd!['redirect_link'] != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening ${_bannerAd!['redirect_link']}')));
+                }
+              },
+              child: _buildBannerAd()
+          ) : null,
+          body: Stack(
+            children: [
+              type == 'txt'
               ? FutureBuilder<String>(
                   future: _txtFuture,
                   builder: (context, snapshot) {
@@ -386,7 +528,86 @@ class _ReaderPageState extends State<ReaderPage>
                     );
                   },
                 )
-              : const Center(child: Text('Format not supported')),
+              : type == 'pdf' 
+                  ? (_pdfPath != null 
+                      ? PDFView(
+                          filePath: _pdfPath,
+                          enableSwipe: true,
+                          swipeHorizontal: true,
+                          autoSpacing: true,
+                          pageFling: true,
+                          onError: (error) {
+                              print(error.toString());
+                          },
+                          onPageError: (page, error) {
+                              print('$page: ${error.toString()}');
+                          },
+                      )
+                      : const Center(child: CircularProgressIndicator()))
+                  : const Center(child: Text('Format not supported')),
+              
+              // Interstitial Ad Overlay
+              if (_showInterstitial && _interstitialAd != null)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black,
+                    child: Stack(
+                      children: [
+                        // Background Image
+                        Positioned.fill(
+                            child: Image.network(
+                                _getImageUrl(_interstitialAd!['image_path']),
+                                fit: BoxFit.cover,
+                            )
+                        ),
+                        // Overlay Content
+                        Positioned.fill(
+                            child: Container(
+                                color: Colors.black.withOpacity(0.7),
+                                child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                        if (_interstitialAd!['logo_path'] != null)
+                                            Container(
+                                                width: 80, height: 80,
+                                                margin: const EdgeInsets.only(bottom: 20),
+                                                decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(12),
+                                                    image: DecorationImage(image: NetworkImage(_getImageUrl(_interstitialAd!['logo_path'])), fit: BoxFit.cover)
+                                                ),
+                                            ),
+                                        if (_interstitialAd!['u_text'] != null)
+                                            Padding(
+                                                padding: const EdgeInsets.all(20),
+                                                child: Text(
+                                                    _interstitialAd!['u_text'],
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                                                ),
+                                            ),
+                                        ElevatedButton(
+                                            onPressed: () {
+                                                if (_interstitialAd!['redirect_link'] != null) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening ${_interstitialAd!['redirect_link']}')));
+                                                }
+                                            },
+                                            child: const Text('Visit Sponsor'),
+                                        ),
+                                        const SizedBox(height: 30),
+                                        TextButton(
+                                            onPressed: () => setState(() => _showInterstitial = false),
+                                            child: const Text('Close and Read Book', style: TextStyle(color: Colors.white70)),
+                                        )
+                                    ],
+                                ),
+                            )
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -634,7 +855,19 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
                           child: Text(
                             _pages[index],
                             style: widget.textStyle,
-                            textAlign: TextAlign.justify,
+                          ),
+                        ),
+                        // Mini Footer with progress
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16.0),
+                          child: Center(
+                            child: Text(
+                              '${index + 1} / ${_pages.length}',
+                              style: widget.textStyle.copyWith(
+                                fontSize: 12,
+                                color: widget.textStyle.color?.withOpacity(0.5)
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -643,59 +876,9 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
                 },
               ),
             ),
-
-            // Footer (Progress)
-            Positioned(
-              bottom: 16,
-              left: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${((_currentPage + 1) / _pages.length * 100).toInt()}%',
-                       style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
-                      ),
-                    ),
-                    Text(
-                      '${_currentPage + 1} of ${_pages.length}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
-            // Progress Bar Line
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: LinearProgressIndicator(
-                value: (_currentPage + 1) / _pages.length,
-                backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                ),
-                minHeight: 2,
-              ),
-            ),
           ],
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 }
