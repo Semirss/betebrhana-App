@@ -41,32 +41,46 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
 
-@override
-void initState() {
-  super.initState();
-  _rentalRepository = RentalRepository();
-  _queueRepository = QueueRepository();
-  _downloadService = BookDownloadService();
-  _connectivity = Connectivity();
-  
-  // Listen to scroll position for parallax effect
-  _scrollController.addListener(() {
-    setState(() {
-      _scrollOffset = _scrollController.offset;
+  // Selected Sponsor for this session
+  int? _selectedSponsorId;
+  String? _selectedSponsorName;
+
+  @override
+  void initState() {
+    super.initState();
+    _rentalRepository = RentalRepository();
+    _queueRepository = QueueRepository();
+    _downloadService = BookDownloadService();
+    _connectivity = Connectivity();
+    
+    // Select a sponsor once
+    if (widget.book.isSponsored && widget.book.sponsors.isNotEmpty) {
+       final randomIndex = math.Random().nextInt(widget.book.sponsors.length);
+       _selectedSponsorName = widget.book.sponsors[randomIndex];
+       // Assuming sponsorIds matches the order of sponsors
+       if (widget.book.sponsorIds.length > randomIndex) {
+           _selectedSponsorId = widget.book.sponsorIds[randomIndex];
+       }
+    }
+
+    // Listen to scroll position for parallax effect
+    _scrollController.addListener(() {
+      setState(() {
+        _scrollOffset = _scrollController.offset;
+      });
     });
-  });
-  
-  _checkConnectivity(); 
-  _loadStatus();
-  _checkIfDownloaded();
-  _startCountdownTimer();
-  _downloadService.syncWithServerAndCleanup();
-  
-  // Listen for connectivity changes
-  _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
-    _updateConnectivityStatus(result);
-  });
-}
+    
+    _checkConnectivity(); 
+    _loadStatus();
+    _checkIfDownloaded();
+    _startCountdownTimer();
+    _downloadService.syncWithServerAndCleanup();
+    
+    // Listen for connectivity changes
+    _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
+      _updateConnectivityStatus(result);
+    });
+  }
 
   @override
   void dispose() {
@@ -871,10 +885,7 @@ Future<void> _returnCurrentBook() async {
       );
     }
     
-    final sponsors = widget.book.sponsors;
-    final sponsor = sponsors.isNotEmpty 
-        ? sponsors[math.Random().nextInt(sponsors.length)] 
-        : "Anonymous";
+    final sponsor = _selectedSponsorName ?? "Anonymous";
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1139,19 +1150,24 @@ Future<void> _returnCurrentBook() async {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: (!_actionInProgress && _canRead) ? () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ReaderPage(
-                    book: widget.book,
-                    rentalDueDate: _activeRental?.dueDate,
-                  ),
-                ),
-              );
-            } : null,
+            onPressed: (!_actionInProgress && _canRead) 
+              ? () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ReaderPage(
+                        book: widget.book,
+                        rentalDueDate: _activeRental?.dueDate,
+                        sponsorId: _selectedSponsorId,
+                      ),
+                    ),
+                  );
+                } 
+              : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromARGB(211, 241, 126, 19).withOpacity(0.5),
-              foregroundColor: _canRead ? const Color.fromARGB(255, 255, 255, 255) : const Color.fromARGB(255, 231, 227, 224),
+              foregroundColor: _canRead 
+                  ? const Color.fromARGB(255, 255, 255, 255) 
+                  : const Color.fromARGB(255, 231, 227, 224),
               minimumSize: const Size.fromHeight(50),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),

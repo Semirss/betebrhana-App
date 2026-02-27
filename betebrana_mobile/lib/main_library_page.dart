@@ -1153,15 +1153,25 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
   List<dynamic> _ads = [];
   bool _isLoading = true;
 
+  Timer? _refreshTimer;
+
   @override
   void initState() {
     super.initState();
     _fetchAds();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 45), (_) => _fetchAds());
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchAds() async {
     try {
-      final response = await DioClient.instance.dio.get('/ads/section/A');
+      // Add timestamp to bust cache
+      final response = await DioClient.instance.dio.get('/ads/section/A?ts=${DateTime.now().millisecondsSinceEpoch}');
       if (mounted) {
         setState(() {
           _ads = response.data;
@@ -1173,7 +1183,8 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
     }
   }
 
-  String _getImageUrl(String path) {
+  String _getImageUrl(String? path) {
+    if (path == null || path.isEmpty) return "";
     // Construct URL from AppConfig.baseApiUrl
     final baseUrl = AppConfig.baseApiUrl.replaceAll('/api', '');
     return "$baseUrl$path";
@@ -1217,10 +1228,13 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
                   margin: const EdgeInsets.symmetric(horizontal: 6),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    image: DecorationImage(
-                      image: NetworkImage(_getImageUrl(ad['image_path'])),
-                      fit: BoxFit.cover,
-                    ),
+                    color: Colors.grey[800], // Fallback color
+                    image: _getImageUrl(ad['image_path']).isNotEmpty 
+                        ? DecorationImage(
+                            image: NetworkImage(_getImageUrl(ad['image_path'])),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                     boxShadow: [
                         BoxShadow(
                             color: Colors.black.withOpacity(0.1),

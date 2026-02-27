@@ -604,13 +604,23 @@ app.delete("/api/admin/books/:id", authenticateAdmin, async (req, res) => {
 // --- Ad Management ---
 
 // Public: Get Ads for Section
+// Public: Get Ads for Section (Optional: Filter by Sponsor)
 app.get("/api/ads/section/:section", async (req, res) => {
   const { section } = req.params; // A, B, C
+  const { sponsor_id } = req.query;
+
   try {
-    const [ads] = await pool.execute(
-      "SELECT * FROM advertisements WHERE section = ? AND is_active = TRUE ORDER BY created_at DESC",
-      [section]
-    );
+    let query = "SELECT * FROM advertisements WHERE section = ? AND is_active = TRUE";
+    const params = [section];
+
+    if (sponsor_id) {
+      query += " AND sponsor_id = ?";
+      params.push(sponsor_id);
+    }
+
+    query += " ORDER BY created_at DESC";
+
+    const [ads] = await pool.execute(query, params);
     res.json(ads);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -619,12 +629,40 @@ app.get("/api/ads/section/:section", async (req, res) => {
 app.get("/api/admin/ads", authenticateAdmin, async (req, res) => {
   try {
     const [ads] = await pool.execute(`
-        SELECT a.*, s.name as sponsor_name 
-        FROM advertisements a 
-        LEFT JOIN sponsors s ON a.sponsor_id = s.id 
+        SELECT a.*, s.name as sponsor_name
+        FROM advertisements a
+        LEFT JOIN sponsors s ON a.sponsor_id = s.id
         ORDER BY a.created_at DESC
     `);
     res.json(ads);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: Get Single Book (with sponsor data)
+app.get("/api/books/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const [books] = await pool.execute(`
+        SELECT b.*,
+        JSON_ARRAYAGG(s.name) as sponsors,
+        JSON_ARRAYAGG(s.id) as sponsor_ids,
+        CASE WHEN COUNT(bs.sponsor_id) > 0 THEN TRUE ELSE FALSE END as is_sponsored
+        FROM books b
+        LEFT JOIN book_sponsors bs ON b.id = bs.book_id
+        LEFT JOIN sponsors s ON bs.sponsor_id = s.id
+        WHERE b.id = ?
+        GROUP BY b.id
+    `, [req.params.id]);
+
+    if (books.length === 0) {
+      return res.status(404).json({ error: "Book not found" });
+    }
+
+    const book = books[0];
+    // JSON_ARRAYAGG returns a JSON string, parse it
+    book.sponsors = book.sponsors ? JSON.parse(book.sponsors).filter(name => name !== null) : [];
+    book.sponsor_ids = book.sponsor_ids ? JSON.parse(book.sponsor_ids).filter(id => id !== null) : [];
+
+    res.json(book);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

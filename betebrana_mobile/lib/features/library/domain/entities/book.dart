@@ -17,6 +17,7 @@ class Book {
   final String? localFilePath;
   final bool isSponsored;
   final List<String> sponsors;
+  final List<int> sponsorIds;
   const Book({
     required this.id,
     required this.title,
@@ -34,7 +35,8 @@ class Book {
     this.isDownloaded = false,
     this.localFilePath, 
     this.isSponsored = false,
-    this.sponsors = const [],      
+    this.sponsors = const [],  
+    this.sponsorIds = const [],
   });
 
   factory Book.fromJson(Map<String, dynamic> json) {
@@ -68,7 +70,16 @@ class Book {
       localFilePath: json['localFilePath'] as String?,
       isSponsored: json['isSponsored'] as bool? ?? false,
       sponsors: (json['sponsors'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      sponsorIds: intListFromJson(json['sponsor_ids']),
     );
+  }
+
+  static List<int> intListFromJson(dynamic json) {
+    if (json == null) return const [];
+    if (json is List) {
+      return json.map((e) => int.tryParse(e.toString()) ?? 0).where((e) => e != 0).toList();
+    }
+    return const [];
   }
 
   bool get isAvailable => availableCopies > 0;

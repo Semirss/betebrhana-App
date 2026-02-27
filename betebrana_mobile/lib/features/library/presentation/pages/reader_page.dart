@@ -17,10 +17,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 
 class ReaderPage extends StatefulWidget {
-  const ReaderPage({super.key, required this.book, this.rentalDueDate});
+  const ReaderPage({super.key, required this.book, this.rentalDueDate, this.sponsorId});
 
   final Book book;
   final DateTime? rentalDueDate;
+  final int? sponsorId;
 
   @override
   State<ReaderPage> createState() => _ReaderPageState();
@@ -65,12 +66,14 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   Future<void> _fetchAds() async {
-    print("Fetching Ads...");
+    print("Fetching Ads... SponsorId: ${widget.sponsorId}");
     try {
       final dio = DioClient.instance.dio;
+      final queryParam = widget.sponsorId != null ? '?sponsor_id=${widget.sponsorId}' : '';
+
       // Fetch Section C (Interstitial)
       try {
-        final resC = await dio.get('/ads/section/C');
+        final resC = await dio.get('/ads/section/C$queryParam');
         print("Ads C Response: ${resC.data}");
         if (resC.data is List && resC.data.isNotEmpty) {
            final ads = resC.data as List;
@@ -87,7 +90,7 @@ class _ReaderPageState extends State<ReaderPage>
 
       // Fetch Section B (Banner)
       try {
-        final resB = await dio.get('/ads/section/B');
+        final resB = await dio.get('/ads/section/B$queryParam');
         print("Ads B Response: ${resB.data}");
         if (resB.data is List && resB.data.isNotEmpty) {
            final ads = resB.data as List;
@@ -108,7 +111,8 @@ class _ReaderPageState extends State<ReaderPage>
     }
   }
 
-  String _getImageUrl(String path) {
+  String _getImageUrl(String? path) {
+    if (path == null || path.isEmpty) return "";
     if (path.startsWith('http')) return path;
     final baseUrl = AppConfig.baseApiUrl.replaceAll('/api', '');
     return "$baseUrl$path";
@@ -131,7 +135,13 @@ class _ReaderPageState extends State<ReaderPage>
                 height: 40,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  image: DecorationImage(image: NetworkImage(_getImageUrl(ad['logo_path'])), fit: BoxFit.cover)
+                  color: Colors.grey[300],
+                  image: _getImageUrl(ad['logo_path']).isNotEmpty
+                      ? DecorationImage(
+                          image: NetworkImage(_getImageUrl(ad['logo_path'])), 
+                          fit: BoxFit.cover
+                        )
+                      : null
                 ),
               ),
             Expanded(
