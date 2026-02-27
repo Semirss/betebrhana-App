@@ -1141,7 +1141,7 @@ class _BookCoverImage extends StatelessWidget {
   }
 }
 
-// --- AD SLIDER WIDGET ---
+// --- AD SLIDER WIDGET (Cube Carousel) ---
 class _HeroAdSlider extends StatefulWidget {
   const _HeroAdSlider();
 
@@ -1152,31 +1152,55 @@ class _HeroAdSlider extends StatefulWidget {
 class _HeroAdSliderState extends State<_HeroAdSlider> {
   List<dynamic> _ads = [];
   bool _isLoading = true;
-
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  double _pageOffset = 0;
   Timer? _refreshTimer;
+  Timer? _autoScrollTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchAds();
+    // Re-fetch ads every 45 seconds
     _refreshTimer = Timer.periodic(const Duration(seconds: 45), (_) => _fetchAds());
+    // Track precise scroll offset for cube math
+    _pageController.addListener(() {
+      if (mounted) setState(() => _pageOffset = _pageController.page ?? 0);
+    });
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _autoScrollTimer?.cancel();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  void _startAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || _ads.isEmpty) return;
+      final next = (_currentPage + 1) % _ads.length;
+      _pageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 650),
+        curve: Curves.easeInOut,
+      );
+    });
   }
 
   Future<void> _fetchAds() async {
     try {
-      // Add timestamp to bust cache
-      final response = await DioClient.instance.dio.get('/ads/section/A?ts=${DateTime.now().millisecondsSinceEpoch}');
+      final response = await DioClient.instance.dio
+          .get('/ads/section/A?ts=${DateTime.now().millisecondsSinceEpoch}');
       if (mounted) {
         setState(() {
-          _ads = response.data;
+          _ads = response.data is List ? response.data : [];
           _isLoading = false;
         });
+        _startAutoScroll();
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
@@ -1184,10 +1208,9 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
   }
 
   String _getImageUrl(String? path) {
-    if (path == null || path.isEmpty) return "";
-    // Construct URL from AppConfig.baseApiUrl
+    if (path == null || path.isEmpty) return '';
     final baseUrl = AppConfig.baseApiUrl.replaceAll('/api', '');
-    return "$baseUrl$path";
+    return '$baseUrl$path';
   }
 
   @override
@@ -1200,7 +1223,7 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
           child: Text(
-            "Sponsored",
+            'Sponsored',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -1210,65 +1233,147 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
           ),
         ),
         SizedBox(
-          height: 180,
+          height: 190,
           child: PageView.builder(
-            controller: PageController(viewportFraction: 0.9),
+            controller: _pageController,
             itemCount: _ads.length,
+            onPageChanged: (i) => setState(() => _currentPage = i),
             itemBuilder: (context, index) {
               final ad = _ads[index];
-              return GestureDetector(
-                onTap: () {
-                     if (ad['redirect_link'] != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Opening: ${ad['redirect_link']}'))
-                        );
-                     }
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    color: Colors.grey[800], // Fallback color
-                    image: _getImageUrl(ad['image_path']).isNotEmpty 
-                        ? DecorationImage(
-                            image: NetworkImage(_getImageUrl(ad['image_path'])),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                    boxShadow: [
+
+              // ── Cube math ──────────────────────────────────────────────
+              // offset = how far THIS page is from the current scroll position.
+              // When offset == 0  → page is fully visible (flat, no rotation).
+              // When offset == -1 → page has scrolled off to the left  (+90° Y).
+              // When offset == +1 → page is coming in from the right   (-90° Y).
+              final offset = index - _pageOffset;
+              const halfPi = 3.14159265 / 2; // 90°
+              final angle = offset * halfPi;
+              // Pivot at the edge that faces the viewer (right edge when leaving, left edge when entering)
+              final alignment = offset > 0 ? Alignment.centerLeft : Alignment.centerRight;
+
+              return Transform(
+                alignment: alignment,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.0012) // perspective depth
+                  ..rotateY(-angle),       // negative so left→right feels natural
+                child: GestureDetector(
+                  onTap: () {
+                    if (ad['redirect_link'] != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Opening: ${ad['redirect_link']}')),
+                      );
+                    }
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.grey[850],
+                      image: _getImageUrl(ad['image_path']).isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(_getImageUrl(ad['image_path'])),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      boxShadow: [
                         BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5)
-                        )
-                    ]
-                  ),
-                  child: ad['u_text'] != null 
-                    ? Container(
-                        decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            gradient: LinearGradient(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Dark gradient at bottom
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
                                 begin: Alignment.bottomCenter,
                                 end: Alignment.topCenter,
-                                colors: [Colors.black.withOpacity(0.7), Colors.transparent]
-                            )
-                        ),
-                        alignment: Alignment.bottomLeft,
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                            ad['u_text'],
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                colors: [
+                                  Colors.black.withOpacity(0.80),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.55],
+                              ),
                             ),
-                        ),
-                      ) 
-                    : null,
+                          ),
+                          // Logo + text row at bottom
+                          Positioned(
+                            left: 16,
+                            right: 16,
+                            bottom: 16,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                if (ad['logo_path'] != null &&
+                                    _getImageUrl(ad['logo_path']).isNotEmpty)
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    margin: const EdgeInsets.only(right: 12),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: Colors.white24, width: 1),
+                                      image: DecorationImage(
+                                        image: NetworkImage(_getImageUrl(ad['logo_path'])),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                if (ad['u_text'] != null)
+                                  Expanded(
+                                    child: Text(
+                                      ad['u_text'],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        shadows: [
+                                          Shadow(color: Colors.black87, blurRadius: 8),
+                                        ],
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               );
             },
           ),
+        ),
+        // Animated pill dot indicator
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(_ads.length, (i) {
+            final active = i == _currentPage;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: active ? 22 : 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: active
+                    ? Theme.of(context).primaryColor
+                    : Colors.grey.withOpacity(0.35),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
         ),
       ],
     );

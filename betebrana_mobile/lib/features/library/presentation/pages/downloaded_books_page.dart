@@ -340,6 +340,7 @@ class _DownloadedBookGridItem extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               FloatingActionButton.small(
+                                heroTag: 'read_${book.id}',
                                 onPressed: onRead,
                                 backgroundColor: isDark ? Colors.white : Colors.black87,
                                 foregroundColor: isDark ? Colors.black : Colors.white,
@@ -347,6 +348,7 @@ class _DownloadedBookGridItem extends StatelessWidget {
                               ),
                               
                               FloatingActionButton.small(
+                                heroTag: 'delete_${book.id}',
                                 onPressed: onRemove,
                                 backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,

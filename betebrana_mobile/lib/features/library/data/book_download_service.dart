@@ -375,14 +375,15 @@ Future<void> _clearDownloadsForUser(String userId) async {
         print('2. Wrong encryption key (different device/session)');
         print('3. Invalid file format');
         
-        // Try to read file as hex to debug
+        // Log the raw bytes for debugging
         final hexPreview = encrypted.take(50).map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ');
         print('First 50 bytes (hex): $hexPreview');
         
-        // Delete corrupted file
-        print('Deleting corrupted file...');
-        await _deleteBookEntry(bookId.toString(), userId);
-        
+        // DO NOT delete the file — the error may be a temporary key mismatch
+        // (e.g. during debug hot-restarts). Deleting would permanently destroy
+        // the user's downloaded book. Just return null and let the caller show
+        // a friendly error message.
+        print('Decryption failed — keeping file intact for potential retry.');
         return null;
       }
     } catch (e) {
@@ -558,7 +559,17 @@ Future<void> syncWithServerAndCleanup() async {
     print('Syncing downloaded books for user $userId');
     
     final downloadedBooks = await getDownloadedBooks();
+    if (downloadedBooks.isEmpty) return;
+
     final activeRentals = await _rentalRepository.getUserRentals();
+
+    // Safety guard: if the server returned an empty rental list (network issue
+    // or first-login race condition), do NOT wipe all downloads. We only clean
+    // up when we have confirmed rental data.
+    if (activeRentals.isEmpty) {
+      print('Rental list is empty — skipping sync cleanup to avoid false removals');
+      return;
+    }
 
     for (final book in downloadedBooks) {
       final bookId = int.tryParse(book.id);
@@ -591,11 +602,9 @@ Future<void> updateUserSession(String? userId) async {
   if (userId != null) {
     await _setCurrentUserId(userId);
     print('Updated user session to: $userId');
-    
-    // Just track user change, don't clear downloads
-    await clearDownloadsForPreviousUser();
   } else {
-    // Clear current user ID on logout
+    // Clear current user ID on logout — downloads metadata is preserved
+    // so they reappear when the same user logs back in.
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefsKeyCurrentUserId);
     print('Cleared user session (logout) - downloads preserved');

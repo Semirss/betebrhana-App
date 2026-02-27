@@ -102,7 +102,7 @@ class AuthRepository {
       await _persistSession(tokens: tokens, user: user);
       
       // Set current user ID for downloaded books management
-      await _setCurrentUserId(user.id);
+      await setCurrentUserId(user.id);
       
       // Clear previous user's downloads
       await _downloadService.clearDownloadsForPreviousUser();
@@ -299,8 +299,8 @@ Future<AuthUser?> getCurrentUser() async {
   }
 }
 
-  // Helper method to set current user ID in SharedPreferences
-  Future<void> _setCurrentUserId(String userId) async {
+  // Helper method to set current user ID in SharedPreferences (public for AuthBloc session restore)
+  Future<void> setCurrentUserId(String userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('current_user_id', userId);

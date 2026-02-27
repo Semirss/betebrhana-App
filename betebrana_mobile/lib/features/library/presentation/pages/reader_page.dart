@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:betebrana_mobile/features/library/data/book_download_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -48,10 +50,11 @@ class _ReaderPageState extends State<ReaderPage>
   late List<ThemeData> _themes;
 
   // Ad State
-  Map<String, dynamic>? _bannerAd;
-  Map<String, dynamic>? _interstitialAd;
+  Map<String, dynamic>? _sharedAd;   // Single ad used for both banner and interstitial
   bool _showInterstitial = false;
   bool _isLoadingAds = true;
+  int _adCountdown = 5;              // 5-second countdown before close button appears
+  Timer? _adCountdownTimer;
 
   @override
   void initState() {
@@ -67,48 +70,80 @@ class _ReaderPageState extends State<ReaderPage>
 
   Future<void> _fetchAds() async {
     print("Fetching Ads... SponsorId: ${widget.sponsorId}");
+    final cacheKey = 'cached_reader_ad_${widget.book.id}';
     try {
       final dio = DioClient.instance.dio;
       final queryParam = widget.sponsorId != null ? '?sponsor_id=${widget.sponsorId}' : '';
 
-      // Fetch Section C (Interstitial)
+      // Fetch one section (C = interstitial/fullpage) and reuse the same
+      // randomly-chosen ad for both the fullpage overlay AND the bottom banner.
+      // This ensures both surfaces always show the same sponsor.
       try {
         final resC = await dio.get('/ads/section/C$queryParam');
         print("Ads C Response: ${resC.data}");
         if (resC.data is List && resC.data.isNotEmpty) {
-           final ads = resC.data as List;
-           if (mounted) {
-             setState(() {
-               _interstitialAd = ads[math.Random().nextInt(ads.length)];
-               _showInterstitial = true;
-             });
-           }
+          final ads = resC.data as List;
+          final pickedAd = ads[math.Random().nextInt(ads.length)] as Map<String, dynamic>;
+          
+          // ── Cache the ad locally for offline use ──
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(cacheKey, jsonEncode(pickedAd));
+          
+          if (mounted) {
+            setState(() {
+              _sharedAd = pickedAd;
+              _showInterstitial = true;
+              _adCountdown = 5;
+            });
+            _startAdCountdown();
+          }
         }
       } catch (e) {
-        print("Error fetching C ads: $e");
+        print("Network error fetching ads: $e — trying cache");
+        // ── Offline fallback: load cached ad ──
+        await _loadCachedAd(cacheKey);
       }
-
-      // Fetch Section B (Banner)
-      try {
-        final resB = await dio.get('/ads/section/B$queryParam');
-        print("Ads B Response: ${resB.data}");
-        if (resB.data is List && resB.data.isNotEmpty) {
-           final ads = resB.data as List;
-           if (mounted) {
-             setState(() {
-               _bannerAd = ads[math.Random().nextInt(ads.length)];
-             });
-           }
-        }
-      } catch (e) {
-        print("Error fetching B ads: $e");
-      }
-
     } catch (e) {
       print("Error fetching ads: $e");
+      await _loadCachedAd(cacheKey);
     } finally {
       if (mounted) setState(() => _isLoadingAds = false);
     }
+  }
+
+  Future<void> _loadCachedAd(String cacheKey) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(cacheKey);
+      if (raw != null && raw.isNotEmpty) {
+        final ad = jsonDecode(raw) as Map<String, dynamic>;
+        if (mounted) {
+          setState(() {
+            _sharedAd = ad;
+            _showInterstitial = true;
+            _adCountdown = 5;
+          });
+          _startAdCountdown();
+          print('Loaded cached ad for offline use');
+        }
+      }
+    } catch (e) {
+      print('Could not load cached ad: $e');
+    }
+  }
+
+  void _startAdCountdown() {
+    _adCountdownTimer?.cancel();
+    _adCountdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        if (_adCountdown > 0) {
+          _adCountdown--;
+        } else {
+          t.cancel();
+        }
+      });
+    });
   }
 
   String _getImageUrl(String? path) {
@@ -119,8 +154,8 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   Widget _buildBannerAd() {
-    if (_bannerAd == null) return const SizedBox.shrink();
-    final ad = _bannerAd!;
+    if (_sharedAd == null) return const SizedBox.shrink();
+    final ad = _sharedAd!;
     
     return Container(
       color: theme.colorScheme.surface,
@@ -158,7 +193,7 @@ class _ReaderPageState extends State<ReaderPage>
             ),
             IconButton(
               icon: Icon(Icons.close, size: 18, color: theme.colorScheme.onSurface),
-              onPressed: () => setState(() => _bannerAd = null),
+              onPressed: () => setState(() => _sharedAd = null),
             )
           ],
         ),
@@ -214,6 +249,7 @@ class _ReaderPageState extends State<ReaderPage>
 
   @override
   void dispose() {
+    _adCountdownTimer?.cancel();
     // Restore system UI overlays
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: SystemUiOverlay.values);
@@ -260,34 +296,29 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   Future<String> _loadLocalTxtContent(Book book) async {
-    try {
-      if (book.localFilePath == null) {
-        throw Exception('No local file path available');
-      }
-
-      final localFile = File(book.localFilePath!);
-      if (!await localFile.exists()) {
-        throw Exception('Local file not found');
-      }
-
-      final content = await localFile.readAsString();
-      return content;
-    } catch (e) {
+    // For encrypted downloaded books, go straight to BookDownloadService
+    // (which handles decryption). Never try readAsString() on an encrypted file.
+    final bookId = int.tryParse(book.id);
+    if (bookId != null) {
       try {
-        final text = await _offlineBookService.readTxtContent(book.id);
-        if (text.isNotEmpty) return text;
-      } catch (_) {}
-
-      try {
-        final bookId = int.tryParse(book.id);
-        if (bookId != null) {
-          final downloadService = BookDownloadService();
-          return await downloadService.getBookContent(bookId);
-        }
-      } catch (_) {}
-
-      throw Exception('Failed to load local book content: $e');
+        final downloadService = BookDownloadService();
+        final content = await downloadService.getBookContent(bookId);
+        print('Loaded decrypted content, length: ${content.length}');
+        return content;
+      } catch (e) {
+        print('BookDownloadService failed: $e');
+      }
     }
+
+    // Fallback: try OfflineBookService (plain-text offline cache)
+    try {
+      final text = await _offlineBookService.readTxtContent(book.id);
+      if (text.isNotEmpty) return text;
+    } catch (_) {}
+
+    throw Exception(
+      'Could not load book offline. Please connect to the internet and open the book once to refresh.',
+    );
   }
 
   Future<void> _refreshOfflineState() async {
@@ -490,10 +521,10 @@ class _ReaderPageState extends State<ReaderPage>
               ],
             ],
           ),
-          bottomNavigationBar: _bannerAd != null ? GestureDetector(
+          bottomNavigationBar: (_sharedAd != null && !_showInterstitial) ? GestureDetector(
               onTap: () {
-                if (_bannerAd!['redirect_link'] != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening ${_bannerAd!['redirect_link']}')));
+                if (_sharedAd!['redirect_link'] != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening ${_sharedAd!['redirect_link']}')));
                 }
               },
               child: _buildBannerAd()
@@ -557,7 +588,7 @@ class _ReaderPageState extends State<ReaderPage>
                   : const Center(child: Text('Format not supported')),
               
               // Interstitial Ad Overlay
-              if (_showInterstitial && _interstitialAd != null)
+              if (_showInterstitial && _sharedAd != null)
                 Positioned.fill(
                   child: Container(
                     color: Colors.black,
@@ -565,51 +596,105 @@ class _ReaderPageState extends State<ReaderPage>
                       children: [
                         // Background Image
                         Positioned.fill(
-                            child: Image.network(
-                                _getImageUrl(_interstitialAd!['image_path']),
-                                fit: BoxFit.cover,
-                            )
+                            child: _sharedAd!['image_path'] != null
+                                ? Image.network(
+                                    _getImageUrl(_sharedAd!['image_path']),
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(color: const Color(0xFF1A1A2E))
+                        ),
+                        // Dark overlay
+                        Positioned.fill(
+                          child: Container(color: Colors.black.withOpacity(0.65)),
                         ),
                         // Overlay Content
                         Positioned.fill(
-                            child: Container(
-                                color: Colors.black.withOpacity(0.7),
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                        if (_interstitialAd!['logo_path'] != null)
-                                            Container(
-                                                width: 80, height: 80,
-                                                margin: const EdgeInsets.only(bottom: 20),
-                                                decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius.circular(12),
-                                                    image: DecorationImage(image: NetworkImage(_getImageUrl(_interstitialAd!['logo_path'])), fit: BoxFit.cover)
+                            child: SafeArea(
+                              child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                      if (_sharedAd!['logo_path'] != null)
+                                          Container(
+                                              width: 90, height: 90,
+                                              margin: const EdgeInsets.only(bottom: 20),
+                                              decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(16),
+                                                  boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 12)],
+                                                  image: DecorationImage(image: NetworkImage(_getImageUrl(_sharedAd!['logo_path'])), fit: BoxFit.cover)
+                                              ),
+                                          ),
+                                      if (_sharedAd!['u_text'] != null)
+                                          Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                                              child: Text(
+                                                  _sharedAd!['u_text'],
+                                                  textAlign: TextAlign.center,
+                                                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1.4),
+                                              ),
+                                          ),
+                                      const SizedBox(height: 32),
+                                      // --- Countdown or action buttons ---
+                                      if (_adCountdown > 0) ...[  
+                                        // Show countdown ring while waiting
+                                        SizedBox(
+                                          width: 64, height: 64,
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              CircularProgressIndicator(
+                                                value: _adCountdown / 5.0,
+                                                strokeWidth: 4,
+                                                color: Colors.white,
+                                                backgroundColor: Colors.white24,
+                                              ),
+                                              Text(
+                                                '$_adCountdown',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
-                                            ),
-                                        if (_interstitialAd!['u_text'] != null)
-                                            Padding(
-                                                padding: const EdgeInsets.all(20),
-                                                child: Text(
-                                                    _interstitialAd!['u_text'],
-                                                    textAlign: TextAlign.center,
-                                                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                                                ),
-                                            ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          'Ad — please wait',
+                                          style: TextStyle(color: Colors.white54, fontSize: 13),
+                                        ),
+                                      ] else ...[  
+                                        // Countdown finished — show action buttons
                                         ElevatedButton(
                                             onPressed: () {
-                                                if (_interstitialAd!['redirect_link'] != null) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening ${_interstitialAd!['redirect_link']}')));
+                                                if (_sharedAd!['redirect_link'] != null) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening ${_sharedAd!['redirect_link']}')));
                                                 }
                                             },
-                                            child: const Text('Visit Sponsor'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: Colors.black87,
+                                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: const [
+                                                Icon(Icons.open_in_new, size: 18),
+                                                SizedBox(width: 8),
+                                                Text('Visit Sponsor', style: TextStyle(fontWeight: FontWeight.bold)),
+                                              ],
+                                            ),
                                         ),
-                                        const SizedBox(height: 30),
+                                        const SizedBox(height: 16),
                                         TextButton(
                                             onPressed: () => setState(() => _showInterstitial = false),
-                                            child: const Text('Close and Read Book', style: TextStyle(color: Colors.white70)),
-                                        )
-                                    ],
-                                ),
+                                            child: const Text('Close and Read Book', style: TextStyle(color: Colors.white70, fontSize: 15)),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 24),
+                                  ],
+                              ),
                             )
                         )
                       ],

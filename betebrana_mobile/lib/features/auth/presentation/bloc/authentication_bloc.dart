@@ -31,6 +31,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _authRepository.logout();
       emit(const AuthUnauthenticated());
     } else {
+      // Restore current_user_id in SharedPreferences so BookDownloadService
+      // can find this user's downloaded books. This key is cleared on logout,
+      // but not automatically restored when the app restarts with a valid session.
+      await _authRepository.setCurrentUserId(user.id);
       emit(AuthAuthenticated(user));
     }
   }

@@ -1,10 +1,10 @@
-// encryption_service.dart (FIXED VERSION - Singleton with proper persistence)
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provides AES-256 encryption/decryption using a device-specific key
 /// stored securely with [FlutterSecureStorage].
@@ -20,6 +20,9 @@ class EncryptionService {
       : _secureStorage = secureStorage ?? const FlutterSecureStorage();
 
   static const _keyDeviceEncryptionKey = 'device_encryption_key_v1';
+  // Backup key stored in SharedPreferences (plain — less secure but survives
+  // hot restarts where FlutterSecureStorage can temporarily drop values).
+  static const _keyBackup = 'enc_key_backup_v1';
   
   final FlutterSecureStorage _secureStorage;
   final Random _random = Random.secure();
@@ -28,16 +31,15 @@ class EncryptionService {
   encrypt.Key? _cachedKey;
 
   Future<encrypt.Key> _getOrCreateKey() async {
-    // Return cached key if available
+    // 1. Return cached key if available
     if (_cachedKey != null) {
       print('Using cached encryption key');
       return _cachedKey!;
     }
 
+    // 2. Try secure storage first
     try {
-      // Try to read from secure storage
       final stored = await _secureStorage.read(key: _keyDeviceEncryptionKey);
-      
       if (stored != null && stored.isNotEmpty) {
         print('Found existing encryption key in secure storage');
         try {
@@ -46,33 +48,52 @@ class EncryptionService {
           print('Successfully loaded encryption key');
           return _cachedKey!;
         } catch (e) {
-          print('Error decoding stored key: $e');
-          // If key is corrupted, delete it and generate new one
-          await _secureStorage.delete(key: _keyDeviceEncryptionKey);
-          _cachedKey = null;
+          print('Error decoding key from secure storage: $e');
         }
       }
-
-      // Generate new key
-      print('Generating new encryption key...');
-      final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
-      final encoded = base64Encode(bytes);
-      
-      // Save to secure storage
-      await _secureStorage.write(key: _keyDeviceEncryptionKey, value: encoded);
-      
-      _cachedKey = encrypt.Key(Uint8List.fromList(bytes));
-      print('New encryption key generated and saved');
-      
-      return _cachedKey!;
     } catch (e) {
-      print('Error in _getOrCreateKey: $e');
-      // Fallback: generate in-memory key (won't persist)
-      final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
-      _cachedKey = encrypt.Key(Uint8List.fromList(bytes));
-      print('Using in-memory fallback key');
-      return _cachedKey!;
+      print('Error reading secure storage: $e');
     }
+
+    // 3. Fallback: try SharedPreferences backup (survives hot restarts)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final backup = prefs.getString(_keyBackup);
+      if (backup != null && backup.isNotEmpty) {
+        print('Found encryption key in SharedPreferences backup');
+        final bytes = base64Decode(backup);
+        _cachedKey = encrypt.Key(Uint8List.fromList(bytes));
+        // Restore to secure storage so it's the primary source again
+        await _secureStorage.write(key: _keyDeviceEncryptionKey, value: backup);
+        print('Restored encryption key from backup to secure storage');
+        return _cachedKey!;
+      }
+    } catch (e) {
+      print('Error reading SharedPreferences backup: $e');
+    }
+
+    // 4. No key found anywhere — generate a brand new one. 
+    //    This only runs on the first ever install or after a full uninstall.
+    print('Generating new encryption key...');
+    final bytes = List<int>.generate(32, (_) => _random.nextInt(256));
+    final encoded = base64Encode(bytes);
+    
+    // Save to both storages
+    try {
+      await _secureStorage.write(key: _keyDeviceEncryptionKey, value: encoded);
+    } catch (e) {
+      print('Error writing key to secure storage: $e');
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_keyBackup, encoded);
+    } catch (e) {
+      print('Error writing key backup: $e');
+    }
+    
+    _cachedKey = encrypt.Key(Uint8List.fromList(bytes));
+    print('New encryption key generated and saved');
+    return _cachedKey!;
   }
 
   /// Debug method to check if key exists
