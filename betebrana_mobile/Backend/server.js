@@ -822,57 +822,54 @@ app.get("/api/books/:id/read", authenticateToken, async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Check if user has rented this book, IF it is a rental logic
-    // But first, CHECK SPONSORSHIP STATUS
-    const [sponsorCount] = await pool.execute(
-      "SELECT COUNT(*) as count FROM book_sponsors WHERE book_id = ?",
-      [bookId]
-    );
-
-    if (sponsorCount[0].count === 0) {
-      return res.status(403).json({
-        error: "This book is not currently sponsored and cannot be accessed.",
-        isNotSponsored: true
-      });
-    }
-
-    // Check if user has rented this book
+    // Check if user has an active rental
     const [rentals] = await pool.execute(
       'SELECT * FROM rentals WHERE book_id = ? AND user_id = ? AND status = "active"',
       [bookId, userId]
     );
 
     if (rentals.length === 0) {
-      return res
-        .status(403)
-        .json({ error: "You do not have access to this book" });
+      return res.status(403).json({ error: "You do not have an active rental for this book" });
     }
 
     // Get book details
-    const [books] = await pool.execute("SELECT * FROM books WHERE id = ?", [
-      bookId,
-    ]);
+    const [books] = await pool.execute("SELECT * FROM books WHERE id = ?", [bookId]);
     if (books.length === 0) {
       return res.status(404).json({ error: "Book not found" });
     }
 
     const book = books[0];
+    const filePath = book.file_path;
 
-    // Return document info for the reader
-    res.json({
-      book: {
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        file_path: book.file_path,
-        file_type: book.file_type,
-      },
+    if (!filePath) {
+      return res.status(404).json({ error: "This book has no associated file" });
+    }
+
+    // If filePath is a full URL (GitHub raw), proxy it
+    if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+      try {
+        const response = await axios.get(filePath, { responseType: "stream" });
+        res.setHeader("Content-Type", response.headers["content-type"] || "application/octet-stream");
+        res.setHeader("Content-Disposition", `inline; filename="${book.title}"`);
+        response.data.pipe(res);
+      } catch (proxyErr) {
+        console.error("Proxy error:", proxyErr.message);
+        res.status(502).json({ error: "Could not fetch book file from storage" });
+      }
+      return;
+    }
+
+    // Legacy local path — try to serve from disk (dev only, won't work on Render)
+    return res.status(404).json({
+      error: "Book file not available. Please contact support.",
     });
+
   } catch (error) {
     console.error("Read book error:", error);
     res.status(500).json({ error: "Failed to access book" });
   }
 });
+
 
 // Upload book endpoint (for admin)
 app.post("/api/books/upload", upload.single("document"), async (req, res) => {

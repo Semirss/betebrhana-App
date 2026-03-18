@@ -277,23 +277,7 @@ class _ReaderPageState extends State<ReaderPage>
     }
   }
 
-  Future<void> _downloadPdfForViewing() async {
-      try {
-          final url = _buildDocumentUrl(widget.book.filePath);
-          if (url == null) throw Exception('No file path');
-          
-          final dio = DioClient.instance.dio;
-          final dir = await getApplicationDocumentsDirectory();
-          final file = File('${dir.path}/${widget.book.id}.pdf');
-          
-          // Verify if file already exists? Maybe just overwrite for now to be safe
-          await dio.download(url, file.path);
-          if(mounted) setState(() => _pdfPath = file.path);
-      } catch (e) {
-          print("Error downloading PDF for view: $e");
-          if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading PDF: $e')));
-      }
-  }
+
 
   Future<String> _loadLocalTxtContent(Book book) async {
     // For encrypted downloaded books, go straight to BookDownloadService
@@ -333,6 +317,7 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   Future<String> _loadTxtContent(Book book) async {
+    // 1. Try offline cache first
     try {
       final entry = await _offlineBookService.getEntryForBook(book.id);
       if (entry != null) {
@@ -347,24 +332,39 @@ class _ReaderPageState extends State<ReaderPage>
       }
     } catch (_) {}
 
-    final url = _buildDocumentUrl(book.filePath);
-    if (url == null) throw Exception('This book has no associated file.');
-
+    // 2. Fetch via the secure proxy endpoint (auth token is sent automatically)
     final dio = DioClient.instance.dio;
     final response = await dio.get<String>(
-      url,
+      '/books/${book.id}/read',
       options: Options(responseType: ResponseType.plain),
     );
     return response.data ?? '';
   }
 
+  Future<void> _downloadPdfForViewing() async {
+    try {
+      final dio = DioClient.instance.dio;
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/${widget.book.id}.pdf');
+      // Download via secure proxy — auth header is set automatically by DioClient
+      await dio.download('/books/${widget.book.id}/read', file.path);
+      if (mounted) setState(() => _pdfPath = file.path);
+    } catch (e) {
+      print("Error downloading PDF for view: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading PDF: $e')),
+        );
+      }
+    }
+  }
+
+  // Kept for compatibility with _downloadForOffline
   String? _buildDocumentUrl(String? filePath) {
     if (filePath == null || filePath.isEmpty) return null;
-    // If it is already a full URL (GitHub raw URL etc.), use it directly
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
       return filePath;
     }
-    // Legacy path like "/documents/file.txt" or "documents/file.txt"
     var path = filePath.trim();
     if (path.startsWith('/')) path = path.substring(1);
     if (path.startsWith('documents/')) path = path.substring('documents/'.length);
