@@ -1,46 +1,37 @@
-// class AppConfig {
-//   AppConfig._();
-
-//   /// Base API URL (can be overridden by flavors / env-specific configs).
-//   /// Example dev URL: http://localhost:3000/api
-//   static const String baseApiUrl = 'http://localhost:3000/api';
-
-//   /// Documents (books) base URL. The backend serves files from /documents.
-//   static const String documentsBaseUrl = 'http://localhost:3000/documents';
-
-//   /// Covers base URL. The backend serves cover images from /covers.
-//   static const String coversBaseUrl = 'http://localhost:3000';
-// }
-
 class AppConfig {
   AppConfig._();
 
-  /// For Android Emulator: Use 10.0.2.2
-  /// For iOS Simulator/Web: Use localhost
-  static const String baseApiUrl = 'http://10.0.2.2:3000/api'; 
+  /// Production Render URL
+  static const String baseApiUrl = 'https://betebrana-backend.onrender.com/api';
 
-  static const String documentsBaseUrl = 'http://10.0.2.2:3000/documents';
-  static const String coversBaseUrl = 'http://10.0.2.2:3000';
+  // Documents and covers are now stored on GitHub, so these are no longer needed
+  // for new uploads. Kept for backwards compatibility with any legacy code.
+  static const String documentsBaseUrl = 'https://betebrana-backend.onrender.com/documents';
+  static const String coversBaseUrl = 'https://betebrana-backend.onrender.com';
 }
+
+// =====================================================================
+// OLD LOCAL CONFIGS — kept for reference only, do not uncomment
+// =====================================================================
 
 // class AppConfig {
 //   AppConfig._();
-
-//   /// For Android Emulator: Use 10.0.2.2
-//   /// For iOS Simulator/Web: Use localhost
-//   static const String baseApiUrl = 'http://172.16.120.175:3000/api'; 
-
-//   static const String documentsBaseUrl = 'http://172.16.120.175:3000/documents';
-//   static const String coversBaseUrl = 'http://172.16.120.175:3000';
+//   static const String baseApiUrl = 'http://192.168.8.112:3000/api';
+//   static const String documentsBaseUrl = 'http://192.168.8.112:3000/documents';
+//   static const String coversBaseUrl = 'http://192.168.8.112:3000';
 // }
 
 // class AppConfig {
 //   AppConfig._();
-
-//   /// For Android Emulator: Use 10.0.2.2
-//   /// For iOS Simulator/Web: Use localhost
 //   static const String baseApiUrl = 'http://192.168.8.120:3000/api'; 
-
 //   static const String documentsBaseUrl = 'http://192.168.8.120:3000/documents';
 //   static const String coversBaseUrl = 'http://192.168.8.120:3000';
+// }
+
+// class AppConfig {
+//   AppConfig._();
+//   /// For Android Emulator: Use 10.0.2.2
+//   static const String baseApiUrl = 'http://10.0.2.2:3000/api'; 
+//   static const String documentsBaseUrl = 'http://10.0.2.2:3000/documents';
+//   static const String coversBaseUrl = 'http://10.0.2.2:3000';
 // }

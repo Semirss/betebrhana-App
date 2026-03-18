@@ -8,6 +8,7 @@ const fs = require("fs");
 const mammoth = require("mammoth");
 const pdfParse = require("pdf-parse");
 const multer = require("multer");
+const axios = require("axios");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const cors = require("cors");
@@ -26,8 +27,8 @@ app.use(
         "http://10.0.2.2:3000",
         "http://10.0.2.2:*",
         //for specific pc ip
-        "http://192.168.8.120:3000",
-        "http://192.168.8.120:*",
+        "http://192.168.8.112:3000",
+        "http://192.168.8.112:*",
         // For iOS Simulator
         "http://localhost:*",
         "http://127.0.0.1:*",
@@ -64,19 +65,49 @@ app.use("/documents", express.static("documents"));
 app.use("/covers", express.static("covers"));
 
 // ===== END CORS MIDDLEWARE =====
-// File upload configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "documents/");
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
-    );
-  },
-});
+
+// GitHub Upload Helper
+async function uploadToGitHub(fileBuffer, originalName, folderPath) {
+  const token = process.env.GITHUB_TOKEN;
+  const repoSlug = process.env.GITHUB_REPO;
+
+  if (!token || !repoSlug) {
+    throw new Error("GitHub credentials not configured in environment variables");
+  }
+
+  const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+  const fileName = uniqueSuffix + path.extname(originalName);
+  const basePath = process.env.GITHUB_BASE_PATH || "";
+  
+  // Combine basePath, folderPath and fileName (e.g. "betebrana_mobile/Backend/documents/file.jpg")
+  // Replace Windows backslashes with forward slashes for the GitHub API URL
+  const filePath = basePath 
+    ? `${basePath}/${folderPath}/${fileName}`.replace(/\/+/g, '/') 
+    : `${folderPath}/${fileName}`;
+
+  const contentEncoded = fileBuffer.toString("base64");
+  const url = `https://api.github.com/repos/${repoSlug}/contents/${filePath}`;
+  
+  await axios.put(
+    url,
+    {
+      message: `Upload ${fileName}`,
+      content: contentEncoded,
+      branch: "main",
+    },
+    {
+      headers: {
+        Authorization: `token ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return `https://raw.githubusercontent.com/${repoSlug}/main/${filePath}`;
+}
+
+// File upload configuration - using Memory Storage for GitHub push
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -202,14 +233,15 @@ function authenticateAdmin(req, res, next) {
 async function processExpiredRentals() {
   try {
     // Find rentals that are overdue (due_date has passed)
+    // We pass the current localized Node Date to bypass timezone discrepancies
     const [expiredRentals] = await pool.execute(`
         SELECT r.*, b.title 
         FROM rentals r 
         JOIN books b ON r.book_id = b.id 
         WHERE r.status = 'active' 
-        AND r.due_date < NOW()
+        AND r.due_date < ?
         LIMIT 100
-    `);
+    `, [new Date()]);
 
     console.log(`Found ${expiredRentals.length} expired rentals to process`);
 
@@ -675,8 +707,12 @@ app.post("/api/admin/ads", authenticateAdmin, upload.fields([{ name: 'image', ma
     let image_path = null;
     let logo_path = null;
 
-    if (files['image'] && files['image'][0]) image_path = `/documents/${files['image'][0].filename}`;
-    if (files['logo'] && files['logo'][0]) logo_path = `/documents/${files['logo'][0].filename}`;
+    if (files['image'] && files['image'][0]) {
+      image_path = await uploadToGitHub(files['image'][0].buffer, files['image'][0].originalname, 'documents');
+    }
+    if (files['logo'] && files['logo'][0]) {
+      logo_path = await uploadToGitHub(files['logo'][0].buffer, files['logo'][0].originalname, 'documents');
+    }
 
     // Validate required fields based on section logic (optional but good practice)
     // Section A needs image, C needs image, B needs logo? 
@@ -893,6 +929,9 @@ app.post("/api/books/upload", upload.single("document"), async (req, res) => {
     else if (fileExt === ".doc") fileType = "doc";
     else if (fileExt === ".docx") fileType = "docx";
 
+    // Upload book document to GitHub
+    const githubUrl = await uploadToGitHub(file.buffer, file.originalname, "documents");
+
     // Insert book into database
     const [result] = await pool.execute(
       "INSERT INTO books (title, author, description, total_copies, available_copies, file_path, file_type, file_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -902,7 +941,7 @@ app.post("/api/books/upload", upload.single("document"), async (req, res) => {
         description,
         total_copies || 1,
         total_copies || 1,
-        `/documents/${file.filename}`,
+        githubUrl,
         fileType,
         file.size,
       ]
@@ -946,26 +985,7 @@ app.get("/api/user/rentals", authenticateToken, async (req, res) => {
       .json({ error: "Failed to fetch rentals: " + error.message });
   }
 });
-app.post("/api/books/upload", upload.single("document"), async (req, res) => {
-  try {
-    const { title, author, description, total_copies } = req.body;
-    const file = req.file;
 
-    if (!file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-
-    // Validate file path was created
-    if (!file.path) {
-      return res.status(500).json({ error: "File storage failed" });
-    }
-
-    // ... rest of your code
-  } catch (error) {
-    console.error("Upload book error:", error);
-    res.status(500).json({ error: "Failed to upload book" });
-  }
-});
 // Get user queue
 app.get("/api/user/queue", authenticateToken, async (req, res) => {
   const userId = req.user.id;
@@ -1395,34 +1415,49 @@ app.get("/api/books/:id/download-test", async (req, res) => {
 
     const book = books[0];
 
-    // Check if file exists
-    const filePath = path.join(
-      __dirname,
-      book.file_path.replace("/documents/", "documents/")
-    );
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: "Book file not found on server" });
-    }
-
-    // Read the file content
     let content = "";
-    const fileExt = path.extname(filePath).toLowerCase();
+    const fileExt = path.extname(book.file_path).toLowerCase();
 
-    if (fileExt === ".pdf") {
-      // For PDF files, we need to extract text
-      const dataBuffer = fs.readFileSync(filePath);
-      const pdfData = await pdfParse(dataBuffer);
-      content = pdfData.text;
-    } else if (fileExt === ".docx" || fileExt === ".doc") {
-      // For Word documents
-      const result = await mammoth.extractRawText({ path: filePath });
-      content = result.value;
-    } else if (fileExt === ".txt") {
-      // For text files
-      content = fs.readFileSync(filePath, "utf-8");
+    if (book.file_path.startsWith("http")) {
+      // Download remote file from GitHub (or anywhere else)
+      const response = await axios.get(book.file_path, { responseType: 'arraybuffer' });
+      const dataBuffer = Buffer.from(response.data);
+
+      if (fileExt === ".pdf") {
+        const pdfData = await pdfParse(dataBuffer);
+        content = pdfData.text;
+      } else if (fileExt === ".docx" || fileExt === ".doc") {
+        const result = await mammoth.extractRawText({ buffer: dataBuffer });
+        content = result.value;
+      } else if (fileExt === ".txt") {
+        content = dataBuffer.toString("utf-8");
+      } else {
+        return res.status(400).json({ error: "Unsupported file format" });
+      }
     } else {
-      return res.status(400).json({ error: "Unsupported file format" });
+      // Legacy local file logic
+      const filePath = path.join(
+        __dirname,
+        book.file_path.replace(/^\/?documents\//, "documents/")
+      );
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "Book file not found on server" });
+      }
+
+      const dataBuffer = fs.readFileSync(filePath);
+
+      if (fileExt === ".pdf") {
+        const pdfData = await pdfParse(dataBuffer);
+        content = pdfData.text;
+      } else if (fileExt === ".docx" || fileExt === ".doc") {
+        const result = await mammoth.extractRawText({ path: filePath });
+        content = result.value;
+      } else if (fileExt === ".txt") {
+        content = dataBuffer.toString("utf-8");
+      } else {
+        return res.status(400).json({ error: "Unsupported file format" });
+      }
     }
 
     // Send the text content as JSON response
