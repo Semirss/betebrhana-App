@@ -2,12 +2,12 @@ class AppConfig {
   AppConfig._();
 
   /// Production Render URL
-  static const String baseApiUrl = 'https://betebrana-backend.onrender.com/api';
+  static const String baseApiUrl = 'https://betebrhana-app.onrender.com/api';
 
   // Documents and covers are now stored on GitHub, so these are no longer needed
   // for new uploads. Kept for backwards compatibility with any legacy code.
-  static const String documentsBaseUrl = 'https://betebrana-backend.onrender.com/documents';
-  static const String coversBaseUrl = 'https://betebrana-backend.onrender.com';
+  static const String documentsBaseUrl = 'https://betebrhana-app.onrender.com/documents';
+  static const String coversBaseUrl = 'https://betebrhana-app.onrender.com';
 }
 
 // =====================================================================
