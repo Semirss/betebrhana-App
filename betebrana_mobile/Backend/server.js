@@ -850,7 +850,8 @@ app.get("/api/books/:id/read", authenticateToken, async (req, res) => {
       try {
         const response = await axios.get(filePath, { responseType: "stream" });
         res.setHeader("Content-Type", response.headers["content-type"] || "application/octet-stream");
-        res.setHeader("Content-Disposition", `inline; filename="${book.title}"`);
+        const safeTitle = encodeURIComponent(book.title).replace(/'/g, "%27");
+        res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${safeTitle}`);
         response.data.pipe(res);
       } catch (proxyErr) {
         console.error("Proxy error:", proxyErr.message);
