@@ -1424,7 +1424,7 @@ Future<void> _returnCurrentBook() async {
       );
     }
 
-    final url = '${AppConfig.coversBaseUrl}/${book.coverImagePath}';
+    final url = AppConfig.resolveUrl(book.coverImagePath);
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.cover,

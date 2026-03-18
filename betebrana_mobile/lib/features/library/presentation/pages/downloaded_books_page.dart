@@ -473,7 +473,7 @@ class _BookCoverImage extends StatelessWidget {
       );
     }
 
-    final url = '${AppConfig.coversBaseUrl}/$path';
+    final url = AppConfig.resolveUrl(path);
     
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),

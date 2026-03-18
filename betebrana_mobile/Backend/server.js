@@ -12,55 +12,19 @@ const axios = require("axios");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const cors = require("cors");
+// CORS - allow all origins since this is a mobile-first API
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl, postman)
-      if (!origin) return callback(null, true);
-
-      // List of allowed origins
-      const allowedOrigins = [
-        "http://localhost:65054",
-        "http://127.0.0.1:5500",
-        "http://localhost:3000",
-        // For Android Emulator
-        "http://10.0.2.2:3000",
-        "http://10.0.2.2:*",
-        //for specific pc ip
-        "http://192.168.8.112:3000",
-        "http://192.168.8.112:*",
-        // For iOS Simulator
-        "http://localhost:*",
-        "http://127.0.0.1:*",
-        // For Chrome debugging
-        "http://localhost",
-
-        "http://127.0.0.1",
-        // Add any other origins you need
-      ];
-
-      // Check if origin is allowed
-      if (
-        allowedOrigins.some((allowed) =>
-          origin.startsWith(allowed.replace(":*", ""))
-        )
-      ) {
-        callback(null, true);
-      } else {
-        console.log("Blocked by CORS:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true, // Reflect request origin; mobile apps have no "origin" anyway
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     credentials: true,
-    exposedHeaders: ["Content-Disposition"], // For file downloads
+    exposedHeaders: ["Content-Disposition"],
   })
 );
 
 // Middleware
 app.use(express.json());
-app.use(express.static("public"));
 app.use("/documents", express.static("documents"));
 app.use("/covers", express.static("covers"));
 
@@ -388,13 +352,11 @@ async function cleanupExpiredQueue() {
 }
 // Routes
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-app.get("/reader", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "reader.html"));
-});
-app.get("/try", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "try.html"));
+  res.json({
+    status: "ok",
+    message: "BeteBrana API server is running 🚀",
+    version: "1.0.0",
+  });
 });
 
 // Test endpoint
@@ -1515,8 +1477,17 @@ app.get("/api/books/:id/queue-info", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Failed to get queue info" });
   }
 });
-app.use("/node_modules", express.static("node_modules"));
-app.use(express.static(".")); // Serve current directory
+// Global error sanitizer — never expose stack traces to clients
+app.use((err, req, res, next) => {
+  console.error("[ERROR]", err.stack || err.message || err);
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ error: "Something went wrong. Please try again." });
+});
+
+// 404 catch-all
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found" });
+});
 // Start server
 // Start server
 async function startServer() {

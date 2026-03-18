@@ -360,6 +360,11 @@ class _ReaderPageState extends State<ReaderPage>
 
   String? _buildDocumentUrl(String? filePath) {
     if (filePath == null || filePath.isEmpty) return null;
+    // If it is already a full URL (GitHub raw URL etc.), use it directly
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      return filePath;
+    }
+    // Legacy path like "/documents/file.txt" or "documents/file.txt"
     var path = filePath.trim();
     if (path.startsWith('/')) path = path.substring(1);
     if (path.startsWith('documents/')) path = path.substring('documents/'.length);

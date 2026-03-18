@@ -1,13 +1,28 @@
 class AppConfig {
   AppConfig._();
 
-  /// Production Render URL
+  /// Production Render backend URL (API)
   static const String baseApiUrl = 'https://betebrhana-app.onrender.com/api';
 
-  // Documents and covers are now stored on GitHub, so these are no longer needed
-  // for new uploads. Kept for backwards compatibility with any legacy code.
+  /// Render base URL — only used for LEGACY local /documents or /covers paths
+  static const String _renderBaseUrl = 'https://betebrhana-app.onrender.com';
+
+  // These are kept for backwards compatibility only
   static const String documentsBaseUrl = 'https://betebrhana-app.onrender.com/documents';
   static const String coversBaseUrl = 'https://betebrhana-app.onrender.com';
+
+  /// Safely resolves any image or file path to a full URL.
+  /// - If path is already a full URL (http/https), returns it as-is.
+  /// - If path is a local /covers or /documents path, prepends the Render base URL.
+  static String resolveUrl(String? path) {
+    if (path == null || path.isEmpty) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path; // Already a full URL (GitHub raw URL etc.)
+    }
+    // Legacy local path — prepend Render server base
+    final cleanPath = path.startsWith('/') ? path : '/$path';
+    return '$_renderBaseUrl$cleanPath';
+  }
 }
 
 // =====================================================================
@@ -19,19 +34,4 @@ class AppConfig {
 //   static const String baseApiUrl = 'http://192.168.8.112:3000/api';
 //   static const String documentsBaseUrl = 'http://192.168.8.112:3000/documents';
 //   static const String coversBaseUrl = 'http://192.168.8.112:3000';
-// }
-
-// class AppConfig {
-//   AppConfig._();
-//   static const String baseApiUrl = 'http://192.168.8.120:3000/api'; 
-//   static const String documentsBaseUrl = 'http://192.168.8.120:3000/documents';
-//   static const String coversBaseUrl = 'http://192.168.8.120:3000';
-// }
-
-// class AppConfig {
-//   AppConfig._();
-//   /// For Android Emulator: Use 10.0.2.2
-//   static const String baseApiUrl = 'http://10.0.2.2:3000/api'; 
-//   static const String documentsBaseUrl = 'http://10.0.2.2:3000/documents';
-//   static const String coversBaseUrl = 'http://10.0.2.2:3000';
 // }

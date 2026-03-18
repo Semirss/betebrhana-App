@@ -433,7 +433,7 @@ class _BookCover extends StatelessWidget {
       return const Icon(Icons.book, size: 40);
     }
 
-    final url = '${AppConfig.coversBaseUrl}/$coverImagePath';
+    final url = AppConfig.resolveUrl(coverImagePath);
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: CachedNetworkImage(

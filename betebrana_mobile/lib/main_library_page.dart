@@ -1129,7 +1129,7 @@ class _BookCoverImage extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: CachedNetworkImage(
-        imageUrl: '${AppConfig.coversBaseUrl}/$path',
+        imageUrl: AppConfig.resolveUrl(path),
         fit: BoxFit.cover,
         placeholder: (_, __) => Container(color: Colors.grey[900]),
         errorWidget: (_, __, ___) => Container(
@@ -1208,9 +1208,7 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
   }
 
   String _getImageUrl(String? path) {
-    if (path == null || path.isEmpty) return '';
-    final baseUrl = AppConfig.baseApiUrl.replaceAll('/api', '');
-    return '$baseUrl$path';
+    return AppConfig.resolveUrl(path);
   }
 
   @override
