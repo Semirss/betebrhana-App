@@ -13,7 +13,7 @@ class AppTheme {
 
   static const tanBackground = Color(0xFFF4EBD0); // Warmer, richer tan
   static const tanForeground = Color(0xFF4A5568); // Deeper gray-brown
-
+  
   static const blueBackground = Color(0xFFDBEAFE); // Deeper blue tint
   static const blueForeground = Color(0xFF1E40AF); // Richer blue
 

@@ -1092,6 +1092,8 @@ Future<void> _returnCurrentBook() async {
     
     return Column(
       children: [
+        _buildActionButton(),
+        const SizedBox(height: 16),
         // Download/Remove download button
         SizedBox(
           width: double.infinity,
@@ -1328,8 +1330,8 @@ Future<void> _returnCurrentBook() async {
                           ),
                         ],
                         
-                        // Bottom padding for floating action button
-                        const SizedBox(height: 80),
+                        // Bottom padding
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
@@ -1398,13 +1400,7 @@ Future<void> _returnCurrentBook() async {
             ),
           ),
           
-          // Floating action button at bottom
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: MediaQuery.of(context).padding.bottom + 16,
-            child: _buildActionButton(),
-          ),
+
         ],
       ),
     );

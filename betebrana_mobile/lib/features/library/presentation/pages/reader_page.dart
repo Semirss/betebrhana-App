@@ -17,7 +17,7 @@ import 'package:betebrana_mobile/core/theme/app_theme.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_pdfview/flutter_pdfview.dart';
-
+import 'package:cached_network_image/cached_network_image.dart';
 class ReaderPage extends StatefulWidget {
   const ReaderPage({super.key, required this.book, this.rentalDueDate, this.sponsorId});
 
@@ -163,7 +163,7 @@ class _ReaderPageState extends State<ReaderPage>
       child: SafeArea( // Ensure it doesn't overlap home indicator
         child: Row(
           children: [
-            if (ad['logo_path'] != null)
+            if (ad['logo_path'] != null && _getImageUrl(ad['logo_path']).isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(right: 12),
                 width: 40, 
@@ -171,12 +171,11 @@ class _ReaderPageState extends State<ReaderPage>
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: Colors.grey[300],
-                  image: _getImageUrl(ad['logo_path']).isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(_getImageUrl(ad['logo_path'])), 
-                          fit: BoxFit.cover
-                        )
-                      : null
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: CachedNetworkImage(
+                  imageUrl: _getImageUrl(ad['logo_path']),
+                  fit: BoxFit.cover,
                 ),
               ),
             Expanded(
@@ -333,12 +332,20 @@ class _ReaderPageState extends State<ReaderPage>
     } catch (_) {}
 
     // 2. Fetch via the secure proxy endpoint (auth token is sent automatically)
-    final dio = DioClient.instance.dio;
-    final response = await dio.get<String>(
-      '/books/${book.id}/read',
-      options: Options(responseType: ResponseType.plain),
-    );
-    return response.data ?? '';
+    try {
+      final dio = DioClient.instance.dio;
+      final response = await dio.get<String>(
+        '/books/${book.id}/read',
+        options: Options(
+          responseType: ResponseType.plain,
+          receiveTimeout: const Duration(seconds: 60),
+          sendTimeout: const Duration(seconds: 60),
+        ),
+      );
+      return response.data ?? '';
+    } catch (_) {
+      throw 'Server busy, please try again.';
+    }
   }
 
   Future<void> _downloadPdfForViewing() async {
@@ -544,7 +551,26 @@ class _ReaderPageState extends State<ReaderPage>
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
+                      String msg = snapshot.error.toString();
+                      if (msg.startsWith('Exception: ')) msg = msg.substring(11);
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.error_outline, size: 48, color: Color(0xFF5D4037)),
+                              const SizedBox(height: 16),
+                              Text(msg, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => setState(() => _initTxtFuture()),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     }
                     final text = snapshot.data ?? '';
                     if (text.isEmpty) {
@@ -602,8 +628,8 @@ class _ReaderPageState extends State<ReaderPage>
                         // Background Image
                         Positioned.fill(
                             child: _sharedAd!['image_path'] != null
-                                ? Image.network(
-                                    _getImageUrl(_sharedAd!['image_path']),
+                                ? CachedNetworkImage(
+                                    imageUrl: _getImageUrl(_sharedAd!['image_path']),
                                     fit: BoxFit.cover,
                                   )
                                 : Container(color: const Color(0xFF1A1A2E))
@@ -624,8 +650,12 @@ class _ReaderPageState extends State<ReaderPage>
                                               margin: const EdgeInsets.only(bottom: 20),
                                               decoration: BoxDecoration(
                                                   borderRadius: BorderRadius.circular(16),
-                                                  boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 12)],
-                                                  image: DecorationImage(image: NetworkImage(_getImageUrl(_sharedAd!['logo_path'])), fit: BoxFit.cover)
+                                                  boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 12)],
+                                              ),
+                                              clipBehavior: Clip.antiAlias,
+                                              child: CachedNetworkImage(
+                                                imageUrl: _getImageUrl(_sharedAd!['logo_path']),
+                                                fit: BoxFit.cover,
                                               ),
                                           ),
                                       if (_sharedAd!['u_text'] != null)
