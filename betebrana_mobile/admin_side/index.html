@@ -4,79 +4,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Betebrana Admin</title>
+    <title>Betebrana Workspace</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #F8F6F0; /* Soft warm white */
+            color: #3B2F2F; /* Deep espresso text */
+        }
+        /* SaaS subtle transitions */
+        button, a, input, select, textarea {
+            transition: all 0.2s ease-in-out;
+        }
+        .modal-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
+<body class="min-h-screen">
 
     <!-- LOGIN SECTION -->
     <div id="login-section" class="flex items-center justify-center min-h-screen">
-        <div class="bg-white p-8 rounded-lg shadow-lg w-96">
-            <h2 class="text-2xl font-bold mb-6 text-center text-blue-900">Admin Login</h2>
-            <form id="login-form" class="space-y-4">
+        <div class="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border border-[#EAE3D9]">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold tracking-tight text-[#4A3B32]">Betebrana Admin</h2>
+                <p class="text-sm text-[#8D7B68] mt-2">Welcome back. Please log in to your workspace.</p>
+            </div>
+            <form id="login-form" class="space-y-5">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Email</label>
-                    <input type="email" id="email" class="w-full mt-1 p-2 border rounded" required>
+                    <label class="block text-sm font-medium text-[#6B5A4E]">Email Address</label>
+                    <input type="email" id="email" class="w-full mt-1 p-3 bg-[#FDFCFB] border border-[#EAE3D9] rounded-xl focus:ring-2 focus:ring-[#AA8B78] focus:border-transparent outline-none shadow-sm" required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Password</label>
-                    <input type="password" id="password" class="w-full mt-1 p-2 border rounded" required>
+                    <label class="block text-sm font-medium text-[#6B5A4E]">Password</label>
+                    <input type="password" id="password" class="w-full mt-1 p-3 bg-[#FDFCFB] border border-[#EAE3D9] rounded-xl focus:ring-2 focus:ring-[#AA8B78] focus:border-transparent outline-none shadow-sm" required>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Login</button>
+                <button type="submit" class="w-full bg-[#6B5A4E] text-white p-3 rounded-xl hover:bg-[#4A3B32] font-medium shadow-md">Sign In</button>
             </form>
-            <p id="login-error" class="text-red-500 text-sm mt-2 hidden"></p>
+            <p id="login-error" class="text-[#D35D5D] text-sm mt-4 text-center hidden"></p>
         </div>
     </div>
 
-    <!-- DASHBOARD SECTION (Hidden by default) -->
-    <div id="dashboard-section" class="hidden flex min-h-screen">
+    <!-- DASHBOARD SECTION -->
+    <div id="dashboard-section" class="hidden min-h-screen">
         <!-- Sidebar -->
-        <aside class="w-64 bg-blue-900 text-white flex flex-col">
-            <div class="p-6 text-2xl font-bold border-b border-blue-800">Betebrana</div>
-            <nav class="flex-1 p-4 space-y-2">
-                <button onclick="showPage('books')" class="w-full text-left p-3 rounded hover:bg-blue-800 nav-btn"
-                    data-page="books">Books</button>
-                <button onclick="showPage('sponsors')" class="w-full text-left p-3 rounded hover:bg-blue-800 nav-btn"
-                    data-page="sponsors">Sponsors & Rates</button>
-                <button onclick="showPage('ads')" class="w-full text-left p-3 rounded hover:bg-blue-800 nav-btn"
-                    data-page="ads">Ads Management</button>
+        <aside class="w-72 bg-white border-r border-[#EAE3D9] flex flex-col fixed inset-y-0 z-10 shadow-sm">
+            <div class="h-20 flex items-center px-8 border-b border-[#EAE3D9]">
+                <h1 class="text-2xl font-bold tracking-tight text-[#4A3B32]">Betebrana.</h1>
+            </div>
+            <nav class="flex-1 px-4 py-8 space-y-2">
+                <button onclick="showPage('books')" class="w-full text-left px-4 py-3 rounded-xl transition-colors font-medium text-[#6B5A4E] hover:bg-[#F8F6F0] nav-btn" data-page="books">
+                    Library Management
+                </button>
+                <button onclick="showPage('sponsors')" class="w-full text-left px-4 py-3 rounded-xl transition-colors font-medium text-[#6B5A4E] hover:bg-[#F8F6F0] nav-btn" data-page="sponsors">
+                    Sponsors & Rates
+                </button>
+                <button onclick="showPage('ads')" class="w-full text-left px-4 py-3 rounded-xl transition-colors font-medium text-[#6B5A4E] hover:bg-[#F8F6F0] nav-btn" data-page="ads">
+                    Ad Campaigns
+                </button>
             </nav>
-            <div class="p-4 border-t border-blue-800">
-                <button onclick="logout()" class="w-full text-left p-2 hover:text-gray-300">Logout</button>
+            <div class="px-4 py-6 border-t border-[#EAE3D9]">
+                <button onclick="logout()" class="w-full text-left px-4 py-3 text-[#B07D7D] font-medium hover:bg-[#FDF6F6] rounded-xl">Sign Out</button>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 p-8 overflow-y-auto">
+        <main class="ml-72 flex-1 p-10 min-h-screen">
 
             <!-- BOOKS PAGE -->
-            <section id="page-books" class="page-section hidden">
-                <h2 class="text-3xl font-bold mb-6">Book Management</h2>
-
-                <div class="mb-6 flex gap-4">
-                    <button onclick="openModal('upload-book-modal')" class="bg-green-600 text-white px-4 py-2 rounded">+
-                        Upload Book</button>
+            <section id="page-books" class="page-section hidden max-w-7xl mx-auto py-4">
+                <div class="flex justify-between items-end mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold tracking-tight text-[#3B2F2F]">Library Management</h2>
+                        <p class="text-[#8D7B68] mt-1 text-sm">Oversee your digital book inventory and distributions.</p>
+                    </div>
+                    <button onclick="openModal('upload-book-modal')" class="bg-[#8C7362] text-white px-5 py-2.5 rounded-lg hover:bg-[#6B5A4E] font-medium shadow-sm flex items-center gap-2">
+                        <span>+</span> Upload New Book
+                    </button>
                 </div>
 
-                <div class="bg-white rounded shadow text-sm">
+                <div class="bg-white rounded-2xl shadow-sm border border-[#EAE3D9] overflow-hidden text-sm">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-50 border-b">
-                                <th class="p-4">Title</th>
-                                <th class="p-4">Author</th>
-                                <th class="p-4">Sponsors</th>
-                                <th class="p-4">Avail. Copies</th>
-                                <th class="p-4">Actions</th>
+                            <tr class="bg-[#FDFCFB] border-b border-[#EAE3D9] text-[#8D7B68] tracking-wide text-xs uppercase">
+                                <th class="py-4 px-6 font-semibold">Title</th>
+                                <th class="py-4 px-6 font-semibold">Author</th>
+                                <th class="py-4 px-6 font-semibold">Sponsors & Rev</th>
+                                <th class="py-4 px-6 font-semibold text-center">Avail. Copies</th>
+                                <th class="py-4 px-6 font-semibold text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="books-list">
+                        <tbody id="books-list" class="divide-y divide-[#EAE3D9] text-[#4A3B32]">
                             <!-- Populated by JS -->
                         </tbody>
                     </table>
@@ -84,163 +105,219 @@
             </section>
 
             <!-- SPONSORS PAGE -->
-            <section id="page-sponsors" class="page-section hidden">
-                <h2 class="text-3xl font-bold mb-6">Sponsors & Rates</h2>
+            <section id="page-sponsors" class="page-section hidden max-w-7xl mx-auto py-4">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold tracking-tight text-[#3B2F2F]">Sponsors & Rates</h2>
+                    <p class="text-[#8D7B68] mt-1 text-sm">Manage corporate sponsors and system conversion rates.</p>
+                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 my-8">
                     <!-- Rates Config -->
-                    <div class="bg-white p-6 rounded shadow h-fit">
-                        <h3 class="text-xl font-bold mb-4">Sponsorship Settings</h3>
-                        <form id="rates-form" class="space-y-4">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-[#EAE3D9] h-fit">
+                        <h3 class="text-lg font-semibold mb-6 text-[#4A3B32]">Sponsorship Conversion Rates</h3>
+                        <form id="rates-form" class="space-y-5">
                             <div>
-                                <label class="block text-sm font-medium">Rate Amount (Birr)</label>
-                                <input type="number" id="setting-amount" class="w-full border p-2 rounded">
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Rate Amount (Birr)</label>
+                                <input type="number" id="setting-amount" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium">Copies per Batch</label>
-                                <input type="number" id="setting-copies" class="w-full border p-2 rounded">
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Copies Granted per Batch</label>
+                                <input type="number" id="setting-copies" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none">
                             </div>
-                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Update Rates</button>
+                            <button type="submit" class="bg-[#EAE3D9] text-[#4A3B32] px-5 py-2.5 rounded-lg font-medium hover:bg-[#DED7CD] w-full">Apply Updates</button>
                         </form>
                     </div>
 
                     <!-- Add Sponsor -->
-                    <div class="bg-white p-6 rounded shadow h-fit">
-                        <h3 class="text-xl font-bold mb-4">Add New Sponsor</h3>
-                        <form id="add-sponsor-form" class="space-y-4">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-[#EAE3D9] h-fit">
+                        <h3 class="text-lg font-semibold mb-6 text-[#4A3B32]">Onboard New Sponsor</h3>
+                        <form id="add-sponsor-form" class="space-y-5">
                             <div>
-                                <label class="block text-sm font-medium">Sponsor Name</label>
-                                <input type="text" id="sponsor-name" class="w-full border p-2 rounded" required>
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Organization Name</label>
+                                <input type="text" id="sponsor-name" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium">Contact Info</label>
-                                <textarea id="sponsor-contact" class="w-full border p-2 rounded"></textarea>
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Contact Details</label>
+                                <textarea id="sponsor-contact" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" rows="2"></textarea>
                             </div>
-                            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Add Sponsor</button>
+                            <button type="submit" class="bg-[#8C7362] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6B5A4E] w-full">Create Entity</button>
                         </form>
                     </div>
                 </div>
 
                 <!-- Sponsor List -->
-                <div class="mt-8 bg-white rounded shadow">
-                    <div class="p-4 border-b font-bold">All Sponsors</div>
-                    <ul id="sponsors-list" class="divide-y">
+                <div class="bg-white rounded-2xl shadow-sm border border-[#EAE3D9] overflow-hidden">
+                    <div class="px-8 py-5 border-b border-[#EAE3D9] bg-[#FDFCFB]">
+                        <h4 class="font-semibold text-[#4A3B32]">Active Sponsors Directory</h4>
+                    </div>
+                    <ul id="sponsors-list" class="divide-y divide-[#EAE3D9]">
                         <!-- JS populated -->
                     </ul>
                 </div>
             </section>
 
             <!-- ADS PAGE -->
-            <section id="page-ads" class="page-section hidden">
-                <h2 class="text-3xl font-bold mb-6">Ad Management</h2>
+            <section id="page-ads" class="page-section hidden max-w-7xl mx-auto py-4">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold tracking-tight text-[#3B2F2F]">Ad Campaigns</h2>
+                    <p class="text-[#8D7B68] mt-1 text-sm">Distribute promotional content across app screen slots.</p>
+                </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
                     <!-- Upload Form -->
-                    <div class="bg-white p-6 rounded shadow">
-                        <h3 class="text-xl font-bold mb-4">Create New Ad</h3>
-                        <form id="create-ad-form" class="space-y-4">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-[#EAE3D9]">
+                        <h3 class="text-lg font-semibold mb-6 text-[#4A3B32]">Launch Campaign</h3>
+                        <form id="create-ad-form" class="space-y-5">
                             <div>
-                                <label class="block text-sm font-medium">Sponsor</label>
-                                <select id="ad-sponsor" class="w-full border p-2 rounded" required>
-                                    <option value="">Select Sponsor</option>
-                                    <!-- Populated by JS -->
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Sponsor Owner</label>
+                                <select id="ad-sponsor" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
+                                    <option value="">Select Target Entity</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium">Ad Section</label>
-                                <select id="ad-section" name="section" class="w-full border p-2 rounded"
-                                    onchange="updateAdForm()">
-                                    <option value="A">Section A: Hero Slider (Homepage)</option>
-                                    <option value="B">Section B: Bottom Banner (Reading)</option>
-                                    <option value="C">Section C: Full Screen (Opening)</option>
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Placement Slot</label>
+                                <select id="ad-section" name="section" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" onchange="updatePreview()">
+                                    <option value="A">Section A: Primary Hero Slider</option>
+                                    <option value="B">Section B: Bottom Reader Banner</option>
+                                    <option value="C">Section C: App Interstitial (Opening)</option>
                                 </select>
                             </div>
 
-                            <div id="field-image">
-                                <label class="block text-sm font-medium">Main Image/Banner</label>
-                                <input type="file" id="ad-image" name="image" class="w-full border p-2 rounded"
-                                    accept="image/*">
-                            </div>
-
-                            <div id="field-logo">
-                                <label class="block text-sm font-medium">Logo (Optional)</label>
-                                <input type="file" id="ad-logo" name="logo" class="w-full border p-2 rounded"
-                                    accept="image/*">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium">Overlay Text</label>
-                                <input type="text" id="ad-text" name="u_text" class="w-full border p-2 rounded">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div id="field-image">
+                                    <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Main Creative</label>
+                                    <input type="file" id="ad-image" name="image" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2 text-sm rounded-lg" accept="image/*">
+                                </div>
+                                <div id="field-logo">
+                                    <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Entity Logo</label>
+                                    <input type="file" id="ad-logo" name="logo" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2 text-sm rounded-lg" accept="image/*">
+                                </div>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium">Redirect Link</label>
-                                <input type="text" id="ad-link" name="redirect_link" class="w-full border p-2 rounded">
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Marketing Copy</label>
+                                <input type="text" id="ad-text" name="u_text" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none">
                             </div>
 
-                            <div class="flex items-center gap-2">
-                                <input type="checkbox" id="ad-sticky" name="is_sticky" value="true">
-                                <label>Sticky / Urgent</label>
+                            <div>
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Destination URL</label>
+                                <input type="text" id="ad-link" name="redirect_link" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none">
                             </div>
 
-                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Upload &
-                                Publish</button>
+                            <div class="flex items-center gap-3 pt-2">
+                                <input type="checkbox" id="ad-sticky" name="is_sticky" value="true" class="w-4 h-4 text-[#8C7362] rounded focus:ring-[#8C7362]">
+                                <label class="text-sm font-medium text-[#4A3B32]">Mark as Urgent / Persistent</label>
+                            </div>
+
+                            <button type="submit" class="bg-[#8C7362] text-white px-5 py-3 rounded-xl font-medium hover:bg-[#6B5A4E] w-full shadow-sm mt-4">Broadcast Campaign</button>
                         </form>
                     </div>
 
                     <!-- Live Preview -->
-                    <div class="bg-white p-6 rounded shadow">
-                        <h3 class="text-xl font-bold mb-4">Live Preview</h3>
-                        <div id="preview-container"
-                            class="border rounded h-[500px] overflow-hidden bg-gray-100 relative items-center justify-center flex">
-                            <p class="text-gray-400">Select Section to Preview</p>
-                            <!-- Preview Content -->
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-[#EAE3D9]">
+                        <h3 class="text-lg font-semibold mb-6 text-[#4A3B32]">Real-time Component Preview</h3>
+                        <div id="preview-container" class="border border-[#EAE3D9] rounded-xl h-[450px] overflow-hidden bg-[#F8F6F0] relative items-center justify-center flex shadow-inner">
+                            <p class="text-[#A4968C]">Adjust fields to render view</p>
                         </div>
                     </div>
                 </div>
             </section>
-
         </main>
     </div>
 
-    <!-- Modals -->
-    <div id="upload-book-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-        <div class="bg-white p-6 rounded w-96">
-            <h3 class="text-xl font-bold mb-4">Upload Book</h3>
+    <!-- MODALS -->
+
+    <!-- Upload Book Modal -->
+    <div id="upload-book-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="modal-glass p-8 rounded-2xl w-full max-w-md shadow-2xl border border-[#EAE3D9]">
+            <h3 class="text-xl font-bold mb-6 text-[#3B2F2F]">Upload Document</h3>
             <form id="upload-book-form" class="space-y-4">
-                <input type="text" name="title" placeholder="Title" class="w-full border p-2 rounded" required>
-                <input type="text" name="author" placeholder="Author" class="w-full border p-2 rounded" required>
-                <textarea name="description" placeholder="Description" class="w-full border p-2 rounded"></textarea>
-                <input type="file" name="document" class="w-full border p-2 rounded" required>
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('upload-book-modal')"
-                        class="text-gray-500">Cancel</button>
-                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Upload</button>
+                <input type="text" name="title" placeholder="Literature Title" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
+                <input type="text" name="author" placeholder="Author/Creator" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
+                <textarea name="description" placeholder="Synopsis" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none rows-3"></textarea>
+                <input type="file" name="document" class="w-full border border-[#EAE3D9] bg-white p-2 rounded-lg" required>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('upload-book-modal')" class="px-5 py-2.5 rounded-lg font-medium text-[#6B5A4E] hover:bg-[#F8F6F0]">Cancel</button>
+                    <button type="submit" class="bg-[#8C7362] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6B5A4E]">Ingest Title</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="sponsor-book-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-        <div class="bg-white p-6 rounded w-96">
-            <h3 class="text-xl font-bold mb-4">Add Sponsorship</h3>
-            <p id="sponsor-book-title" class="mb-4 text-gray-600 italic"></p>
+    <!-- Sponsor Book Modal -->
+    <div id="sponsor-book-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="modal-glass p-8 rounded-2xl w-full max-w-md shadow-2xl border border-[#EAE3D9]">
+            <h3 class="text-xl font-bold mb-2 text-[#3B2F2F]">Fund Title Distribution</h3>
+            <p id="sponsor-book-title" class="mb-6 text-[#8D7B68] text-sm"></p>
             <form id="sponsor-book-form" class="space-y-4">
                 <input type="hidden" id="sponsor-book-id">
-                <select id="sponsor-select" class="w-full border p-2 rounded" required>
-                    <!-- Populated -->
-                </select>
+                <select id="sponsor-select" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required></select>
                 <div>
-                    <label class="text-sm">Amount (Birr)</label>
-                    <input type="number" id="sponsor-amount" class="w-full border p-2 rounded" placeholder="1000"
-                        required>
+                    <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Injection Amount (Birr)</label>
+                    <input type="number" id="sponsor-amount" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" placeholder="1000" required>
                 </div>
-                <div class="text-sm text-gray-500" id="sponsor-calc-info">Adds 10 copies per 1000 Birr</div>
+                <div class="text-xs text-[#A4968C] bg-[#FDFCFB] p-3 rounded-lg border border-[#EAE3D9]" id="sponsor-calc-info">Adds corresponding copies using global conversion rates.</div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('sponsor-book-modal')" class="px-5 py-2.5 rounded-lg font-medium text-[#6B5A4E] hover:bg-[#F8F6F0]">Cancel</button>
+                    <button type="submit" class="bg-[#4A3B32] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#2A211C]">Confirm Ledger</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('sponsor-book-modal')"
-                        class="text-gray-500">Cancel</button>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Confirm</button>
+    <!-- Edit Sponsor Modal -->
+    <div id="edit-sponsor-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="modal-glass p-8 rounded-2xl w-full max-w-md shadow-2xl border border-[#EAE3D9]">
+            <h3 class="text-xl font-bold mb-6 text-[#3B2F2F]">Update Entity Record</h3>
+            <form id="edit-sponsor-form" class="space-y-4">
+                <input type="hidden" id="edit-sponsor-id">
+                <div>
+                    <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Organization Name</label>
+                    <input type="text" id="edit-sponsor-name" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Contact Details</label>
+                    <textarea id="edit-sponsor-contact" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" rows="2"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('edit-sponsor-modal')" class="px-5 py-2.5 rounded-lg font-medium text-[#6B5A4E] hover:bg-[#F8F6F0]">Cancel</button>
+                    <button type="submit" class="bg-[#8C7362] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6B5A4E]">Save Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Book Modal -->
+    <div id="edit-book-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="modal-glass p-8 rounded-2xl w-full max-w-md shadow-2xl border border-[#EAE3D9] max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-6 text-[#3B2F2F]">Modify Catalog Entry</h3>
+            <form id="edit-book-form" class="space-y-4">
+                <input type="hidden" id="edit-book-id">
+                <div>
+                    <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Title</label>
+                    <input type="text" id="edit-book-title" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Author</label>
+                    <input type="text" id="edit-book-author" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Description</label>
+                    <textarea id="edit-book-desc" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none rows-2"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Available Copies</label>
+                        <input type="number" id="edit-book-avail" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-red-400" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Total Copies</label>
+                        <input type="number" id="edit-book-total" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('edit-book-modal')" class="px-5 py-2.5 rounded-lg font-medium text-[#6B5A4E] hover:bg-[#F8F6F0]">Discard</button>
+                    <button type="submit" class="bg-[#8C7362] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6B5A4E]">Commit Changes</button>
                 </div>
             </form>
         </div>

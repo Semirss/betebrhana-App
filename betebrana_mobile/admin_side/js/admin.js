@@ -14,8 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     document.getElementById('rates-form').addEventListener('submit', handleUpdateRates);
     document.getElementById('add-sponsor-form').addEventListener('submit', handleAddSponsor);
+    document.getElementById('edit-sponsor-form').addEventListener('submit', handleSaveSponsorEdit);
     document.getElementById('sponsor-book-form').addEventListener('submit', handleSponsorBook);
     document.getElementById('upload-book-form').addEventListener('submit', handleUploadBook);
+    document.getElementById('edit-book-form').addEventListener('submit', handleSaveBookEdit);
     document.getElementById('create-ad-form').addEventListener('submit', handleCreateAd);
 
     // Live Preview Listeners
@@ -37,13 +39,25 @@ function showLogin() {
 function showDashboard() {
     document.getElementById('login-section').classList.add('hidden');
     document.getElementById('dashboard-section').classList.remove('hidden');
-    document.getElementById('dashboard-section').classList.add('flex');
-    showPage('books'); // Default page
+    
+    // Default page
+    showPage('books');
 }
 
 function showPage(pageId) {
     document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
     document.getElementById(`page-${pageId}`).classList.remove('hidden');
+
+    // Update active state in sidebar
+    document.querySelectorAll('.nav-btn').forEach(el => {
+        if (el.dataset.page === pageId) {
+            el.classList.add('bg-[#EAE3D9]');
+            el.classList.remove('hover:bg-[#F8F6F0]');
+        } else {
+            el.classList.remove('bg-[#EAE3D9]');
+            el.classList.add('hover:bg-[#F8F6F0]');
+        }
+    });
 
     // Load Data
     if (pageId === 'books') loadBooks();
@@ -54,12 +68,17 @@ function showPage(pageId) {
     }
 }
 
+function logout() {
+    localStorage.removeItem('adminToken');
+    showLogin();
+}
+
 async function loadAdSponsors() {
     const res = await apiFetch('/admin/sponsors');
     if (res.ok) {
         const sponsors = await res.json();
         const select = document.getElementById('ad-sponsor');
-        select.innerHTML = '<option value="">Select Sponsor</option>' +
+        select.innerHTML = '<option value="">Select Target Entity</option>' +
             sponsors.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
     }
 }
@@ -93,14 +112,24 @@ async function loadBooks() {
 function renderBooks() {
     const tbody = document.getElementById('books-list');
     tbody.innerHTML = currentBooks.map(book => `
-        <tr class="border-b hover:bg-gray-50">
-            <td class="p-4 font-medium">${book.title}</td>
-            <td class="p-4">${book.author}</td>
-            <td class="p-4">${book.sponsor_count || 0} (${book.total_sponsored_amount || 0} Birr)</td>
-            <td class="p-4">${book.available_copies}</td>
-            <td class="p-4">
-                <button onclick="openSponsorModal(${book.id}, '${book.title}')" class="text-blue-600 hover:underline mr-2">Add Sponsor</button>
-                <button onclick="deleteBook(${book.id})" class="text-red-600 hover:underline">Delete</button>
+        <tr class="hover:bg-[#FDFCFB] transition-colors group">
+            <td class="py-4 px-6">
+                <div class="font-medium text-[#3B2F2F]">${book.title}</div>
+            </td>
+            <td class="py-4 px-6 text-[#6B5A4E]">${book.author}</td>
+            <td class="py-4 px-6 text-[#6B5A4E]">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#EAE3D9] text-[#4A3B32]">
+                    ${book.sponsor_count || 0} sponsors
+                </span>
+                <span class="ml-2">${book.total_sponsored_amount || 0} Birr</span>
+            </td>
+            <td class="py-4 px-6 text-center">
+                <span class="font-semibold text-[#8C7362]">${book.available_copies}</span> <span class="text-[#A4968C] text-xs">/ ${book.total_copies}</span>
+            </td>
+            <td class="py-4 px-6 text-right space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="openSponsorModal(${book.id}, '${book.title.replace(/'/g,"\\'")}')" class="text-xs font-medium text-[#4A3B32] hover:text-[#8C7362] bg-[#F8F6F0] px-3 py-1.5 rounded-md border border-[#EAE3D9]">Fund</button>
+                <button onclick="openEditBookModal(${book.id})" class="text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100">Edit</button>
+                <button onclick="deleteBook(${book.id})" class="text-xs font-medium text-[#D35D5D] hover:text-red-800 bg-red-50 px-3 py-1.5 rounded-md border border-red-100">Drop</button>
             </td>
         </tr>
     `).join('');
@@ -122,21 +151,72 @@ async function handleUploadBook(e) {
     }
 }
 
+function openEditBookModal(id) {
+    const book = currentBooks.find(b => b.id === id);
+    if (!book) return;
+    document.getElementById('edit-book-id').value = book.id;
+    document.getElementById('edit-book-title').value = book.title;
+    document.getElementById('edit-book-author').value = book.author;
+    document.getElementById('edit-book-desc').value = book.description || "";
+    document.getElementById('edit-book-avail').value = book.available_copies;
+    document.getElementById('edit-book-total').value = book.total_copies;
+    openModal('edit-book-modal');
+}
+
+async function handleSaveBookEdit(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit-book-id').value;
+    const title = document.getElementById('edit-book-title').value;
+    const author = document.getElementById('edit-book-author').value;
+    const description = document.getElementById('edit-book-desc').value;
+    const available_copies = parseInt(document.getElementById('edit-book-avail').value);
+    const total_copies = parseInt(document.getElementById('edit-book-total').value);
+
+    const res = await apiFetch(`/admin/books/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, author, description, available_copies, total_copies })
+    });
+    if (res.ok) {
+        closeModal('edit-book-modal');
+        loadBooks();
+    } else {
+        alert('Failed to modify book details.');
+    }
+}
+
 async function deleteBook(id) {
-    if (!confirm('Are you sure?')) return;
+    if (!confirm('Warning: Deleting a book drops all associated records. Proceed?')) return;
     await apiFetch(`/admin/books/${id}`, { method: 'DELETE' });
     loadBooks();
 }
 
 // --- MODALS ---
-function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openModal(id) { 
+    document.getElementById(id).classList.remove('hidden'); 
+    setTimeout(() => {
+        document.getElementById(id).children[0].classList.add('scale-100', 'opacity-100');
+        document.getElementById(id).children[0].classList.remove('scale-95', 'opacity-0');
+    }, 10);
+}
+
+function closeModal(id) { 
+    document.getElementById(id).children[0].classList.remove('scale-100', 'opacity-100');
+    document.getElementById(id).children[0].classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+        document.getElementById(id).classList.add('hidden'); 
+    }, 200);
+}
+
+// Apply transition classes initially
+document.querySelectorAll('.modal-glass').forEach(el => {
+    el.classList.add('transition-all', 'duration-200', 'transform', 'scale-95', 'opacity-0');
+});
 
 async function openSponsorModal(bookId, title) {
     document.getElementById('sponsor-book-id').value = bookId;
-    document.getElementById('sponsor-book-title').textContent = `Sponsoring: ${title}`;
+    document.getElementById('sponsor-book-title').textContent = title;
 
-    // Load sponsors for select
     const res = await apiFetch('/admin/sponsors');
     const sponsors = await res.json();
     const select = document.getElementById('sponsor-select');
@@ -161,7 +241,7 @@ async function handleSponsorBook(e) {
         closeModal('sponsor-book-modal');
         loadBooks();
     } else {
-        alert('Failed to add sponsorship');
+        alert('Transaction failed to clear.');
     }
 }
 
@@ -173,7 +253,6 @@ async function loadSponsors() {
         renderSponsors();
     }
 
-    // Also load settings
     const settingsRes = await apiFetch('/admin/settings');
     if (settingsRes.ok) {
         const settings = await settingsRes.json();
@@ -186,20 +265,63 @@ async function loadSponsors() {
 function updateSponsorInfo() {
     const amt = document.getElementById('setting-amount').value || 1000;
     const cps = document.getElementById('setting-copies').value || 10;
-    document.getElementById('sponsor-calc-info').textContent = `System adds ${cps} copies per ${amt} Birr`;
+    document.getElementById('sponsor-calc-info').textContent = `System converts ${amt} Birr -> ${cps} inventory items globally.`;
 }
 
 function renderSponsors() {
     const list = document.getElementById('sponsors-list');
     list.innerHTML = currentSponsors.map(s => `
-        <li class="p-4 hover:bg-gray-50 flex justify-between">
+        <li class="px-8 py-5 hover:bg-[#FDFCFB] flex justify-between items-center group transition-colors">
             <div>
-                <div class="font-bold">${s.name}</div>
-                <div class="text-sm text-gray-500">${s.contact_info || ''}</div>
+                <div class="font-semibold text-[#3B2F2F]">${s.name}</div>
+                <div class="text-sm text-[#8D7B68] mt-1">${s.contact_info || 'No contact provided'}</div>
+                <div class="text-xs text-[#A4968C] mt-2 border border-[#EAE3D9] inline-block px-2 py-0.5 rounded shadow-sm bg-white">Onboarded: ${new Date(s.created_at).toLocaleDateString()}</div>
             </div>
-            <div class="text-sm text-gray-400">${new Date(s.created_at).toLocaleDateString()}</div>
+            <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                <button onclick="openEditSponsor(${s.id})" class="text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100">Edit</button>
+                <button onclick="deleteSponsor(${s.id})" class="text-xs font-medium text-[#D35D5D] hover:text-red-800 bg-red-50 px-3 py-1.5 rounded-md border border-red-100">Terminate</button>
+            </div>
         </li>
     `).join('');
+}
+
+function openEditSponsor(id) {
+    const s = currentSponsors.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('edit-sponsor-id').value = s.id;
+    document.getElementById('edit-sponsor-name').value = s.name;
+    document.getElementById('edit-sponsor-contact').value = s.contact_info || "";
+    openModal('edit-sponsor-modal');
+}
+
+async function handleSaveSponsorEdit(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit-sponsor-id').value;
+    const name = document.getElementById('edit-sponsor-name').value;
+    const contact_info = document.getElementById('edit-sponsor-contact').value;
+
+    const res = await apiFetch(`/admin/sponsors/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, contact_info })
+    });
+
+    if (res.ok) {
+        closeModal('edit-sponsor-modal');
+        loadSponsors();
+    } else {
+        alert("Failed to update organization.");
+    }
+}
+
+async function deleteSponsor(id) {
+    if (!confirm('This action irrecoverably purges the sponsor data. Continue?')) return;
+    const res = await apiFetch(`/admin/sponsors/${id}`, { method: 'DELETE' });
+    if(res.ok) {
+        loadSponsors();
+    } else {
+        alert("Delete blocked. They may have active ledgers linked to books.");
+    }
 }
 
 async function handleUpdateRates(e) {
@@ -213,7 +335,7 @@ async function handleUpdateRates(e) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings })
     });
-    alert('Rates updated!');
+    alert('System rates synchronized across all nodes.');
     updateSponsorInfo();
 }
 
@@ -245,65 +367,55 @@ function updatePreview() {
     const logoInput = document.getElementById('ad-logo');
 
     const previewContainer = document.getElementById('preview-container');
-    previewContainer.className = "border rounded h-[500px] overflow-hidden bg-gray-100 relative items-center justify-center flex"; // Reset basics
+    previewContainer.className = "border border-[#EAE3D9] shadow-inner rounded-xl h-[450px] overflow-hidden bg-[#F8F6F0] relative items-center justify-center flex";
 
-    // Helper to read file
     const readFile = (input) => {
         if (input.files && input.files[0]) return URL.createObjectURL(input.files[0]);
         return null;
     };
-    const imgUrl = readFile(imageInput) || 'https://via.placeholder.com/300x150?text=No+Image';
+    const imgUrl = readFile(imageInput) || 'https://via.placeholder.com/300x150?text=Primary+Creative';
     const logoUrl = readFile(logoInput) || 'https://via.placeholder.com/50?text=Logo';
 
     if (section === 'A') {
-        // Slider Preview
         previewContainer.innerHTML = `
-            <div class="w-full max-w-sm bg-white shadow-xl h-full flex flex-col">
-                <div class="bg-gray-800 text-white p-2 text-xs">Home Page</div>
-                <div class="p-4 bg-gray-50 flex-1">
-                     <div class="text-lg font-bold mb-2">My Library</div>
-                     <!-- Ad Slider -->
-                     <div class="relative w-full h-40 bg-gray-300 rounded overflow-hidden">
+            <div class="w-full max-w-sm bg-[#FDFCFB] shadow-lg h-full flex flex-col border border-[#EAE3D9]">
+                <div class="bg-[#4A3B32] text-white p-2 text-xs font-medium tracking-wide">HOME VIEW CONTEXT</div>
+                <div class="p-5 flex-1 space-y-4">
+                     <div class="text-sm font-bold text-[#3B2F2F] tracking-wide uppercase mt-2">Library Spotlight</div>
+                     <div class="relative w-full h-44 bg-[#EAE3D9] rounded-xl overflow-hidden shadow-sm">
                         <img src="${imgUrl}" class="w-full h-full object-cover">
-                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-sm truncate">
-                            ${text || 'Your Ad Text'}
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pb-3">
+                            <span class="text-white font-medium text-sm drop-shadow line-clamp-2 leading-tight">${text || 'Inspiring copy goes here'}</span>
                         </div>
-                     </div>
-                     <div class="mt-4 space-y-2">
-                        <div class="h-4 bg-gray-200 w-3/4 rounded"></div>
-                        <div class="h-4 bg-gray-200 w-1/2 rounded"></div>
                      </div>
                 </div>
             </div>
         `;
     } else if (section === 'B') {
-        // Bottom Banner Preview (Reader)
         previewContainer.innerHTML = `
-            <div class="w-full max-w-sm bg-white shadow-xl h-full flex flex-col relative">
-                <div class="bg-gray-800 text-white p-2 text-xs">Reader View</div>
-                <div class="p-8 text-justify text-gray-400 text-xs overflow-hidden flex-1">
-                    [Book Content Mockup] Lorem ipsum dolor sit amet...
+            <div class="w-full max-w-sm bg-white shadow-xl h-full flex flex-col relative border border-[#EAE3D9]">
+                <div class="bg-[#4A3B32] text-white p-2 text-xs font-medium tracking-wide">READER VIEW CONTEXT</div>
+                <div class="p-8 text-justify text-[#A4968C] text-xs overflow-hidden flex-1 font-serif leading-relaxed">
+                    [Literature Content Simulation] "The quick brown fox jumps over the lazy dog."
                 </div>
-                <!-- Bottom Ad -->
-                <div class="${sticky ? 'absolute bottom-0' : 'relative'} w-full bg-white border-t p-2 flex items-center gap-2 shadow-up">
-                    <img src="${logoUrl}" class="w-10 h-10 rounded bg-gray-200 object-cover">
+                <div class="${sticky ? 'absolute bottom-0' : 'relative'} w-full bg-[#fdfcfb] border-t border-[#EAE3D9] p-3 flex items-center gap-3">
+                    <img src="${logoUrl}" class="w-10 h-10 rounded-md bg-[#EAE3D9] object-cover shadow-sm">
                     <div class="flex-1">
-                        <div class="text-xs font-bold text-gray-800">${text || 'Ad Text'}</div>
-                        <div class="text-[10px] text-blue-500 truncate">${link || 'Click here'}</div>
+                        <div class="text-xs font-bold text-[#3B2F2F] leading-tight">${text || 'Marketing Copy'}</div>
+                        <div class="text-[10px] text-[#A4968C] truncate mt-0.5">${link || 'Click path destination'}</div>
                     </div>
                 </div>
             </div>
         `;
     } else if (section === 'C') {
-        // Full Screen Preview
         previewContainer.innerHTML = `
-            <div class="w-full max-w-sm bg-black h-full relative flex flex-col">
-                <img src="${imgUrl}" class="w-full h-full object-cover opacity-80">
-                <div class="absolute inset-0 flex flex-col items-center justify-center text-white p-6 text-center">
-                    <img src="${logoUrl}" class="w-16 h-16 rounded mb-4 bg-white/20">
-                    <h2 class="text-2xl font-bold mb-2">${text || 'Ad Headline'}</h2>
-                    <button class="bg-blue-600 px-6 py-2 rounded-full mt-4">Visit Link</button>
-                    <button class="absolute top-4 right-4 text-white/50 border border-white/30 px-3 py-1 rounded text-sm">Skip >></button>
+            <div class="w-full max-w-sm bg-[#3B2F2F] h-full relative flex flex-col overflow-hidden border border-black/20 shadow-xl">
+                <img src="${imgUrl}" class="w-full h-full object-cover opacity-60">
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center bg-gradient-to-t from-black/90 via-black/40 to-black/20">
+                    <img src="${logoUrl}" class="w-16 h-16 rounded-xl mb-4 bg-white/10 p-1 backdrop-blur shadow-lg border border-white/20">
+                    <h2 class="text-2xl font-bold mb-2 tracking-tight">${text || 'Launch Narrative'}</h2>
+                    <button class="bg-white text-[#3B2F2F] px-6 py-2.5 rounded-lg mt-4 font-semibold shadow-xl">Engage Now</button>
+                    <button class="absolute top-4 right-4 text-white/70 bg-black/30 backdrop-blur border border-white/20 px-3 py-1.5 rounded-lg text-xs font-medium">Skip Narrative</button>
                 </div>
             </div>
         `;
@@ -314,47 +426,26 @@ async function handleCreateAd(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     const sponsorId = document.getElementById('ad-sponsor').value;
-    formData.append('sponsor_id', sponsorId); // Backend expects this
+    formData.append('sponsor_id', sponsorId);
 
     const res = await apiFetch('/admin/ads', {
         method: 'POST',
         body: formData
     });
     if (res.ok) {
-        alert('Ad Published!');
+        alert('Campaign successfully broadcasted to live instances.');
         e.target.reset();
-        loadAds(); // If we had a list
+        loadAds();
         updatePreview();
     } else {
-        alert('Upload Error');
+        alert('Transmission failed. Validate asset restrictions.');
     }
 }
 
 async function loadAds() {
-    // Currently we don't have a list UI in the HTML, but let's log or assume we might add one later.
-    // For now, let's just ensure we can upload.
-    // If the user wants a list, we'd need to add a <ul id="ads-list"> to the HTML.
-    // Let's check if the user asked for a specific "edit" feature which implies a list.
-    // "edit or add his add" -> Yes.
-
-    // Let's create a visual list container dynamically if it doesn't exist, or just append after the form.
-    // Actually, createAdForm is in a grid. Let's look for a place. 
-    // For now, just logging content.
+    // Standard preload buffer for the UI view
     const res = await apiFetch('/admin/ads');
     if (res.ok) {
         const ads = await res.json();
-        const sponsorId = document.getElementById('ad-sponsor').value;
-        // Filter if a sponsor is selected? The user said "first we should choose sponsor then edit or add his add"
-
-        // Let's filter the list if a sponsor is selected in the dropdown
-        const filteredAds = sponsorId ? ads.filter(a => a.sponsor_id == sponsorId) : ads;
-
-        // Where to render? We need a container. 
-        // Let's assume we want to show them somewhere.
-        // For this step I will just implement the fetch logic.
-        console.log("Loaded Ads:", filteredAds);
     }
 }
-
-// Add listener to sponsor dropdown to reload/filter ads?
-document.getElementById('ad-sponsor').addEventListener('change', loadAds);

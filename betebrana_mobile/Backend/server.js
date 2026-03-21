@@ -518,6 +518,22 @@ app.post("/api/admin/sponsors", authenticateAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.put("/api/admin/sponsors/:id", authenticateAdmin, async (req, res) => {
+  const { name, contact_info } = req.body;
+  if (!name) return res.status(400).json({ error: "Name required" });
+  try {
+    await pool.execute("UPDATE sponsors SET name = ?, contact_info = ? WHERE id = ?", [name, contact_info, req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete("/api/admin/sponsors/:id", authenticateAdmin, async (req, res) => {
+  try {
+    await pool.execute("DELETE FROM sponsors WHERE id = ?", [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- Settings Management ---
 app.get("/api/admin/settings", authenticateAdmin, async (req, res) => {
   try {
@@ -591,6 +607,18 @@ app.delete("/api/admin/books/:id", authenticateAdmin, async (req, res) => {
   // Basic delete
   try {
     await pool.execute("DELETE FROM books WHERE id = ?", [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Update Book Metadata
+app.put("/api/admin/books/:id", authenticateAdmin, async (req, res) => {
+  const { title, author, description, available_copies, total_copies } = req.body;
+  try {
+    await pool.execute(
+      "UPDATE books SET title = ?, author = ?, description = ?, available_copies = ?, total_copies = ? WHERE id = ?",
+      [title, author, description, available_copies, total_copies, req.params.id]
+    );
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

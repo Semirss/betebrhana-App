@@ -1162,8 +1162,8 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
   void initState() {
     super.initState();
     _fetchAds();
-    // Re-fetch ads every 45 seconds
-    _refreshTimer = Timer.periodic(const Duration(seconds: 45), (_) => _fetchAds());
+    // Re-fetch ads every 30 minutes
+    _refreshTimer = Timer.periodic(const Duration(minutes: 30), (_) => _fetchAds());
     // Track precise scroll offset for cube math
     _pageController.addListener(() {
       if (mounted) setState(() => _pageOffset = _pageController.page ?? 0);
@@ -1270,7 +1270,7 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
                       color: Colors.grey[850],
                       image: _getImageUrl(ad['image_path']).isNotEmpty
                           ? DecorationImage(
-                              image: NetworkImage(_getImageUrl(ad['image_path'])),
+                              image: CachedNetworkImageProvider(_getImageUrl(ad['image_path'])),
                               fit: BoxFit.cover,
                             )
                           : null,
@@ -1319,7 +1319,7 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(color: Colors.white24, width: 1),
                                       image: DecorationImage(
-                                        image: NetworkImage(_getImageUrl(ad['logo_path'])),
+                                        image: CachedNetworkImageProvider(_getImageUrl(ad['logo_path'])),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
