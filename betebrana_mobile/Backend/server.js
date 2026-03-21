@@ -522,8 +522,24 @@ app.put("/api/admin/sponsors/:id", authenticateAdmin, async (req, res) => {
   const { name, contact_info } = req.body;
   if (!name) return res.status(400).json({ error: "Name required" });
   try {
-    await pool.execute("UPDATE sponsors SET name = ?, contact_info = ? WHERE id = ?", [name, contact_info, req.params.id]);
-    res.json({ success: true });
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      
+      // Update sponsor
+      await connection.execute("UPDATE sponsors SET name = ?, contact_info = ? WHERE id = ?", [name, contact_info, req.params.id]);
+      
+      // Update corresponding u_text in ads
+      await connection.execute("UPDATE advertisements SET u_text = ? WHERE sponsor_id = ?", [name, req.params.id]);
+      
+      await connection.commit();
+      res.json({ success: true });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -743,6 +759,56 @@ app.post("/api/admin/ads/:id/toggle", authenticateAdmin, async (req, res) => {
     await pool.execute("UPDATE advertisements SET is_active = NOT is_active WHERE id = ?", [req.params.id]);
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: Delete Ad
+app.delete("/api/admin/ads/:id", authenticateAdmin, async (req, res) => {
+  try {
+    await pool.execute("DELETE FROM advertisements WHERE id = ?", [req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Admin: Update Ad
+app.put("/api/admin/ads/:id", authenticateAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'logo', maxCount: 1 }]), async (req, res) => {
+  try {
+    const { section, u_text, redirect_link, is_sticky, sponsor_id } = req.body;
+    const files = req.files || {};
+    const adId = req.params.id;
+
+    let updateFields = [];
+    let updateValues = [];
+
+    if (section) { updateFields.push("section = ?"); updateValues.push(section); }
+    if (u_text !== undefined) { updateFields.push("u_text = ?"); updateValues.push(u_text || null); }
+    if (redirect_link !== undefined) { updateFields.push("redirect_link = ?"); updateValues.push(redirect_link || null); }
+    if (is_sticky !== undefined) { updateFields.push("is_sticky = ?"); updateValues.push(is_sticky === 'true'); }
+    if (sponsor_id) { updateFields.push("sponsor_id = ?"); updateValues.push(parseInt(sponsor_id)); }
+
+    if (files['image'] && files['image'][0]) {
+      const image_path = await uploadToGitHub(files['image'][0].buffer, files['image'][0].originalname, 'documents');
+      updateFields.push("image_path = ?");
+      updateValues.push(image_path);
+    }
+    if (files['logo'] && files['logo'][0]) {
+      const logo_path = await uploadToGitHub(files['logo'][0].buffer, files['logo'][0].originalname, 'documents');
+      updateFields.push("logo_path = ?");
+      updateValues.push(logo_path);
+    }
+
+    if (updateFields.length > 0) {
+      updateValues.push(adId);
+      await pool.execute(
+        `UPDATE advertisements SET ${updateFields.join(', ')} WHERE id = ?`,
+        updateValues
+      );
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error("Ad Update Error", e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Books endpoints with queue information

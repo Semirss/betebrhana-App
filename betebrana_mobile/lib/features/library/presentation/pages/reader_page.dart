@@ -18,6 +18,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 class ReaderPage extends StatefulWidget {
   const ReaderPage({super.key, required this.book, this.rentalDueDate, this.sponsorId});
 
@@ -157,44 +159,54 @@ class _ReaderPageState extends State<ReaderPage>
     if (_sharedAd == null) return const SizedBox.shrink();
     final ad = _sharedAd!;
     
-    return Container(
-      color: theme.colorScheme.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SafeArea( // Ensure it doesn't overlap home indicator
-        child: Row(
-          children: [
-            if (ad['logo_path'] != null && _getImageUrl(ad['logo_path']).isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                width: 40, 
-                height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[300],
+    return GestureDetector(
+      onTap: () async {
+        if (ad['redirect_link'] != null) {
+          final url = Uri.parse(ad['redirect_link']);
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
+          }
+        }
+      },
+      child: Container(
+        color: theme.colorScheme.surface,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: SafeArea( // Ensure it doesn't overlap home indicator
+          child: Row(
+            children: [
+              if (ad['logo_path'] != null && _getImageUrl(ad['logo_path']).isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  width: 40, 
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.grey[300],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: CachedNetworkImage(
+                    imageUrl: _getImageUrl(ad['logo_path']),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: CachedNetworkImage(
-                  imageUrl: _getImageUrl(ad['logo_path']),
-                  fit: BoxFit.cover,
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                     if (ad['u_text'] != null)
+                       Text(ad['u_text'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.colorScheme.onSurface)),
+                     if (ad['redirect_link'] != null)
+                       Text('Tap to visit', style: TextStyle(color: Colors.blue, fontSize: 10)),
+                  ],
                 ),
               ),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   if (ad['u_text'] != null)
-                     Text(ad['u_text'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.colorScheme.onSurface)),
-                   if (ad['redirect_link'] != null)
-                     Text('Tap to visit', style: TextStyle(color: Colors.blue, fontSize: 10)),
-                ],
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.close, size: 18, color: theme.colorScheme.onSurface),
-              onPressed: () => setState(() => _sharedAd = null),
-            )
-          ],
+              IconButton(
+                icon: Icon(Icons.close, size: 18, color: theme.colorScheme.onSurface),
+                onPressed: () => setState(() => _sharedAd = null),
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -701,9 +713,12 @@ class _ReaderPageState extends State<ReaderPage>
                                       ] else ...[  
                                         // Countdown finished — show action buttons
                                         ElevatedButton(
-                                            onPressed: () {
+                                            onPressed: () async {
                                                 if (_sharedAd!['redirect_link'] != null) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Opening ${_sharedAd!['redirect_link']}')));
+                                                    final url = Uri.parse(_sharedAd!['redirect_link']);
+                                                    if (await canLaunchUrl(url)) {
+                                                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                                                    }
                                                 }
                                             },
                                             style: ElevatedButton.styleFrom(

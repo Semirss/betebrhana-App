@@ -17,9 +17,11 @@ import 'package:betebrana_mobile/features/library/presentation/bloc/library_stat
 import 'package:betebrana_mobile/features/library/presentation/pages/book_details_page.dart';
 import 'package:betebrana_mobile/features/library/presentation/pages/downloaded_books_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // --- MAIN ENTRY POINT ---
 class MainLibraryPage extends StatelessWidget {
@@ -103,6 +105,8 @@ class _MainLibraryView extends StatefulWidget {
 class _MainLibraryViewState extends State<_MainLibraryView> with WidgetsBindingObserver {
   int _currentIndex = 0;
   Timer? _refreshTimer;
+  // Key to reach _HomeTab's refresh() method
+  final GlobalKey<_HomeTabState> _homeTabKey = GlobalKey<_HomeTabState>();
 
   @override
   void initState() {
@@ -138,6 +142,26 @@ class _MainLibraryViewState extends State<_MainLibraryView> with WidgetsBindingO
     }
   }
 
+  /// Called when user taps the Home tab icon.
+  /// If already on Home, refresh ads + library data, bypassing ALL image caches
+  /// (hero ads, reader-page interstitial/banner ads, and book covers).
+  void _onHomeTapped() {
+    if (_currentIndex == 0) {
+      // 1. Evict hero-ad images (memory + disk) via the slider's own list
+      _homeTabKey.currentState?.refresh();
+      // 2. Nuke the entire disk cache — this also clears reader-page ad images
+      //    that CachedNetworkImage persisted between reader sessions.
+      DefaultCacheManager().emptyCache();
+      // 3. Clear Flutter's in-memory image cache so book covers reload fresh
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      // 4. Refresh library data (book list + new cover URLs)
+      _refreshLibrary();
+    } else {
+      setState(() => _currentIndex = 0);
+    }
+  }
+
   // Public method to allow children to switch tabs
   void switchToTab(int index) {
     setState(() {
@@ -151,11 +175,11 @@ Widget build(BuildContext context) {
   return Scaffold(
     body: IndexedStack(
       index: _currentIndex,
-      children: const [
-        _HomeTab(),
-        _LibraryTab(),
-        _ProfileTab(),
-        _SettingsTab(),
+      children: [
+        _HomeTab(key: _homeTabKey),
+        const _LibraryTab(),
+        const _ProfileTab(),
+        const _SettingsTab(),
       ],
     ),
     bottomNavigationBar: Container(
@@ -168,7 +192,13 @@ Widget build(BuildContext context) {
       child: BottomNavigationBar(
         backgroundColor: isDark ? const Color(0xFF000000) : const Color.fromARGB(255, 228, 227, 226),
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          if (index == 0) {
+            _onHomeTapped();
+          } else {
+            setState(() => _currentIndex = index);
+          }
+        },
         showSelectedLabels: false,
         showUnselectedLabels: false,
         selectedItemColor: Theme.of(context).primaryColor,
@@ -201,8 +231,21 @@ Widget build(BuildContext context) {
 }}
 // --- TAB 1: HOME (CAROUSEL & RECOMMENDED) ---
 
-class _HomeTab extends StatelessWidget {
-  const _HomeTab();
+class _HomeTab extends StatefulWidget {
+  const _HomeTab({super.key});
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  // Key to reach the ad slider's refresh() from outside
+  final GlobalKey<_HeroAdSliderState> _adSliderKey = GlobalKey<_HeroAdSliderState>();
+
+  /// Refresh ads (clears their cache) — called by parent when user re-taps Home.
+  void refresh() {
+    _adSliderKey.currentState?.refresh();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +346,7 @@ appBar: AppBar(
                 const SizedBox(height: 30),
                 
                 // --- AD SECTION A (Hero Slider) ---
-                const _HeroAdSlider(),
+                _HeroAdSlider(key: _adSliderKey),
                 
                 const SizedBox(height: 30),
 
@@ -1143,7 +1186,7 @@ class _BookCoverImage extends StatelessWidget {
 
 // --- AD SLIDER WIDGET (Cube Carousel) ---
 class _HeroAdSlider extends StatefulWidget {
-  const _HeroAdSlider();
+  const _HeroAdSlider({super.key});
 
   @override
   State<_HeroAdSlider> createState() => _HeroAdSliderState();
@@ -1189,6 +1232,27 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
         curve: Curves.easeInOut,
       );
     });
+  }
+
+  /// Public entry point: evict cached ad images then re-fetch fresh ones.
+  void refresh() {
+    _evictAdImageCache();
+    _fetchAds();
+  }
+
+  /// Evict every currently-loaded ad image from CachedNetworkImage's
+  /// in-memory AND disk cache so the next build fetches the latest version.
+  void _evictAdImageCache() {
+    for (final ad in _ads) {
+      final imgUrl = _getImageUrl(ad['image_path'] as String?);
+      if (imgUrl.isNotEmpty) {
+        CachedNetworkImage.evictFromCache(imgUrl);
+      }
+      final logoUrl = _getImageUrl(ad['logo_path'] as String?);
+      if (logoUrl.isNotEmpty) {
+        CachedNetworkImage.evictFromCache(logoUrl);
+      }
+    }
   }
 
   Future<void> _fetchAds() async {
@@ -1256,11 +1320,12 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
                   ..setEntry(3, 2, 0.0012) // perspective depth
                   ..rotateY(-angle),       // negative so left→right feels natural
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     if (ad['redirect_link'] != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Opening: ${ad['redirect_link']}')),
-                      );
+                      final url = Uri.parse(ad['redirect_link']);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      }
                     }
                   },
                   child: Container(

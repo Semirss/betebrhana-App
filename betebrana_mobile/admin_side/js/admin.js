@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('upload-book-form').addEventListener('submit', handleUploadBook);
     document.getElementById('edit-book-form').addEventListener('submit', handleSaveBookEdit);
     document.getElementById('create-ad-form').addEventListener('submit', handleCreateAd);
+    document.getElementById('edit-ad-form').addEventListener('submit', handleSaveAdEdit);
 
     // Live Preview Listeners
     ['ad-section', 'ad-text', 'ad-link', 'ad-sticky'].forEach(id => {
@@ -27,6 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     ['ad-image', 'ad-logo'].forEach(id => {
         document.getElementById(id).addEventListener('change', updatePreview);
+    });
+    
+    document.getElementById('ad-sponsor').addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (selectedOption && selectedOption.value !== "") {
+            document.getElementById('ad-text').value = selectedOption.text;
+            updatePreview();
+        }
     });
 });
 
@@ -442,10 +451,90 @@ async function handleCreateAd(e) {
     }
 }
 
+let currentAds = [];
+
 async function loadAds() {
-    // Standard preload buffer for the UI view
     const res = await apiFetch('/admin/ads');
     if (res.ok) {
-        const ads = await res.json();
+        currentAds = await res.json();
+        renderAds();
     }
 }
+
+function renderAds() {
+    const tbody = document.getElementById('ads-list');
+    tbody.innerHTML = currentAds.map(ad => `
+        <tr class="hover:bg-[#FDFCFB] transition-colors group ${ad.is_active ? '' : 'opacity-60'}">
+            <td class="py-4 px-6">
+                <div class="flex items-center gap-3">
+                    ${ad.logo_path ? `<img src="${ad.logo_path.startsWith('http') ? ad.logo_path : '/api' + ad.logo_path}" class="w-8 h-8 rounded-md object-cover bg-gray-100">` : '<div class="w-8 h-8 rounded-md bg-gray-200"></div>'}
+                    <div class="font-medium text-[#3B2F2F] whitespace-nowrap">${ad.sponsor_name || 'Unknown Entity'}</div>
+                </div>
+            </td>
+            <td class="py-4 px-6 text-[#6B5A4E]">
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-700">
+                    Slot ${ad.section}
+                </span>
+            </td>
+            <td class="py-4 px-6 text-[#6B5A4E] text-xs max-w-[200px] truncate">
+                ${ad.u_text || '-'}
+            </td>
+            <td class="py-4 px-6 text-center">
+                ${ad.is_active 
+                    ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>'
+                    : '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Inactive</span>'
+                }
+            </td>
+            <td class="py-4 px-6 text-right space-x-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                <button onclick="toggleAd(${ad.id})" class="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">${ad.is_active ? 'Disable' : 'Enable'}</button>
+                <button onclick="openEditAdModal(${ad.id})" class="text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100">Edit</button>
+                <button onclick="deleteAd(${ad.id})" class="text-xs font-medium text-[#D35D5D] hover:text-red-800 bg-red-50 px-3 py-1.5 rounded-md border border-red-100">Terminate</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function toggleAd(id) {
+    const res = await apiFetch(`/admin/ads/${id}/toggle`, { method: 'POST' });
+    if (res.ok) loadAds();
+}
+
+async function deleteAd(id) {
+    if (!confirm('Warning: Permanently delete this campaign block?')) return;
+    const res = await apiFetch(`/admin/ads/${id}`, { method: 'DELETE' });
+    if (res.ok) loadAds();
+}
+
+function openEditAdModal(id) {
+    const ad = currentAds.find(a => a.id === id);
+    if (!ad) return;
+    document.getElementById('edit-ad-id').value = ad.id;
+    document.getElementById('edit-ad-text').value = ad.u_text || '';
+    document.getElementById('edit-ad-link').value = ad.redirect_link || '';
+    document.getElementById('edit-ad-section').value = ad.section || 'A';
+    document.getElementById('edit-ad-sticky').checked = ad.is_sticky == 1;
+    openModal('edit-ad-modal');
+}
+
+async function handleSaveAdEdit(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit-ad-id').value;
+    const formData = new FormData(e.target);
+    
+    // Checkboxes only send value if checked. If not checked, manually append false.
+    if (!document.getElementById('edit-ad-sticky').checked) {
+        formData.append('is_sticky', 'false');
+    }
+
+    const res = await apiFetch(`/admin/ads/${id}`, {
+        method: 'PUT',
+        body: formData
+    });
+    if (res.ok) {
+        closeModal('edit-ad-modal');
+        loadAds();
+    } else {
+        alert('Failed to modify campaign.');
+    }
+}
+
