@@ -81,7 +81,7 @@ class _ReaderPageState extends State<ReaderPage>
       // randomly-chosen ad for both the fullpage overlay AND the bottom banner.
       // This ensures both surfaces always show the same sponsor.
       try {
-        final resC = await dio.get('/ads/section/C$queryParam');
+        final resC = await dio.get('/promos/section/C$queryParam');
         print("Ads C Response: ${resC.data}");
         if (resC.data is List && resC.data.isNotEmpty) {
           final ads = resC.data as List;

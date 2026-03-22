@@ -1,0 +1,17 @@
+{
+    "liveServer.settings.ignoreFiles": [
+        ".vscode/**",
+        "**/*.scss",
+        "**/*.sass",
+        "**/*.ts",
+        "build/**",
+        ".dart_tool/**",
+        "android/**",
+        "ios/**",
+        "linux/**",
+        "macos/**",
+        "windows/**",
+        "lib/**",
+        "test/**"
+    ]
+}

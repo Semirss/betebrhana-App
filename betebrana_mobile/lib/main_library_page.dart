@@ -1258,7 +1258,7 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
   Future<void> _fetchAds() async {
     try {
       final response = await DioClient.instance.dio
-          .get('/ads/section/A?ts=${DateTime.now().millisecondsSinceEpoch}');
+          .get('/promos/section/A?ts=${DateTime.now().millisecondsSinceEpoch}');
       if (mounted) {
         setState(() {
           _ads = response.data is List ? response.data : [];

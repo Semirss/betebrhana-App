@@ -18,22 +18,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sponsor-book-form').addEventListener('submit', handleSponsorBook);
     document.getElementById('upload-book-form').addEventListener('submit', handleUploadBook);
     document.getElementById('edit-book-form').addEventListener('submit', handleSaveBookEdit);
-    document.getElementById('create-ad-form').addEventListener('submit', handleCreateAd);
-    document.getElementById('edit-ad-form').addEventListener('submit', handleSaveAdEdit);
+    document.getElementById('create-promo-form').addEventListener('submit', handleCreateAd);
+    document.getElementById('edit-promo-form').addEventListener('submit', handleSaveAdEdit);
 
     // Live Preview Listeners
-    ['ad-section', 'ad-text', 'ad-link', 'ad-sticky'].forEach(id => {
+    ['promo-section', 'promo-text', 'promo-link', 'promo-sticky'].forEach(id => {
         document.getElementById(id).addEventListener('change', updatePreview);
         document.getElementById(id).addEventListener('input', updatePreview);
     });
-    ['ad-image', 'ad-logo'].forEach(id => {
+    ['promo-image', 'promo-logo'].forEach(id => {
         document.getElementById(id).addEventListener('change', updatePreview);
     });
     
-    document.getElementById('ad-sponsor').addEventListener('change', (e) => {
+    document.getElementById('promo-sponsor').addEventListener('change', (e) => {
         const selectedOption = e.target.options[e.target.selectedIndex];
         if (selectedOption && selectedOption.value !== "") {
-            document.getElementById('ad-text').value = selectedOption.text;
+            document.getElementById('promo-text').value = selectedOption.text;
             updatePreview();
         }
     });
@@ -86,7 +86,7 @@ async function loadAdSponsors() {
     const res = await apiFetch('/admin/sponsors');
     if (res.ok) {
         const sponsors = await res.json();
-        const select = document.getElementById('ad-sponsor');
+        const select = document.getElementById('promo-sponsor');
         select.innerHTML = '<option value="">Select Target Entity</option>' +
             sponsors.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
     }
@@ -367,13 +367,21 @@ async function handleAddSponsor(e) {
 
 // --- ADS & PREVIEW ---
 function updatePreview() {
-    const section = document.getElementById('ad-section').value;
-    const text = document.getElementById('ad-text').value;
-    const link = document.getElementById('ad-link').value;
-    const sticky = document.getElementById('ad-sticky').checked;
+    const section = document.getElementById('promo-section').value;
+    const text = document.getElementById('promo-text').value;
+    const link = document.getElementById('promo-link').value;
+    const sticky = document.getElementById('promo-sticky').checked;
 
-    const imageInput = document.getElementById('ad-image');
-    const logoInput = document.getElementById('ad-logo');
+    const imageInput = document.getElementById('promo-image');
+    const logoInput = document.getElementById('promo-logo');
+    
+    // Toggle field visibility based on section
+    const fieldImage = document.getElementById('field-image');
+    const fieldLogo = document.getElementById('field-logo');
+    if (fieldImage && fieldLogo) {
+        fieldImage.classList.remove('hidden');
+        fieldLogo.classList.remove('hidden');
+    }
 
     const previewContainer = document.getElementById('preview-container');
     previewContainer.className = "border border-[#EAE3D9] shadow-inner rounded-xl h-[450px] overflow-hidden bg-[#F8F6F0] relative items-center justify-center flex";
@@ -434,10 +442,10 @@ function updatePreview() {
 async function handleCreateAd(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const sponsorId = document.getElementById('ad-sponsor').value;
+    const sponsorId = document.getElementById('promo-sponsor').value;
     formData.append('sponsor_id', sponsorId);
 
-    const res = await apiFetch('/admin/ads', {
+    const res = await apiFetch('/admin/promos', {
         method: 'POST',
         body: formData
     });
@@ -454,7 +462,7 @@ async function handleCreateAd(e) {
 let currentAds = [];
 
 async function loadAds() {
-    const res = await apiFetch('/admin/ads');
+    const res = await apiFetch('/admin/promos');
     if (res.ok) {
         currentAds = await res.json();
         renderAds();
@@ -495,43 +503,43 @@ function renderAds() {
 }
 
 async function toggleAd(id) {
-    const res = await apiFetch(`/admin/ads/${id}/toggle`, { method: 'POST' });
+    const res = await apiFetch(`/admin/promos/${id}/toggle`, { method: 'POST' });
     if (res.ok) loadAds();
 }
 
 async function deleteAd(id) {
     if (!confirm('Warning: Permanently delete this campaign block?')) return;
-    const res = await apiFetch(`/admin/ads/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/admin/promos/${id}`, { method: 'DELETE' });
     if (res.ok) loadAds();
 }
 
 function openEditAdModal(id) {
     const ad = currentAds.find(a => a.id === id);
     if (!ad) return;
-    document.getElementById('edit-ad-id').value = ad.id;
-    document.getElementById('edit-ad-text').value = ad.u_text || '';
-    document.getElementById('edit-ad-link').value = ad.redirect_link || '';
-    document.getElementById('edit-ad-section').value = ad.section || 'A';
-    document.getElementById('edit-ad-sticky').checked = ad.is_sticky == 1;
-    openModal('edit-ad-modal');
+    document.getElementById('edit-promo-id').value = ad.id;
+    document.getElementById('edit-promo-text').value = ad.u_text || '';
+    document.getElementById('edit-promo-link').value = ad.redirect_link || '';
+    document.getElementById('edit-promo-section').value = ad.section || 'A';
+    document.getElementById('edit-promo-sticky').checked = ad.is_sticky == 1;
+    openModal('edit-promo-modal');
 }
 
 async function handleSaveAdEdit(e) {
     e.preventDefault();
-    const id = document.getElementById('edit-ad-id').value;
+    const id = document.getElementById('edit-promo-id').value;
     const formData = new FormData(e.target);
     
     // Checkboxes only send value if checked. If not checked, manually append false.
-    if (!document.getElementById('edit-ad-sticky').checked) {
+    if (!document.getElementById('edit-promo-sticky').checked) {
         formData.append('is_sticky', 'false');
     }
 
-    const res = await apiFetch(`/admin/ads/${id}`, {
+    const res = await apiFetch(`/admin/promos/${id}`, {
         method: 'PUT',
         body: formData
     });
     if (res.ok) {
-        closeModal('edit-ad-modal');
+        closeModal('edit-promo-modal');
         loadAds();
     } else {
         alert('Failed to modify campaign.');

@@ -7,6 +7,16 @@
     <title>Betebrana Workspace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Kill any phantom Service Workers from other localhost:5500 projects that might cause infinite reload loops.
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -167,16 +177,16 @@
                     <!-- Upload Form -->
                     <div class="bg-white p-8 rounded-2xl shadow-sm border border-[#EAE3D9]">
                         <h3 class="text-lg font-semibold mb-6 text-[#4A3B32]">Launch Campaign</h3>
-                        <form id="create-ad-form" class="space-y-5">
+                        <form id="create-promo-form" class="space-y-5">
                             <div>
                                 <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Sponsor Owner</label>
-                                <select id="ad-sponsor" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
+                                <select id="promo-sponsor" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
                                     <option value="">Select Target Entity</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Placement Slot</label>
-                                <select id="ad-section" name="section" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" onchange="updatePreview()">
+                                <select id="promo-section" name="section" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" onchange="updatePreview()">
                                     <option value="A">Section A: Primary Hero Slider</option>
                                     <option value="B">Section B: Bottom Reader Banner</option>
                                     <option value="C">Section C: App Interstitial (Opening)</option>
@@ -186,26 +196,26 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div id="field-image">
                                     <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Main Creative</label>
-                                    <input type="file" id="ad-image" name="image" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2 text-sm rounded-lg" accept="image/*">
+                                    <input type="file" id="promo-image" name="image" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2 text-sm rounded-lg" accept="image/*">
                                 </div>
                                 <div id="field-logo">
                                     <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Entity Logo</label>
-                                    <input type="file" id="ad-logo" name="logo" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2 text-sm rounded-lg" accept="image/*">
+                                    <input type="file" id="promo-logo" name="logo" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2 text-sm rounded-lg" accept="image/*">
                                 </div>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Marketing Copy</label>
-                                <input type="text" id="ad-text" name="u_text" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none">
+                                <input type="text" id="promo-text" name="u_text" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none">
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Destination URL</label>
-                                <input type="text" id="ad-link" name="redirect_link" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none">
+                                <input type="text" id="promo-link" name="redirect_link" class="w-full border border-[#EAE3D9] bg-[#FDFCFB] p-2.5 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none">
                             </div>
 
                             <div class="flex items-center gap-3 pt-2">
-                                <input type="checkbox" id="ad-sticky" name="is_sticky" value="true" class="w-4 h-4 text-[#8C7362] rounded focus:ring-[#8C7362]">
+                                <input type="checkbox" id="promo-sticky" name="is_sticky" value="true" class="w-4 h-4 text-[#8C7362] rounded focus:ring-[#8C7362]">
                                 <label class="text-sm font-medium text-[#4A3B32]">Mark as Urgent / Persistent</label>
                             </div>
 
@@ -345,23 +355,23 @@
     </div>
 
     <!-- Edit Ad Modal -->
-    <div id="edit-ad-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50">
+    <div id="edit-promo-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center z-50">
         <div class="modal-glass p-8 rounded-2xl w-full max-w-lg shadow-2xl border border-[#EAE3D9] max-h-[90vh] overflow-y-auto">
             <h3 class="text-xl font-bold mb-6 text-[#3B2F2F]">Modify Campaign Record</h3>
-            <form id="edit-ad-form" class="space-y-4">
-                <input type="hidden" id="edit-ad-id">
+            <form id="edit-promo-form" class="space-y-4">
+                <input type="hidden" id="edit-promo-id">
                 
                 <div>
                     <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Marketing Copy</label>
-                    <input type="text" id="edit-ad-text" name="u_text" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none">
+                    <input type="text" id="edit-promo-text" name="u_text" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Destination URL</label>
-                    <input type="text" id="edit-ad-link" name="redirect_link" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none">
+                    <input type="text" id="edit-promo-link" name="redirect_link" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Placement Slot</label>
-                    <select id="edit-ad-section" name="section" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
+                    <select id="edit-promo-section" name="section" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
                         <option value="A">Section A: Primary Hero Slider</option>
                         <option value="B">Section B: Bottom Reader Banner</option>
                         <option value="C">Section C: App Interstitial (Opening)</option>
@@ -370,20 +380,20 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Update Creative (Optional)</label>
-                        <input type="file" id="edit-ad-image" name="image" class="w-full border border-[#EAE3D9] bg-white p-2 text-sm rounded-lg" accept="image/*">
+                        <input type="file" id="edit-promo-image" name="image" class="w-full border border-[#EAE3D9] bg-white p-2 text-sm rounded-lg" accept="image/*">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Update Logo (Optional)</label>
-                        <input type="file" id="edit-ad-logo" name="logo" class="w-full border border-[#EAE3D9] bg-white p-2 text-sm rounded-lg" accept="image/*">
+                        <input type="file" id="edit-promo-logo" name="logo" class="w-full border border-[#EAE3D9] bg-white p-2 text-sm rounded-lg" accept="image/*">
                     </div>
                 </div>
                 <div class="flex items-center gap-3 pt-2">
-                    <input type="checkbox" id="edit-ad-sticky" name="is_sticky" value="true" class="w-4 h-4 text-[#8C7362] rounded focus:ring-[#8C7362]">
+                    <input type="checkbox" id="edit-promo-sticky" name="is_sticky" value="true" class="w-4 h-4 text-[#8C7362] rounded focus:ring-[#8C7362]">
                     <label class="text-sm font-medium text-[#4A3B32]">Mark as Urgent / Persistent</label>
                 </div>
                 
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" onclick="closeModal('edit-ad-modal')" class="px-5 py-2.5 rounded-lg font-medium text-[#6B5A4E] hover:bg-[#F8F6F0]">Discard</button>
+                    <button type="button" onclick="closeModal('edit-promo-modal')" class="px-5 py-2.5 rounded-lg font-medium text-[#6B5A4E] hover:bg-[#F8F6F0]">Discard</button>
                     <button type="submit" class="bg-[#8C7362] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6B5A4E]">Commit Changes</button>
                 </div>
             </form>

@@ -643,7 +643,7 @@ app.put("/api/admin/books/:id", authenticateAdmin, async (req, res) => {
 
 // Public: Get Ads for Section
 // Public: Get Ads for Section (Optional: Filter by Sponsor)
-app.get("/api/ads/section/:section", async (req, res) => {
+app.get("/api/promos/section/:section", async (req, res) => {
   const { section } = req.params; // A, B, C
   const { sponsor_id } = req.query;
 
@@ -664,7 +664,7 @@ app.get("/api/ads/section/:section", async (req, res) => {
 });
 
 // Admin: Get All Ads
-app.get("/api/admin/ads", authenticateAdmin, async (req, res) => {
+app.get("/api/admin/promos", authenticateAdmin, async (req, res) => {
   try {
     const [ads] = await pool.execute(`
         SELECT a.*, s.name as sponsor_name
@@ -705,7 +705,7 @@ app.get("/api/books/:id", authenticateAdmin, async (req, res) => {
 });
 
 // Admin: Upload/Create Ad
-app.post("/api/admin/ads", authenticateAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'logo', maxCount: 1 }]), async (req, res) => {
+app.post("/api/admin/promos", authenticateAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'logo', maxCount: 1 }]), async (req, res) => {
   try {
     const { section, u_text, redirect_link, is_sticky, sponsor_id } = req.body;
     const files = req.files || {};
@@ -754,7 +754,7 @@ app.post("/api/admin/ads", authenticateAdmin, upload.fields([{ name: 'image', ma
 });
 
 // Admin: Toggle Ad Status
-app.post("/api/admin/ads/:id/toggle", authenticateAdmin, async (req, res) => {
+app.post("/api/admin/promos/:id/toggle", authenticateAdmin, async (req, res) => {
   try {
     await pool.execute("UPDATE advertisements SET is_active = NOT is_active WHERE id = ?", [req.params.id]);
     res.json({ success: true });
@@ -762,7 +762,7 @@ app.post("/api/admin/ads/:id/toggle", authenticateAdmin, async (req, res) => {
 });
 
 // Admin: Delete Ad
-app.delete("/api/admin/ads/:id", authenticateAdmin, async (req, res) => {
+app.delete("/api/admin/promos/:id", authenticateAdmin, async (req, res) => {
   try {
     await pool.execute("DELETE FROM advertisements WHERE id = ?", [req.params.id]);
     res.json({ success: true });
@@ -770,7 +770,7 @@ app.delete("/api/admin/ads/:id", authenticateAdmin, async (req, res) => {
 });
 
 // Admin: Update Ad
-app.put("/api/admin/ads/:id", authenticateAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'logo', maxCount: 1 }]), async (req, res) => {
+app.put("/api/admin/promos/:id", authenticateAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'logo', maxCount: 1 }]), async (req, res) => {
   try {
     const { section, u_text, redirect_link, is_sticky, sponsor_id } = req.body;
     const files = req.files || {};
