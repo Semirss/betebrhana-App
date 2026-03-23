@@ -261,14 +261,14 @@ class _HomeTabState extends State<_HomeTab> {
         }
 
         if (books.isEmpty && state is! LibraryLoading) {
-          return const Center(child: Text("No books found"));
+          return const Center(child: Text("please wait server busy"));
         }
 
         // Logic to simulate categories
         final featuredBooks = books.take(5).toList();
         final recommendedBooks = books.length > 5 ? books.sublist(5) : books;
-        final trendingBooks = books.reversed.take(6).toList();
-        final classicBooks = books.length > 3 ? books.sublist(2, math.min(books.length, 8)) : books;
+        final trendingBooks = books.reversed.take(5).toList();
+        final classicBooks = books.length > 5 ? books.sublist(2, math.min(books.length, 5)) : books;
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -770,14 +770,8 @@ class _CoverFlowCarouselState extends State<_CoverFlowCarousel> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star, color: Colors.amber, size: 14),
-                                const SizedBox(width: 4),
                                 Text(
-                                  "4.5", 
-                                  style: TextStyle(color: Colors.green[400], fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  " • ${widget.books[index].author}",
+                                  " ${widget.books[index].author}",
                                   style: const TextStyle(color: Color.fromARGB(255, 116, 115, 115)), 
                                 ),
                               ],
@@ -1289,7 +1283,7 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.withOpacity(0.6),
+              color: Colors.white.withOpacity(0.8),
               letterSpacing: 1.0,
             ),
           ),
@@ -1377,11 +1371,11 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
                                 if (ad['logo_path'] != null &&
                                     _getImageUrl(ad['logo_path']).isNotEmpty)
                                   Container(
-                                    width: 42,
-                                    height: 42,
+                                    width: 35,
+                                    height: 35,
                                     margin: const EdgeInsets.only(right: 12),
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(5),
                                       border: Border.all(color: Colors.white24, width: 1),
                                       image: DecorationImage(
                                         image: CachedNetworkImageProvider(_getImageUrl(ad['logo_path'])),
@@ -1394,12 +1388,10 @@ class _HeroAdSliderState extends State<_HeroAdSlider> {
                                     child: Text(
                                       ad['u_text'],
                                       style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
+                                        color: Colors.grey,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        shadows: [
-                                          Shadow(color: Colors.black87, blurRadius: 8),
-                                        ],
+                                        
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
