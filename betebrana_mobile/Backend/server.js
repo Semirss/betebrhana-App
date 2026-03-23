@@ -967,28 +967,37 @@ app.get("/api/books/:id/read", authenticateToken, async (req, res) => {
 
 
 // Upload book endpoint (for admin)
-app.post("/api/books/upload", upload.single("document"), async (req, res) => {
+app.post("/api/books/upload", upload.fields([{ name: "document" }, { name: "cover_image" }]), async (req, res) => {
   try {
     const { title, author, description, total_copies } = req.body;
-    const file = req.file;
+    
+    const documentFile = req.files && req.files["document"] ? req.files["document"][0] : null;
+    const coverFile = req.files && req.files["cover_image"] ? req.files["cover_image"][0] : null;
 
-    if (!file) {
-      return res.status(400).json({ error: "No file uploaded" });
+    if (!documentFile) {
+      return res.status(400).json({ error: "No document file uploaded" });
     }
 
     // Determine file type
-    const fileExt = path.extname(file.originalname).toLowerCase();
+    const fileExt = path.extname(documentFile.originalname).toLowerCase();
     let fileType = "txt";
     if (fileExt === ".pdf") fileType = "pdf";
     else if (fileExt === ".doc") fileType = "doc";
     else if (fileExt === ".docx") fileType = "docx";
+    else if (fileExt === ".epub") fileType = "epub";
 
     // Upload book document to GitHub
-    const githubUrl = await uploadToGitHub(file.buffer, file.originalname, "documents");
+    const githubUrl = await uploadToGitHub(documentFile.buffer, documentFile.originalname, "documents");
+
+    // Upload cover image to GitHub if provided
+    let coverUrl = null;
+    if (coverFile) {
+      coverUrl = await uploadToGitHub(coverFile.buffer, coverFile.originalname, "covers");
+    }
 
     // Insert book into database
     const [result] = await pool.execute(
-      "INSERT INTO books (title, author, description, total_copies, available_copies, file_path, file_type, file_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO books (title, author, description, total_copies, available_copies, file_path, file_type, file_size, cover_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         title,
         author,
@@ -997,7 +1006,8 @@ app.post("/api/books/upload", upload.single("document"), async (req, res) => {
         total_copies || 1,
         githubUrl,
         fileType,
-        file.size,
+        documentFile.size,
+        coverUrl
       ]
     );
 

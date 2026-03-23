@@ -266,7 +266,15 @@
                 <input type="text" name="title" placeholder="Literature Title" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
                 <input type="text" name="author" placeholder="Author/Creator" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required>
                 <textarea name="description" placeholder="Synopsis" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none rows-3"></textarea>
-                <input type="file" name="document" class="w-full border border-[#EAE3D9] bg-white p-2 rounded-lg" required>
+                <input type="number" name="total_copies" placeholder="Total Copies (e.g. 1)" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg focus:ring-2 focus:ring-[#AA8B78] outline-none" required min="1" value="1">
+                <div>
+                   <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Book Document (PDF/EPUB/TXT)</label>
+                   <input type="file" name="document" class="w-full border border-[#EAE3D9] bg-white p-2 rounded-lg" required>
+                </div>
+                <div>
+                   <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Cover Image (Optional)</label>
+                   <input type="file" name="cover_image" accept="image/*" class="w-full border border-[#EAE3D9] bg-white p-2 rounded-lg">
+                </div>
                 <div class="flex justify-end gap-3 pt-4">
                     <button type="button" onclick="closeModal('upload-book-modal')" class="px-5 py-2.5 rounded-lg font-medium text-[#6B5A4E] hover:bg-[#F8F6F0]">Cancel</button>
                     <button type="submit" class="bg-[#8C7362] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#6B5A4E]">Ingest Title</button>

@@ -10,6 +10,8 @@ import 'package:betebrana_mobile/core/config/app_config.dart';
 import 'package:betebrana_mobile/core/services/encryption_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:betebrana_mobile/core/network/dio_client.dart';
+import 'package:dio/dio.dart';
 
 class DownloadedBookMetadata {
   DownloadedBookMetadata({
@@ -225,14 +227,14 @@ Future<void> _clearDownloadsForUser(String userId) async {
       }
 
       // Download content
-      final content = await _downloadBookContent(book.id);
-      print('Downloaded content length: ${content.length} characters');
+      final contentBytes = await _downloadBookContent(book.id);
+      print('Downloaded content length: ${contentBytes.length} bytes');
       
       // Encrypt and save
       await _saveEncryptedContent(
         bookId: book.id,
         userId: userId,
-        content: content,
+        contentBytes: contentBytes,
         expiresAt: rentalExpiry,
         book: book,
       );
@@ -244,36 +246,33 @@ Future<void> _clearDownloadsForUser(String userId) async {
     }
   }
 
-  Future<String> _downloadBookContent(String bookId) async {
-    final downloadUrl = '${AppConfig.baseApiUrl}/books/$bookId/download-test';
+  Future<Uint8List> _downloadBookContent(String bookId) async {
+    final downloadUrl = '/books/$bookId/read';
+    print('Downloading binary from proxy: $downloadUrl');
     
-    print('Downloading from: $downloadUrl');
-    
-    final httpClient = HttpClient();
-    final request = await httpClient.getUrl(Uri.parse(downloadUrl));
-    final response = await request.close();
+    final dio = DioClient.instance.dio;
+    final response = await dio.get<List<int>>(
+      downloadUrl,
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(minutes: 5),
+      ),
+    );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 || response.data == null) {
       throw Exception('Failed to download book: ${response.statusCode}');
     }
 
-    final jsonResponse = await response.transform(utf8.decoder).join();
-    final parsed = json.decode(jsonResponse);
+    final contentBytes = Uint8List.fromList(response.data!);
+    print('Download successful, content length: ${contentBytes.length} bytes');
     
-    if (!parsed['success']) {
-      throw Exception(parsed['error'] ?? 'Download failed');
-    }
-    
-    final content = parsed['book']['content'];
-    print('Download successful, content type: ${content.runtimeType}, first 100 chars: ${content.substring(0, content.length > 100 ? 100 : content.length)}');
-    
-    return content;
+    return contentBytes;
   }
 
   Future<void> _saveEncryptedContent({
     required String bookId,
     required String userId,
-    required String content,
+    required Uint8List contentBytes,
     required DateTime expiresAt,
     required Book book,
   }) async {
@@ -290,10 +289,9 @@ Future<void> _clearDownloadsForUser(String userId) async {
 
     try {
       // Encrypt content
-      final plainBytes = Uint8List.fromList(utf8.encode(content));
-      print('Plain bytes length: ${plainBytes.length}');
+      print('Plain bytes length: ${contentBytes.length}');
       
-      final encrypted = await _encryptionService.encryptBytes(plainBytes);
+      final encrypted = await _encryptionService.encryptBytes(contentBytes);
       print('Encrypted bytes length: ${encrypted.length}');
       
       // Save encrypted file
@@ -364,10 +362,14 @@ Future<void> _clearDownloadsForUser(String userId) async {
         final decrypted = await _encryptionService.decryptBytes(encrypted);
         print('Decryption successful, got ${decrypted.length} decrypted bytes');
         
-        final content = utf8.decode(decrypted);
-        print('Decoded to string, length: ${content.length} characters');
-        
-        return content;
+        try {
+          final content = utf8.decode(decrypted);
+          print('Decoded to string, length: ${content.length} characters (TXT format)');
+          return content;
+        } catch (e) {
+          print('Failed to decode as UTF-8 string. This is expected for PDF and EPUB binary files.');
+          return null; // Caller should use getDecryptedBookFilePath for binary
+        }
       } catch (e) {
         print('Error during decryption: $e');
         print('This might be due to:');
@@ -388,6 +390,42 @@ Future<void> _clearDownloadsForUser(String userId) async {
       }
     } catch (e) {
       print('Error decrypting book: $e');
+      return null;
+    }
+  }
+
+  Future<String?> getDecryptedBookFilePath(int bookId, String fileExtension) async {
+    try {
+      final userId = await _getCurrentUserId();
+      if (userId == null) {
+        print('No user ID, cannot decrypt book copy');
+        return null;
+      }
+
+      final metadata = await _getBookMetadata(bookId.toString(), userId);
+      if (metadata == null) return null;
+
+      final file = File(metadata.path);
+      if (!await file.exists()) return null;
+
+      final encrypted = await file.readAsBytes();
+      
+      try {
+        final decrypted = await _encryptionService.decryptBytes(encrypted);
+        
+        final tempDir = await getTemporaryDirectory();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final tempFile = File('${tempDir.path}/temp_book_${bookId}_$timestamp.$fileExtension');
+        await tempFile.writeAsBytes(decrypted, flush: true);
+        
+        print('Created temporary decrypted file at: ${tempFile.path}');
+        return tempFile.path;
+      } catch (e) {
+        print('Error during binary decryption: $e');
+        return null;
+      }
+    } catch (e) {
+      print('Error getting decrypted book file path: $e');
       return null;
     }
   }
@@ -476,7 +514,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
         description: entry.description,
         coverImagePath: entry.coverImagePath,
         filePath: entry.path,
-        fileType: 'txt',
+        fileType: book.fileType ?? 'txt', // Keep orginal type instead of hardcoding txt
         availableCopies: 0,
         totalCopies: 0,
         queueInfo: null,

@@ -147,7 +147,7 @@ function renderBooks() {
 async function handleUploadBook(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const res = await apiFetch('/admin/books/upload', {
+    const res = await apiFetch('/books/upload', {
         method: 'POST',
         body: formData
     });

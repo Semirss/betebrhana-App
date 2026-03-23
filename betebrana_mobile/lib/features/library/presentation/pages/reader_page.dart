@@ -19,6 +19,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:epub_view/epub_view.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage({super.key, required this.book, this.rentalDueDate, this.sponsorId});
@@ -40,6 +41,8 @@ class _ReaderPageState extends State<ReaderPage>
   DateTime? _offlineExpiresAt;
   
   String? _pdfPath;
+  EpubController? _epubController;
+  String? _tempDecryptedFilePath;
 
   // New state variables
   double _textScale = 1.0;
@@ -261,6 +264,21 @@ class _ReaderPageState extends State<ReaderPage>
   @override
   void dispose() {
     _adCountdownTimer?.cancel();
+    _epubController?.dispose();
+    
+    // Securely delete temporary file after viewing to maintain offline encryption
+    if (_tempDecryptedFilePath != null) {
+      try {
+        final f = File(_tempDecryptedFilePath!);
+        if (f.existsSync()) {
+          f.deleteSync();
+          print('Securely deleted temporary decrypted file: $_tempDecryptedFilePath');
+        }
+      } catch (e) {
+        print('Error deleting secure temp file: $e');
+      }
+    }
+
     // Restore system UI overlays
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: SystemUiOverlay.values);
@@ -270,21 +288,48 @@ class _ReaderPageState extends State<ReaderPage>
   void _initTxtFuture() {
     final type = (widget.book.fileType ?? '').toLowerCase();
 
-    // If book is downloaded and has local file path, read from local
+    // If book is downloaded and has local file path, read from local encrypted storage
     if (widget.book.isDownloaded == true && widget.book.localFilePath != null) {
-      if (type == 'pdf') {
-         setState(() => _pdfPath = widget.book.localFilePath);
+      if (type == 'pdf' || type == 'epub') {
+         _loadDecryptedBinary(type);
+         _txtFuture = Future.value('');
       } else {
          _txtFuture = _loadLocalTxtContent(widget.book);
       }
     } else if (type == 'txt') {
       // Fall back to server loading if not downloaded
       _txtFuture = _loadTxtContent(widget.book);
-    } else if (type == 'pdf') {
-       _downloadPdfForViewing();
+    } else if (type == 'pdf' || type == 'epub') {
+       _downloadBinaryForViewing(type);
        _txtFuture = Future.value('');
     } else {
       _txtFuture = Future.value('');
+    }
+  }
+
+  Future<void> _loadDecryptedBinary(String type) async {
+    final bookId = int.tryParse(widget.book.id);
+    if (bookId == null) return;
+    
+    final downloadService = BookDownloadService();
+    // This securely decrypts it to a temp path
+    final tempPath = await downloadService.getDecryptedBookFilePath(bookId, type);
+    
+    if (tempPath != null && mounted) {
+      _tempDecryptedFilePath = tempPath;
+      if (type == 'pdf') {
+        setState(() => _pdfPath = tempPath);
+      } else if (type == 'epub') {
+        setState(() {
+          _epubController = EpubController(
+            document: EpubDocument.openFile(File(tempPath)),
+          );
+        });
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error decrypting book file. Please try downloading again.')),
+      );
     }
   }
 
@@ -360,19 +405,30 @@ class _ReaderPageState extends State<ReaderPage>
     }
   }
 
-  Future<void> _downloadPdfForViewing() async {
+  Future<void> _downloadBinaryForViewing(String extension) async {
     try {
       final dio = DioClient.instance.dio;
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/${widget.book.id}.pdf');
+      final file = File('${dir.path}/${widget.book.id}.$extension');
       // Download via secure proxy — auth header is set automatically by DioClient
       await dio.download('/books/${widget.book.id}/read', file.path);
-      if (mounted) setState(() => _pdfPath = file.path);
+      
+      if (mounted) {
+        if (extension == 'pdf') {
+          setState(() => _pdfPath = file.path);
+        } else if (extension == 'epub') {
+          setState(() {
+            _epubController = EpubController(
+              document: EpubDocument.openFile(file),
+            );
+          });
+        }
+      }
     } catch (e) {
-      print("Error downloading PDF for view: $e");
+      print("Error downloading binary for view: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading PDF: $e')),
+          SnackBar(content: Text('Error loading book file: $e')),
         );
       }
     }
@@ -488,7 +544,7 @@ class _ReaderPageState extends State<ReaderPage>
                   )
                 : null,
             actions: [
-              if (type == 'txt') ...[
+              if (type == 'txt' || type == 'epub') ...[
                 IconButton(
                   onPressed: _zoomOut,
                   icon: const Icon(Icons.remove_circle_outline, size: 20),
@@ -628,7 +684,13 @@ class _ReaderPageState extends State<ReaderPage>
                           },
                       )
                       : const Center(child: CircularProgressIndicator()))
-                  : const Center(child: Text('Format not supported')),
+                  : type == 'epub'
+                      ? (_epubController != null
+                          ? EpubView(
+                              controller: _epubController!,
+                            )
+                          : const Center(child: CircularProgressIndicator()))
+                      : const Center(child: Text('Format not supported')),
               
               // Interstitial Ad Overlay
               if (_showInterstitial && _sharedAd != null)
