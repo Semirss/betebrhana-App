@@ -24,6 +24,7 @@ class DownloadedBookMetadata {
     required this.author,
     required this.coverImagePath,
     required this.description,
+    this.fileType = 'txt',
   });
 
   final String bookId;
@@ -35,6 +36,7 @@ class DownloadedBookMetadata {
   final String author;
   final String? coverImagePath;
   final String? description;
+  final String fileType;
 
   bool get isExpired => expiresAt.isBefore(DateTime.now().toUtc());
 
@@ -49,6 +51,7 @@ class DownloadedBookMetadata {
       'author': author,
       'coverImagePath': coverImagePath,
       'description': description,
+      'fileType': fileType,
     };
   }
 
@@ -63,6 +66,7 @@ class DownloadedBookMetadata {
       author: json['author'] as String,
       coverImagePath: json['coverImagePath'] as String?,
       description: json['description'] as String?,
+      fileType: json['fileType'] as String? ?? 'txt',
     );
   }
 }
@@ -313,6 +317,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
         author: book.author,
         coverImagePath: book.coverImagePath,
         description: book.description,
+        fileType: book.fileType ?? 'txt',
       );
 
       // Save entry to preferences
@@ -514,7 +519,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
         description: entry.description,
         coverImagePath: entry.coverImagePath,
         filePath: entry.path,
-        fileType: book.fileType ?? 'txt', // Keep orginal type instead of hardcoding txt
+        fileType: entry.fileType, // Keep orginal type instead of hardcoding txt
         availableCopies: 0,
         totalCopies: 0,
         queueInfo: null,
