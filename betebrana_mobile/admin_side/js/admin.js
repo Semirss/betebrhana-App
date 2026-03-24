@@ -175,16 +175,11 @@ function openEditBookModal(id) {
 async function handleSaveBookEdit(e) {
     e.preventDefault();
     const id = document.getElementById('edit-book-id').value;
-    const title = document.getElementById('edit-book-title').value;
-    const author = document.getElementById('edit-book-author').value;
-    const description = document.getElementById('edit-book-desc').value;
-    const available_copies = parseInt(document.getElementById('edit-book-avail').value);
-    const total_copies = parseInt(document.getElementById('edit-book-total').value);
+    const formData = new FormData(e.target);
 
     const res = await apiFetch(`/admin/books/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, author, description, available_copies, total_copies })
+        body: formData
     });
     if (res.ok) {
         closeModal('edit-book-modal');

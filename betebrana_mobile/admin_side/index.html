@@ -334,25 +334,33 @@
                 <input type="hidden" id="edit-book-id">
                 <div>
                     <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Title</label>
-                    <input type="text" id="edit-book-title" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
+                    <input type="text" id="edit-book-title" name="title" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Author</label>
-                    <input type="text" id="edit-book-author" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
+                    <input type="text" id="edit-book-author" name="author" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Description</label>
-                    <textarea id="edit-book-desc" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none rows-2"></textarea>
+                    <textarea id="edit-book-desc" name="description" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none rows-2"></textarea>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Available Copies</label>
-                        <input type="number" id="edit-book-avail" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-red-400" required>
+                        <input type="number" id="edit-book-avail" name="available_copies" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-red-400" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Total Copies</label>
-                        <input type="number" id="edit-book-total" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
+                        <input type="number" id="edit-book-total" name="total_copies" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none" required>
                     </div>
+                </div>
+                <div>
+                   <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Update Document (Optional)</label>
+                   <input type="file" id="edit-book-document" name="document" class="w-full border border-[#EAE3D9] bg-white p-2 text-sm rounded-lg" accept=".pdf,.epub,.txt">
+                </div>
+                <div>
+                   <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Update Cover Image (Optional)</label>
+                   <input type="file" id="edit-book-cover" name="cover_image" class="w-full border border-[#EAE3D9] bg-white p-2 text-sm rounded-lg" accept="image/*">
                 </div>
                 <div class="flex justify-end gap-3 pt-4">
                     <button type="button" onclick="closeModal('edit-book-modal')" class="px-5 py-2.5 rounded-lg font-medium text-[#6B5A4E] hover:bg-[#F8F6F0]">Discard</button>

@@ -628,15 +628,46 @@ app.delete("/api/admin/books/:id", authenticateAdmin, async (req, res) => {
 });
 
 // Update Book Metadata
-app.put("/api/admin/books/:id", authenticateAdmin, async (req, res) => {
+app.put("/api/admin/books/:id", authenticateAdmin, upload.fields([{ name: 'document', maxCount: 1 }, { name: 'cover_image', maxCount: 1 }]), async (req, res) => {
   const { title, author, description, available_copies, total_copies } = req.body;
+  const bookId = req.params.id;
+
   try {
-    await pool.execute(
-      "UPDATE books SET title = ?, author = ?, description = ?, available_copies = ?, total_copies = ? WHERE id = ?",
-      [title, author, description, available_copies, total_copies, req.params.id]
-    );
+    const documentFile = req.files && req.files["document"] ? req.files["document"][0] : null;
+    const coverFile = req.files && req.files["cover_image"] ? req.files["cover_image"][0] : null;
+
+    let updateQuery = "UPDATE books SET title = ?, author = ?, description = ?, available_copies = ?, total_copies = ?";
+    let queryParams = [title, author, description, available_copies, total_copies];
+
+    if (documentFile) {
+        const fileExt = path.extname(documentFile.originalname).toLowerCase();
+        let fileType = "txt";
+        if (fileExt === ".pdf") fileType = "pdf";
+        else if (fileExt === ".doc") fileType = "doc";
+        else if (fileExt === ".docx") fileType = "docx";
+        else if (fileExt === ".epub") fileType = "epub";
+
+        const githubUrl = await uploadToGitHub(documentFile.buffer, documentFile.originalname, "documents");
+        updateQuery += ", file_path = ?, file_type = ?, file_size = ?";
+        queryParams.push(githubUrl, fileType, documentFile.size);
+    }
+
+    if (coverFile) {
+        const coverUrl = await uploadToGitHub(coverFile.buffer, coverFile.originalname, "covers");
+        updateQuery += ", cover_image = ?";
+        queryParams.push(coverUrl);
+    }
+
+    updateQuery += " WHERE id = ?";
+    queryParams.push(bookId);
+
+    await pool.execute(updateQuery, queryParams);
+    
     res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { 
+    console.error("Update book error:", e);
+    res.status(500).json({ error: e.message }); 
+  }
 });
 
 // --- Ad Management ---
