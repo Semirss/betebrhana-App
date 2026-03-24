@@ -916,57 +916,8 @@ Future<void> _returnCurrentBook() async {
     // Availability badge
     badges.add(_buildAvailabilityBadge());
     badges.add(_buildSponsorBadge());
-    
-    // Downloaded badge
-    if (_isDownloaded) {
-      badges.add(
-        Container(
-          margin: const EdgeInsets.only(left: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.download_done, size: 14, color: Colors.green),
-              const SizedBox(width: 4),
-              Text(
-                'DOWNLOADED',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    
-    // Copies information as a badge
-    badges.add(
-      Container(
-        margin: const EdgeInsets.only(left: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.purple.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.purple),
-        ),
-        child: Text(
-          '${book.availableCopies}/${book.totalCopies} copies',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.purple,
-          ),
-        ),
-      ),
-    );
+           
+  
     
     return Wrap(
       spacing: 8,
@@ -976,111 +927,167 @@ Future<void> _returnCurrentBook() async {
   }
 
   Widget _buildActionButton() {
-    if (_activeRental != null) {
-      // Return button when book is borrowed
-      return ElevatedButton.icon(
-        onPressed: (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color.fromARGB(176, 172, 88, 9),
-          foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          elevation: 4,
-          shadowColor: Colors.red.withOpacity(0.3),
+    if (_loadingStatus) {
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        icon: const Icon(Icons.undo),
-        label: const Text(
-          'Return Book',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        child: ElevatedButton.icon(
+          onPressed: null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey.shade300,
+            disabledBackgroundColor: Colors.grey.shade300,
+            disabledForegroundColor: Colors.grey.shade600,
+            minimumSize: const Size.fromHeight(60),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
+          ),
+          icon: SizedBox(
+            width: 20, height: 20, 
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey.shade500)
+          ),
+          label: const Text('Loading details...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ),
+      );
+    } else if (_activeRental != null) {
+      // Return button when book is borrowed
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.redAccent.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ElevatedButton.icon(
+          onPressed: (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.redAccent,
+            minimumSize: const Size.fromHeight(60),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            elevation: 0,
+          ),
+          icon: const Icon(Icons.undo),
+          label: const Text('Return Book', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       );
     } else if (_canRent) {
       // Rent/borrow button
-      return ElevatedButton.icon(
-        onPressed: (!_actionInProgress && !_isOffline) ? _rentCurrentBook : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: (widget.book.queueInfo?.hasReservation ?? false) 
-              ? Colors.green 
-              : Color.fromARGB(255, 245, 152, 45),
-
-          foregroundColor: const Color.fromARGB(255, 0, 0, 0),
-          minimumSize: const Size.fromHeight(56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+      final isReserved = widget.book.queueInfo?.hasReservation ?? false;
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: isReserved 
+                ? [Colors.teal.shade400, Colors.teal.shade700]
+                : [const Color(0xFFE6A15C), const Color(0xFFD68B3F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          elevation: 4,
-          shadowColor: (widget.book.queueInfo?.hasReservation ?? false)
-              ? Colors.green.withOpacity(0.3)
-              : Theme.of(context).primaryColor.withOpacity(0.3),
+          boxShadow: [
+            BoxShadow(
+              color: (isReserved ? Colors.teal : const Color(0xFFD68B3F)).withOpacity(0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        icon: (widget.book.queueInfo?.hasReservation ?? false)
-            ? const Icon(Icons.access_time_filled)
-            : const Icon(Icons.library_add),
-        label: Text(
-          (widget.book.queueInfo?.hasReservation ?? false)
-              ? 'BORROW NOW (Reserved!)'
-              : 'Borrow (21 days)',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        child: ElevatedButton.icon(
+          onPressed: (!_actionInProgress && !_isOffline) ? _rentCurrentBook : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(60),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
+            shadowColor: Colors.transparent,
+          ),
+          icon: isReserved ? const Icon(Icons.access_time_filled) : const Icon(Icons.library_add),
+          label: Text(
+            isReserved ? 'BORROW NOW (Reserved!)' : 'Borrow (21 days)',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          ),
         ),
       );
     } else if (_canJoinQueue) {
-      // Join queue button
-      return ElevatedButton.icon(
-        onPressed: (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          elevation: 4,
-          shadowColor: Colors.orange.withOpacity(0.3),
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        icon: const Icon(Icons.schedule),
-        label: const Text(
-          'Join Queue',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        child: ElevatedButton.icon(
+          onPressed: (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange.shade400,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(60),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
+          ),
+          icon: const Icon(Icons.schedule),
+          label: const Text('Join Queue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       );
     } else if (_canLeaveQueue) {
-      // Leave queue button
-      return ElevatedButton.icon(
-        onPressed: (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.grey.shade700,
-          foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          elevation: 4,
-          shadowColor: Colors.grey.withOpacity(0.3),
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        icon: const Icon(Icons.cancel),
-        label: const Text(
-          'Leave Queue',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        child: ElevatedButton.icon(
+          onPressed: (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey.shade800,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(60),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
+          ),
+          icon: const Icon(Icons.cancel),
+          label: const Text('Leave Queue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       );
     } else {
-      // Disabled state
-      return ElevatedButton.icon(
-        onPressed: null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.grey.shade800,
-          foregroundColor: Colors.grey.shade400,
-          minimumSize: const Size.fromHeight(56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+      return Container(
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
+        child: ElevatedButton.icon(
+          onPressed: null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey.shade200,
+            disabledBackgroundColor: Colors.grey.shade200,
+            disabledForegroundColor: Colors.grey.shade400,
+            minimumSize: const Size.fromHeight(60),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            elevation: 0,
           ),
-        ),
-        icon: const Icon(Icons.block),
-        label: const Text(
-          'Not Available',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          icon: const Icon(Icons.block),
+          label: const Text('Not Available', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         ),
       );
     }
@@ -1094,96 +1101,87 @@ Future<void> _returnCurrentBook() async {
       children: [
         _buildActionButton(),
         const SizedBox(height: 16),
-        // Download/Remove download button
-        SizedBox(
-          width: double.infinity,
-          child: _isDownloaded
-              ? ElevatedButton.icon(
-                  onPressed: (!_actionInProgress) ? _removeDownloadedBook : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.withOpacity(0.1),
-                    foregroundColor: Colors.red,
-                    minimumSize: const Size.fromHeight(50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                      side: BorderSide(color: Colors.red.withOpacity(0.3)),
-                    ),
-                  ),
-                  icon: const Icon(Icons.delete),
-                  label: const Text('Remove Download'),
-                )
-              : ElevatedButton.icon(
-                  onPressed: (!_actionInProgress && !_downloading && _canDownload) 
-                      ? _downloadCurrentBook 
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _canDownload 
-                        ? (isDark ? Colors.white : Colors.black87)
-                        : Colors.grey.withOpacity(0.1),
-                    foregroundColor: _canDownload 
-                        ? (isDark ? Colors.black : Colors.white)
-                        : Colors.grey,
-                    minimumSize: const Size.fromHeight(50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                      side: BorderSide(
-                        color: _canDownload 
-                            ? Theme.of(context).primaryColor.withOpacity(0.3)
-                            : Colors.grey.withOpacity(0.3),
-                      ),
-                    ),
-                  ),
-                  icon: _downloading 
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
-                        )
-                      : const Icon(Icons.download),
-                  label: Text(_downloading ? 'Downloading...' : 'Download for Offline'),
-                ),
-        ),
-        const SizedBox(height: 12),
         
-        // Read button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: (!_actionInProgress && _canRead) 
-              ? () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ReaderPage(
-                        book: widget.book,
-                        rentalDueDate: _activeRental?.dueDate,
-                        sponsorId: _selectedSponsorId,
-                      ),
-                    ),
-                  );
-                } 
-              : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(211, 241, 126, 19).withOpacity(0.5),
-              foregroundColor: _canRead 
-                  ? const Color.fromARGB(255, 255, 255, 255) 
-                  : const Color.fromARGB(255, 231, 227, 224),
-              minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-                side: BorderSide(
-                  color: _canRead 
-                      ? Colors.blue.withOpacity(0.3)
-                      : Colors.grey.withOpacity(0.3),
-                ),
+        // Read button - High priority when book is active
+        if (_canRead) ...[
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4A90E2), Color(0xFF0052D4)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            icon: const Icon(Icons.menu_book),
-            label: const Text('Read Book'),
+            child: ElevatedButton.icon(
+              onPressed: (!_actionInProgress) 
+                ? () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ReaderPage(
+                          book: widget.book,
+                          rentalDueDate: _activeRental?.dueDate,
+                          sponsorId: _selectedSponsorId,
+                        ),
+                      ),
+                    );
+                  } 
+                : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                minimumSize: const Size.fromHeight(60),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+                shadowColor: Colors.transparent,
+              ),
+              icon: const Icon(Icons.menu_book),
+              label: const Text('Read Book', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+        ],
+
+        // Download/Remove download actions
+        if (_canDownload || _isDownloaded)
+          Row(
+            children: [
+              Expanded(
+                child: _isDownloaded
+                  ? OutlinedButton.icon(
+                      onPressed: (!_actionInProgress) ? _removeDownloadedBook : null,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      label: const Text('Remove offline copy', style: TextStyle(fontWeight: FontWeight.w600)),
+                    )
+                  : OutlinedButton.icon(
+                      onPressed: (!_actionInProgress && !_downloading) ? _downloadCurrentBook : null,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: isDark ? Colors.white70 : Colors.black87,
+                        side: BorderSide(color: isDark ? Colors.white30 : Colors.black26),
+                        minimumSize: const Size.fromHeight(50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: _downloading 
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.cloud_download_outlined, size: 20),
+                      label: Text(_downloading ? 'Downloading...' : 'Download for Offline', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -1269,18 +1267,41 @@ Future<void> _returnCurrentBook() async {
                           book.title.isEmpty ? 'Untitled' : book.title,
                           style: theme.textTheme.headlineMedium!.copyWith(
                             color: isDark ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
                           ),
                         ),
                         const SizedBox(height: 8),
                         
                         Text(
-                          book.author.isEmpty ? 'Unknown author' : book.author,
+                          book.author.isEmpty ? 'Unknown author' : 'By ${book.author}',
                           style: theme.textTheme.titleMedium!.copyWith(
                             color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
+                        
+                        // Description section immediately follows Title & Author
+                        if ((book.description ?? '').isNotEmpty) ...[
+                          Text(
+                            'About this book',
+                            style: theme.textTheme.titleMedium!.copyWith(
+                              color: isDark ? Colors.white : Colors.black87,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            book.description!,
+                            style: theme.textTheme.bodyMedium!.copyWith(
+                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                              height: 1.6,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                        ],
                         
                         // Key info badges
                         _buildKeyInfoBadges(),
@@ -1296,7 +1317,7 @@ Future<void> _returnCurrentBook() async {
                         
                         if (_queueStatusText().isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.only(top: 12),
                             child: _buildStatusIndicator(
                               Icons.groups,
                               _queueStatusText(),
@@ -1304,34 +1325,13 @@ Future<void> _returnCurrentBook() async {
                             ),
                           ),
                         
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 36),
                         
-                        // Secondary actions
+                        // Action buttons right at the bottom of the content
                         _buildSecondaryActions(),
                         
-                        const SizedBox(height: 32),
-                        
-                        // Description section
-                        if ((book.description ?? '').isNotEmpty) ...[
-                          Text(
-                            'About this book',
-                            style: theme.textTheme.titleLarge!.copyWith(
-                              color: isDark ? Colors.white : Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            book.description!,
-                            style: theme.textTheme.bodyLarge!.copyWith(
-                              color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
-                              height: 1.6,
-                            ),
-                          ),
-                        ],
-                        
                         // Bottom padding
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
