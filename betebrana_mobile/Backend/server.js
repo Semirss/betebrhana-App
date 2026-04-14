@@ -42,16 +42,16 @@ async function uploadToGitHub(fileBuffer, originalName, folderPath) {
   const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
   const fileName = uniqueSuffix + path.extname(originalName);
   const basePath = process.env.GITHUB_BASE_PATH || "";
-  
+
   // Combine basePath, folderPath and fileName (e.g. "betebrana_mobile/Backend/documents/file.jpg")
   // Replace Windows backslashes with forward slashes for the GitHub API URL
-  const filePath = basePath 
-    ? `${basePath}/${folderPath}/${fileName}`.replace(/\/+/g, '/') 
+  const filePath = basePath
+    ? `${basePath}/${folderPath}/${fileName}`.replace(/\/+/g, '/')
     : `${folderPath}/${fileName}`;
 
   const contentEncoded = fileBuffer.toString("base64");
   const url = `https://api.github.com/repos/${repoSlug}/contents/${filePath}`;
-  
+
   await axios.put(
     url,
     {
@@ -525,13 +525,13 @@ app.put("/api/admin/sponsors/:id", authenticateAdmin, async (req, res) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      
+
       // Update sponsor
       await connection.execute("UPDATE sponsors SET name = ?, contact_info = ? WHERE id = ?", [name, contact_info, req.params.id]);
-      
+
       // Update corresponding u_text in ads
       await connection.execute("UPDATE advertisements SET u_text = ? WHERE sponsor_id = ?", [name, req.params.id]);
-      
+
       await connection.commit();
       res.json({ success: true });
     } catch (err) {
@@ -640,33 +640,33 @@ app.put("/api/admin/books/:id", authenticateAdmin, upload.fields([{ name: 'docum
     let queryParams = [title, author, description, available_copies, total_copies];
 
     if (documentFile) {
-        const fileExt = path.extname(documentFile.originalname).toLowerCase();
-        let fileType = "txt";
-        if (fileExt === ".pdf") fileType = "pdf";
-        else if (fileExt === ".doc") fileType = "doc";
-        else if (fileExt === ".docx") fileType = "docx";
-        else if (fileExt === ".epub") fileType = "epub";
+      const fileExt = path.extname(documentFile.originalname).toLowerCase();
+      let fileType = "txt";
+      if (fileExt === ".pdf") fileType = "pdf";
+      else if (fileExt === ".doc") fileType = "doc";
+      else if (fileExt === ".docx") fileType = "docx";
+      else if (fileExt === ".epub") fileType = "epub";
 
-        const githubUrl = await uploadToGitHub(documentFile.buffer, documentFile.originalname, "documents");
-        updateQuery += ", file_path = ?, file_type = ?, file_size = ?";
-        queryParams.push(githubUrl, fileType, documentFile.size);
+      const githubUrl = await uploadToGitHub(documentFile.buffer, documentFile.originalname, "documents");
+      updateQuery += ", file_path = ?, file_type = ?, file_size = ?";
+      queryParams.push(githubUrl, fileType, documentFile.size);
     }
 
     if (coverFile) {
-        const coverUrl = await uploadToGitHub(coverFile.buffer, coverFile.originalname, "covers");
-        updateQuery += ", cover_image = ?";
-        queryParams.push(coverUrl);
+      const coverUrl = await uploadToGitHub(coverFile.buffer, coverFile.originalname, "covers");
+      updateQuery += ", cover_image = ?";
+      queryParams.push(coverUrl);
     }
 
     updateQuery += " WHERE id = ?";
     queryParams.push(bookId);
 
     await pool.execute(updateQuery, queryParams);
-    
+
     res.json({ success: true });
-  } catch (e) { 
+  } catch (e) {
     console.error("Update book error:", e);
-    res.status(500).json({ error: e.message }); 
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -1001,7 +1001,7 @@ app.get("/api/books/:id/read", authenticateToken, async (req, res) => {
 app.post("/api/books/upload", upload.fields([{ name: "document" }, { name: "cover_image" }]), async (req, res) => {
   try {
     const { title, author, description, total_copies } = req.body;
-    
+
     const documentFile = req.files && req.files["document"] ? req.files["document"][0] : null;
     const coverFile = req.files && req.files["cover_image"] ? req.files["cover_image"][0] : null;
 

@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #EC7D22;
+  --color-background-glass: rgba(255, 255, 255, 0.7);
+  --color-background-solid: #fdfcfb;
+}
+
+@layer base {
+  body {
+    @apply bg-zinc-100 text-zinc-900 font-sans antialiased;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior-y: none;
+    /* Soft gradient background for the desktop view outside the mobile frame */
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* The main app container which acts as the 'mobile' frame on desktop */
+  .app-container {
+    @apply max-w-[420px] w-full mx-auto min-h-screen bg-[var(--color-background-solid)] shadow-2xl relative overflow-x-hidden;
+    /* On very wide screens, make it float like a phone */
+    @media (min-width: 640px) {
+      @apply my-8 rounded-[40px] border-[8px] border-white/40 min-h-[85vh];
+      /* Glassmorphism effect for the surrounding frame */
+      backdrop-filter: blur(20px);
+    }
+  }
+
+  /* The bottom nav should be constrained within the mobile frame */
+  .bottom-nav {
+    @apply absolute bottom-0 left-0 right-0 h-16 border-t border-zinc-100 bg-white/80 backdrop-blur-md flex justify-around items-center z-50;
+    /* Ensure the notch/corners look right if we have rounded borders on desktop */
+    @media (min-width: 640px) {
+      @apply rounded-b-[32px];
+    }
+  }
+  
+  .nav-item {
+    @apply flex flex-col items-center justify-center w-full h-full text-zinc-400 transition-colors duration-200;
+  }
+  
+  .nav-item.active {
+    @apply text-primary font-bold;
+  }
+}
+
+/* Base custom scrollbar hidden */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -1,0 +1,5 @@
+# Firebase service account key - NEVER commit
+serviceAccountKey.json
+node_modules/
+.env
+functions/node_modules/

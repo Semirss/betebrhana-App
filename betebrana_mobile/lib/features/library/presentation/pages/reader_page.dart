@@ -320,9 +320,10 @@ class _ReaderPageState extends State<ReaderPage>
       if (type == 'pdf') {
         setState(() => _pdfPath = tempPath);
       } else if (type == 'epub') {
+        final bytes = await File(tempPath).readAsBytes();
         setState(() {
           _epubController = EpubController(
-            document: EpubDocument.openFile(File(tempPath)),
+            document: EpubDocument.openData(bytes),
           );
         });
       }
@@ -417,9 +418,10 @@ class _ReaderPageState extends State<ReaderPage>
         if (extension == 'pdf') {
           setState(() => _pdfPath = file.path);
         } else if (extension == 'epub') {
+          final bytes = await file.readAsBytes();
           setState(() {
             _epubController = EpubController(
-              document: EpubDocument.openFile(file),
+              document: EpubDocument.openData(bytes),
             );
           });
         }
