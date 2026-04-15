@@ -21,10 +21,10 @@
 @layer components {
   /* The main app container which acts as the 'mobile' frame on desktop */
   .app-container {
-    @apply max-w-[420px] w-full mx-auto min-h-screen bg-[var(--color-background-solid)] shadow-2xl relative overflow-x-hidden;
+    @apply max-w-[420px] w-full mx-auto h-screen bg-[var(--color-background-solid)] shadow-2xl relative overflow-hidden;
     /* On very wide screens, make it float like a phone */
     @media (min-width: 640px) {
-      @apply my-8 rounded-[40px] border-[8px] border-white/40 min-h-[85vh];
+      @apply my-8 rounded-[40px] border-[8px] border-white/40 h-[90vh];
       /* Glassmorphism effect for the surrounding frame */
       backdrop-filter: blur(20px);
     }
@@ -32,7 +32,7 @@
 
   /* The bottom nav should be constrained within the mobile frame */
   .bottom-nav {
-    @apply absolute bottom-0 left-0 right-0 h-16 border-t border-zinc-100 bg-white/80 backdrop-blur-md flex justify-around items-center z-50;
+    @apply flex-shrink-0 h-16 border-t border-zinc-100 bg-white/80 backdrop-blur-md flex justify-around items-center z-50;
     /* Ensure the notch/corners look right if we have rounded borders on desktop */
     @media (min-width: 640px) {
       @apply rounded-b-[32px];

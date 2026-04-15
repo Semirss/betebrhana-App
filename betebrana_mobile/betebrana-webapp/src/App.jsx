@@ -46,7 +46,7 @@ function App() {
       <Router>
         <div className="flex justify-center min-h-screen w-full items-center">
           <div className="app-container flex flex-col">
-            <div className="flex-1 pb-16 relative overflow-x-hidden overflow-y-auto w-full no-scrollbar">
+            <div className="flex-1 relative overflow-x-hidden overflow-y-auto w-full no-scrollbar">
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/discover" element={<DiscoverPage />} />

@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Create an axios instance pointing to the Render backend
+// Create an axios instance pointing to the backend
 const api = axios.create({
-  baseURL: 'https://betebrhana-app.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://betebrhana-app.onrender.com/api',
 });
 
 // Automatically attach JWT token to all requests

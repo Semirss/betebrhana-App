@@ -1,5 +1,5 @@
 import localforage from 'localforage';
-import axios from 'axios';
+import api from '../api';
 import { encryptBytes, decryptBytes } from './encryption.js';
 
 // Setup separated instances for cache and metadata
@@ -20,14 +20,8 @@ export async function hasDownloadedBook(bookId) {
 
 export async function downloadBook(bookId, bookMeta) {
   try {
-    const token = localStorage.getItem('access_token');
-    
-    // We assume the backend exposes the download URL, similar to Flutter
-    // You might need to adjust the exact endpoint to match the backend docs
-    const response = await axios.get(`https://betebrhana-app.onrender.com/api/books/${bookId}/download`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
+    // Note: server.js uses /api/books/:id/read to deliver the raw file stream
+    const response = await api.get(`/books/${bookId}/read`, {
       responseType: 'arraybuffer'
     });
 

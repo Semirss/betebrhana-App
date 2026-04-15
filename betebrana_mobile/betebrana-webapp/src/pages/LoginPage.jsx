@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -17,7 +17,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await axios.post('https://betebrhana-app.onrender.com/api/auth/login', {
+      const res = await api.post('/auth/login', {
         email, password
       });
       
