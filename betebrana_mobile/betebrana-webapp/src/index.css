@@ -1,58 +1,486 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────
+   Design tokens
+───────────────────────────────────────── */
 @theme {
-  --color-primary: #EC7D22;
-  --color-background-glass: rgba(255, 255, 255, 0.7);
-  --color-background-solid: #fdfcfb;
+  --color-primary:           #EC7D22;
+  --color-primary-light:     #fff7ed;
+  --color-background-solid:  #fdfcfb;
+  --color-background-outer:  #f0f0f0;
+  --sidebar-width:           232px;
 }
 
+/* ─────────────────────────────────────────
+   Base resets
+───────────────────────────────────────── */
 @layer base {
-  body {
-    @apply bg-zinc-100 text-zinc-900 font-sans antialiased;
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
     margin: 0;
     padding: 0;
-    overscroll-behavior-y: none;
-    /* Soft gradient background for the desktop view outside the mobile frame */
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
-    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+
+  body {
+    background: var(--color-background-outer);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #18181b;
   }
 }
 
+/* ─────────────────────────────────────────
+   Core layout
+───────────────────────────────────────── */
 @layer components {
-  /* The main app container which acts as the 'mobile' frame on desktop */
-  .app-container {
-    @apply max-w-[420px] w-full mx-auto h-screen bg-[var(--color-background-solid)] shadow-2xl relative overflow-hidden;
-    /* On very wide screens, make it float like a phone */
-    @media (min-width: 640px) {
-      @apply my-8 rounded-[40px] border-[8px] border-white/40 h-[90vh];
-      /* Glassmorphism effect for the surrounding frame */
-      backdrop-filter: blur(20px);
-    }
+
+  /* ── App root shell ── */
+  .app-root {
+    display: flex;
+    flex-direction: column;   /* mobile: stack vertically */
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--color-background-solid);
   }
 
-  /* The bottom nav should be constrained within the mobile frame */
+  /* ── Scrollable content area ── */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .main-content::-webkit-scrollbar { display: none; }
+
+  /* ─────────────────────────────────────
+     MOBILE bottom nav  (default / < 768px)
+  ───────────────────────────────────── */
   .bottom-nav {
-    @apply flex-shrink-0 h-16 border-t border-zinc-100 bg-white/80 backdrop-blur-md flex justify-around items-center z-50;
-    /* Ensure the notch/corners look right if we have rounded borders on desktop */
-    @media (min-width: 640px) {
-      @apply rounded-b-[32px];
-    }
+    flex-shrink: 0;
+    height: 64px;
+    border-top: 1px solid #e4e4e7;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 50;
   }
-  
+
   .nav-item {
-    @apply flex flex-col items-center justify-center w-full h-full text-zinc-400 transition-colors duration-200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    gap: 3px;
+    color: #a1a1aa;
+    text-decoration: none;
+    transition: color 0.2s;
   }
-  
-  .nav-item.active {
-    @apply text-primary font-bold;
+  .nav-item.active       { color: var(--color-primary); font-weight: 700; }
+  .nav-item:hover:not(.active) { color: #52525b; }
+
+  .nav-label { font-size: 10px; }
+
+  /* Desktop sidebar — hidden on mobile */
+  .desktop-sidebar { display: none; }
+
+  /* Mobile discover — shown on mobile, hidden on desktop */
+  .mobile-discover  { display: block; }
+  .desktop-discover { display: none; }
+
+
+  /* ─────────────────────────────────────
+     DESKTOP layout  (≥ 768px)
+     Spotify-style: fixed sidebar + main
+  ───────────────────────────────────── */
+  @media (min-width: 768px) {
+
+    body { background: #f0f0f0; }
+
+    /* Full-screen row layout — full viewport width, no centering */
+    .app-root {
+      flex-direction: row;
+      height: 100vh;
+      width: 100vw;
+      background: transparent;
+    }
+
+    /* Hide mobile bottom nav */
+    .bottom-nav { display: none; }
+
+    /* ── Left sidebar ── */
+    .desktop-sidebar {
+      display: flex;
+      flex-direction: column;
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      background: #ffffff;
+      border-right: 1px solid #e4e4e7;
+      padding: 20px 12px 24px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    .desktop-sidebar::-webkit-scrollbar { display: none; }
+
+    /* Logo row */
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 12px 28px;
+    }
+    .sidebar-logo-icon  { color: var(--color-primary); }
+    .sidebar-logo-text  {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: #18181b;
+    }
+
+    /* Nav links */
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sidebar-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 11px 16px;
+      border-radius: 10px;
+      color: #52525b;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sidebar-nav-item:hover:not(.active) {
+      background: #f4f4f5;
+      color: #18181b;
+    }
+    .sidebar-nav-item.active {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    /* Divider + library section */
+    .sidebar-divider {
+      height: 1px;
+      background: #e4e4e7;
+      margin: 20px 8px 16px;
+    }
+    .sidebar-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #a1a1aa;
+      padding: 0 16px;
+      margin: 0 0 10px;
+    }
+    .sidebar-library-hint {
+      font-size: 12px;
+      color: #d4d4d8;
+      padding: 0 16px;
+      line-height: 1.5;
+    }
+
+    /* Main content area — full remaining width */
+    .main-content {
+      flex: 1;
+      height: 100vh;
+      min-width: 0;
+      background: #f8f8f8;
+    }
+
+    /* Hide mobile layout, show desktop layout */
+    .mobile-discover  { display: none; }
+    .desktop-discover { display: block; height: 100%; }
+
+    /* ═══════════════ Three-panel discover grid ═══════════════ */
+    .desktop-discover-grid {
+      display: grid;
+      grid-template-columns: 260px 1fr 260px;
+      gap: 0;
+      height: 100%;
+    }
+
+    /* ── Shared side panel styles ── */
+    .discover-panel-left,
+    .discover-panel-right {
+      height: 100vh;
+      overflow-y: auto;
+      scrollbar-width: none;
+      padding: 28px 16px;
+      background: #ffffff;
+    }
+    .discover-panel-left  { border-right: 1px solid #e4e4e7; }
+    .discover-panel-right { border-left:  1px solid #e4e4e7; }
+    .discover-panel-left::-webkit-scrollbar,
+    .discover-panel-right::-webkit-scrollbar { display: none; }
+
+    .discover-panel-center {
+      height: 100vh;
+      overflow-y: auto;
+      scrollbar-width: none;
+      padding: 28px 32px;
+      background: #f8f8f8;
+    }
+    .discover-panel-center::-webkit-scrollbar { display: none; }
+
+    /* Panel title pill */
+    .discover-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #a1a1aa;
+      margin: 0 0 16px;
+    }
+
+    /* Center panel header */
+    .discover-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    .discover-section-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin: 0 0 4px;
+    }
+    .discover-section-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #18181b;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+    .discover-search-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid #e4e4e7;
+      background: white;
+      color: #52525b;
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .discover-search-btn:hover { background: var(--color-primary-light); color: var(--color-primary); }
+
+    /* ── Featured 6 compact horizontal cards (2-col × 3-row) ── */
+    .featured-books-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .feat-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: white;
+      border-radius: 12px;
+      padding: 10px 12px 10px 10px;
+      text-decoration: none;
+      border: 1px solid #f0f0f0;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+      min-width: 0;
+    }
+    .feat-card:hover {
+      background: #fafafa;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .feat-card-cover {
+      width: 52px;
+      height: 70px;
+      border-radius: 7px;
+      overflow: hidden;
+      background: #f4f4f5;
+      flex-shrink: 0;
+    }
+    .feat-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+    .feat-card-cover-placeholder {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #e4e4e7, #d4d4d8);
+    }
+
+    .feat-card-body { flex: 1; min-width: 0; }
+    .feat-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #18181b;
+      margin: 0 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .feat-card-author {
+      font-size: 11px;
+      color: #a1a1aa;
+      margin: 0 0 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .feat-card-rating {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #EC7D22;
+    }
+    .feat-card-cat {
+      font-size: 10px;
+      font-weight: 600;
+      color: #a1a1aa;
+      background: #f4f4f5;
+      border-radius: 20px;
+      padding: 1px 6px;
+    }
+    .feat-card-arrow {
+      color: #d4d4d8;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .feat-card:hover .feat-card-arrow { color: #EC7D22; }
+
+    /* Quick category chips below the featured grid */
+    .center-cat-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 4px;
+    }
+    .center-cat-chip {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .center-cat-chip:hover { opacity: 0.8; transform: translateY(-1px); }
+
+    /* ── Category pills (left panel) ── */
+    .cat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .cat-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #52525b;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .cat-pill:hover { background: #f4f4f5; color: #18181b; }
+    .cat-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── New arrivals side panel ── */
+    .new-arrivals-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .new-arrival-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .new-arrival-item:hover { background: #f4f4f5; }
+
+    .new-arrival-rank {
+      font-size: 13px;
+      font-weight: 800;
+      color: #e4e4e7;
+      width: 22px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .new-arrival-cover {
+      width: 40px;
+      height: 54px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #f4f4f5;
+      flex-shrink: 0;
+    }
+    .new-arrival-cover img { width: 100%; height: 100%; object-fit: cover; }
+
+    .new-arrival-info { flex: 1; min-width: 0; }
+    .new-arrival-info h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: #18181b;
+      margin: 0 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .new-arrival-info p {
+      font-size: 11px;
+      color: #a1a1aa;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 }
 
-/* Base custom scrollbar hidden */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+/* ─────────────────────────────────────────
+   Utility
+───────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
