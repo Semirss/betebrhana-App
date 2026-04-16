@@ -1,74 +1,64 @@
-import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { Home, Search, BookOpen, User, BookMarked } from 'lucide-react';
-import { AuthProvider } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Home, Search, BookOpen, User, BookMarked, Monitor, Sun, Moon } from 'lucide-react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
-import HomePage from './pages/HomePage';
-import SearchPage from './pages/SearchPage';
-import LibraryPage from './pages/LibraryPage';
+import HomePage        from './pages/HomePage';
+import SearchPage      from './pages/SearchPage';
+import LibraryPage     from './pages/LibraryPage';
 import BookDetailsPage from './pages/BookDetailsPage';
-import LoginPage from './pages/LoginPage';
-import ReaderPage from './pages/ReaderPage';
-import SettingsPage from './pages/SettingsPage';
+import LoginPage       from './pages/LoginPage';
+import ReaderPage      from './pages/ReaderPage';
+import SettingsPage    from './pages/SettingsPage';
 
-const NAV_LINKS = [
-  { to: '/',        icon: Home,     label: 'Discover' },
-  { to: '/search',  icon: Search,   label: 'Search'   },
-  { to: '/library', icon: BookOpen, label: 'Library'  },
-  { to: '/profile', icon: User,     label: 'Profile'  },
-];
-
-/* ─── Desktop left sidebar ─── */
-function Sidebar() {
+function TopNav() {
   const { pathname } = useLocation();
-  if (pathname.startsWith('/book/') || pathname.startsWith('/read/')) return null;
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  if (pathname.startsWith('/read/')) return null;
 
   return (
-    <aside className="desktop-sidebar">
-      {/* Logo */}
-      <div className="sidebar-logo">
-        <BookMarked size={26} className="sidebar-logo-icon" />
-        <span className="sidebar-logo-text">BeteBrana</span>
+    <header className="topnav hidden md:flex items-center justify-between px-16 py-6 absolute top-0 w-full z-50">
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+        <div className="w-8 h-8 rounded-lg bg-[#53389e] flex items-center justify-center text-white">
+          <BookMarked size={18} />
+        </div>
+        <span className="font-bold text-xl text-zinc-900 tracking-tight">BeteBrana</span>
       </div>
 
-      {/* Primary nav */}
-      <nav className="sidebar-nav">
-        {NAV_LINKS.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) => `sidebar-nav-item${isActive ? ' active' : ''}`}
-          >
-            <Icon size={20} />
-            <span>{label}</span>
-          </NavLink>
-        ))}
+      <nav className="flex items-center gap-10">
+        <NavLink to="/" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#53389e]' : 'text-zinc-500 hover:text-zinc-900'}`}>Home</NavLink>
+        <NavLink to="/search" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#53389e]' : 'text-zinc-500 hover:text-zinc-900'}`}>Discover</NavLink>
+        <NavLink to="/library" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#53389e]' : 'text-zinc-500 hover:text-zinc-900'}`}>My Library</NavLink>
       </nav>
 
-      {/* Library quick-links divider */}
-      <div className="sidebar-divider" />
-      <p className="sidebar-section-label">Your Library</p>
-      <div className="sidebar-library-hint">
-        Books you've saved appear here.
+      <div>
+        {user ? (
+          <button onClick={() => navigate('/profile')} className="px-6 py-2.5 bg-[#bbf7d0] hover:bg-[#86efac] text-[#166534] rounded-full text-sm font-bold transition-all border border-[#4ade80]">
+            My Account
+          </button>
+        ) : (
+          <button onClick={() => navigate('/login')} className="px-6 py-2.5 bg-[#bbf7d0] hover:bg-[#86efac] text-[#166534] rounded-full text-sm font-bold transition-all border border-[#4ade80]">
+            Sign In
+          </button>
+        )}
       </div>
-    </aside>
+    </header>
   );
 }
 
-/* ─── Mobile bottom nav ─── */
 function BottomNav() {
   const { pathname } = useLocation();
-  if (pathname.startsWith('/book/') || pathname.startsWith('/read/')) return null;
-
+  if (pathname.startsWith('/read/')) return null;
   return (
-    <nav className="bottom-nav">
-      {NAV_LINKS.map(({ to, icon: Icon, label }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={to === '/'}
-          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-        >
+    <nav className="bottom-nav md:hidden z-50">
+      {[
+        { to: '/',        icon: Home,     label: 'Discover' },
+        { to: '/search',  icon: Search,   label: 'Search'   },
+        { to: '/library', icon: BookOpen, label: 'Library'  },
+        { to: '/profile', icon: User,     label: 'Profile'  },
+      ].map(({ to, icon: Icon, label }) => (
+        <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}>
           <Icon size={22} />
           <span className="nav-label">{label}</span>
         </NavLink>
@@ -77,12 +67,10 @@ function BottomNav() {
   );
 }
 
-/* ─── Inner layout — needs Router context ─── */
 function AppLayout() {
   return (
-    <div className="app-root">
-      <Sidebar />
-
+    <div className="app-root bg-[#FDFBF7]">
+      <TopNav />
       <main className="main-content">
         <Routes>
           <Route path="/"          element={<HomePage />} />
@@ -95,7 +83,6 @@ function AppLayout() {
           <Route path="/login"     element={<LoginPage />} />
         </Routes>
       </main>
-
       <BottomNav />
     </div>
   );

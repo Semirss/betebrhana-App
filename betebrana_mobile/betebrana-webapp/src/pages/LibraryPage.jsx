@@ -47,7 +47,7 @@ export default function LibraryPage() {
   const displayBooks = getDisplayBooks();
 
   return (
-    <div className="pt-12 pb-24 px-6 relative">
+    <div className="pt-24 md:pt-32 pb-24 px-6 md:px-8 max-w-[1200px] mx-auto relative min-h-screen">
       <h1 className="text-3xl font-serif font-bold text-zinc-900 mb-6">
         My Library
       </h1>
@@ -69,7 +69,7 @@ export default function LibraryPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
         {loading ? (
           <div className="col-span-2 text-center text-zinc-500 py-12">Loading...</div>
         ) : displayBooks.length === 0 ? (
@@ -81,7 +81,7 @@ export default function LibraryPage() {
             const actualBookId = book.book_id || book.id; 
             return (
               <Link to={`/book/${actualBookId}`} key={book.id || actualBookId} className="block group">
-                <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-md mb-3 bg-zinc-100">
+                <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 mb-4 bg-zinc-100 relative">
                   {book.cover && <img src={book.cover} alt={book.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
                 </div>
                 <h4 className="text-sm font-bold text-zinc-900 truncate">{book.title}</h4>
