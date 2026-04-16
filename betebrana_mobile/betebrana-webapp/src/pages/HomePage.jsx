@@ -9,6 +9,7 @@ const onErr = (e) => { e.target.onerror = null; e.target.src = PH; };
 export default function HomePage() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeCatTab, setActiveCatTab] = useState('Fiction');
 
   useEffect(() => {
     async function fetchData() {
@@ -31,6 +32,15 @@ export default function HomePage() {
   const popular = books.slice(0, 4);
   const featuredMobile = books[0];
   const mobileArrivals = books.slice(1, 10);
+  
+  const TABS = ["Fiction", "Science & Math", "History", "Art & Design", "Philosophy"];
+  const tabIndex = TABS.indexOf(activeCatTab);
+  
+  // Pad the books to have at least 6 to display, shifting the array based on the active tab so they change
+  const categoryBooks = Array.from({ length: 6 }).map((_, i) => {
+    if (books.length === 0) return null;
+    return books[(i + (tabIndex * 2)) % books.length];
+  }).filter(Boolean);
 
   return (
     <>
@@ -207,25 +217,49 @@ export default function HomePage() {
         </section>
 
         {/* BROWSE CATEGORIES SECTION */}
-        <section className="bg-zinc-50 py-24 border-t border-zinc-200/50">
+        <section className="bg-white py-24">
           <div className="max-w-[1200px] mx-auto px-8">
-            <div className="text-center mb-16">
+            <div className="flex flex-col items-center text-center mb-10">
               <h2 className="text-3xl font-serif font-bold text-zinc-900 mb-4">Browse by Category</h2>
-              <p className="text-zinc-500">Dive into your favorite genres and discover new topics.</p>
+              <p className="text-zinc-500 max-w-xl">Dive into your favorite genres and discover new topics.</p>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {[
-                { name: "Fiction", color: "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100" },
-                { name: "Science & Math", color: "bg-green-50 text-green-700 hover:bg-green-100 border-green-100" },
-                { name: "History", color: "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-100" },
-                { name: "Art & Design", color: "bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-100" },
-                { name: "Philosophy", color: "bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-100" }
-              ].map((c) => (
-                <Link to={`/search?category=${c.name}`} key={c.name} className={`h-32 flex items-center justify-center rounded-2xl border transition-all cursor-pointer shadow-sm hover:shadow-md ${c.color}`}>
-                  <span className="font-bold text-lg">{c.name}</span>
-                </Link>
+            {/* Uniform Style Tabs */}
+            <div className="flex flex-wrap justify-center gap-4 mb-16">
+              {TABS.map((cat) => (
+                <button 
+                  key={cat} 
+                  onClick={() => setActiveCatTab(cat)}
+                  className={`px-8 py-3 rounded-full text-sm font-bold border transition-all duration-300 ${
+                    activeCatTab === cat 
+                      ? "bg-[#53389e] border-[#53389e] text-white shadow-md shadow-purple-900/20 scale-105" 
+                      : "bg-white border-zinc-200 text-zinc-600 hover:border-[#53389e] hover:text-[#53389e]"
+                  }`}
+                >
+                  {cat}
+                </button>
               ))}
+            </div>
+
+            {/* Grid of 6 Books for Active Tab */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+              {categoryBooks.map((book, idx) => {
+                 const uniqueKey = book.id ? `${book.id}-${idx}` : `fallback-${idx}`;
+                 return (
+                   <Link to={`/book/${book.id}`} key={uniqueKey} className="group cursor-pointer">
+                     <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-md border border-zinc-100 mb-4 bg-zinc-100 relative">
+                       <img src={book.cover_image || PH} onError={onErr} alt={book.title || "Book cover"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                       <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
+                         <div className="w-full py-2 bg-[#53389e] hover:bg-[#432c81] text-white text-[10px] uppercase tracking-wider font-bold rounded-lg shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all flex items-center justify-center">
+                           Details
+                         </div>
+                       </div>
+                     </div>
+                     <h4 className="text-sm font-bold text-zinc-900 mb-1 leading-snug truncate" title={book.title}>{book.title || "Untitled"}</h4>
+                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest truncate">{book.author || "Unknown"}</p>
+                   </Link>
+                 );
+              })}
             </div>
           </div>
         </section>

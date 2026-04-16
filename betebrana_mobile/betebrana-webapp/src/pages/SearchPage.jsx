@@ -25,19 +25,20 @@ export default function SearchPage() {
     fetchData();
   }, []);
 
-  const TOP_CATEGORIES = ['Art & Design', 'Adventure', 'Horror', 'History', 'Science Fiction'];
-  const TRENDING = [
-    'Wes Anderson Books',
-    'Classic Literature',
-    'Science Fiction Top 10',
-    'Art and Design Collections'
-  ];
+  // Extract real metadata for suggestions
+  const uniqueAuthors = [...new Set(books.map(b => b.author).filter(Boolean))].slice(0, 5);
+  const realTrendingTitles = books.map(b => b.title).filter(Boolean).slice(0, 4);
 
-  const filteredBooks = books.filter(book => 
-    book.title?.toLowerCase().includes(query.toLowerCase()) || 
-    book.author?.toLowerCase().includes(query.toLowerCase()) ||
-    book.category?.toLowerCase().includes(query.toLowerCase())
-  );
+  const TOP_CATEGORIES = uniqueAuthors.length > 0 ? uniqueAuthors : ['Fiction', 'History', 'Science', 'Art'];
+  const TRENDING = realTrendingTitles.length > 0 ? realTrendingTitles : ['The Great Gatsby', '1984', 'To Kill a Mockingbird'];
+
+  const filteredBooks = query 
+    ? books.filter(book => 
+        book.title?.toLowerCase().includes(query.toLowerCase()) || 
+        book.author?.toLowerCase().includes(query.toLowerCase()) ||
+        book.category?.toLowerCase().includes(query.toLowerCase())
+      )
+    : books;
 
   return (
     <div className="min-h-screen pt-24 md:pt-32 pb-24 px-6 md:px-8 bg-[#FDFBF7]">
@@ -59,13 +60,13 @@ export default function SearchPage() {
           />
         </div>
 
-        {!query ? (
-          <div className="flex flex-col md:flex-row gap-16">
+        {!query && (
+          <div className="flex flex-col md:flex-row gap-16 mb-16">
             <div className="flex-1">
-              <h3 className="text-xs font-bold tracking-[0.1em] text-[#d8a892] uppercase mb-6">Top Categories</h3>
+              <h3 className="text-xs font-bold tracking-[0.1em] text-[#d8a892] uppercase mb-6">Popular Authors</h3>
               <div className="flex flex-wrap gap-3">
                 {TOP_CATEGORIES.map(cat => (
-                  <button key={cat} onClick={() => setQuery(cat)} className="px-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold rounded-xl transition-colors">
+                  <button key={cat} onClick={() => setQuery(cat)} className="px-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 text-xs font-bold rounded-xl transition-colors shadow-sm">
                     {cat}
                   </button>
                 ))}
@@ -73,7 +74,7 @@ export default function SearchPage() {
             </div>
 
             <div className="flex-1">
-              <h3 className="text-xs font-bold tracking-[0.1em] text-[#d8a892] uppercase mb-6">Trending Searches</h3>
+              <h3 className="text-xs font-bold tracking-[0.1em] text-[#d8a892] uppercase mb-6">Trending Books</h3>
               <ul className="space-y-4">
                 {TRENDING.map(search => (
                   <li key={search} onClick={() => setQuery(search)} className="flex items-center gap-3 text-sm font-medium text-zinc-500 cursor-pointer hover:text-[#53389e] transition-colors">
@@ -84,47 +85,52 @@ export default function SearchPage() {
               </ul>
             </div>
           </div>
-        ) : (
-          <div>
-            <div className="mb-8 flex justify-between items-end">
-              <h2 className="text-xl font-bold text-zinc-900">
-                Results for <span className="text-[#53389e]">"{query}"</span>
-              </h2>
-              <span className="text-sm font-medium text-zinc-500">{filteredBooks.length} found</span>
-            </div>
+        )}
 
-            {loading ? (
-              <div className="text-zinc-400 py-12 text-center">Searching...</div>
-            ) : filteredBooks.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
-                {filteredBooks.map(book => (
-                  <div key={book.id} className="group">
-                    <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 mb-4 relative bg-white">
-                      <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
-                        <Link to={`/book/${book.id}`} className="w-full py-2 bg-[#53389e] hover:bg-[#432c81] text-white text-xs font-bold rounded-xl shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all flex items-center justify-center">
-                          Details
-                        </Link>
-                      </div>
-                    </div>
-                    
-                    <h4 className="text-sm font-bold text-zinc-900 mb-1 truncate" title={book.title}>{book.title}</h4>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] text-zinc-500 uppercase tracking-widest truncate max-w-[70%]">{book.author}</p>
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-600">
-                        <Star fill="#53389e" color="#53389e" size={10} /> 4.8
-                      </div>
+        {/* ALWAYS SHOW THE GRID */}
+        <div>
+          <div className="mb-8 flex justify-between items-end border-b border-zinc-100 pb-4">
+            <h2 className="text-xl font-bold text-zinc-900">
+              {query ? (
+                <>Results for <span className="text-[#53389e]">"{query}"</span></>
+              ) : (
+                "Explore Complete Library"
+              )}
+            </h2>
+            <span className="text-sm font-medium text-zinc-500">{filteredBooks.length} titles available</span>
+          </div>
+
+          {loading ? (
+            <div className="text-zinc-400 py-12 text-center">Loading library...</div>
+          ) : filteredBooks.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
+              {filteredBooks.map(book => (
+                <div key={book.id} className="group">
+                  <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 mb-4 relative bg-white">
+                    <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
+                      <Link to={`/book/${book.id}`} className="w-full py-2 bg-[#53389e] hover:bg-[#432c81] text-white text-xs font-bold rounded-xl shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all flex items-center justify-center">
+                        Details
+                      </Link>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-zinc-500 py-24 text-center">
-                No books matched your search.
-              </div>
-            )}
-          </div>
-        )}
+                  
+                  <h4 className="text-sm font-bold text-zinc-900 mb-1 truncate" title={book.title}>{book.title}</h4>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest truncate max-w-[70%]">{book.author}</p>
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-600">
+                      <Star fill="#53389e" color="#53389e" size={10} /> 4.8
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-zinc-500 py-24 text-center">
+              No books matched your search.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
