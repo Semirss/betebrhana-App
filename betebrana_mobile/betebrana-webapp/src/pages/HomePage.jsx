@@ -81,6 +81,60 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+
+        {/* ── MOBILE: Browse by Category ── */}
+        <div className="mb-8">
+          <h3 className="font-serif font-bold text-lg text-zinc-900 mb-4">Browse by Category</h3>
+          {/* Horizontal scrollable category tabs */}
+          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar mb-5">
+            {TABS.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCatTab(cat)}
+                className={`flex-shrink-0 px-5 py-2 rounded-full text-xs font-bold border transition-all ${
+                  activeCatTab === cat
+                    ? 'bg-[#53389e] border-[#53389e] text-white'
+                    : 'bg-white border-zinc-200 text-zinc-600'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          {/* 2-column grid of category books */}
+          <div className="grid grid-cols-3 gap-3">
+            {categoryBooks.slice(0, 6).map((book, idx) => {
+              const uniqueKey = book.id ? `mob-${book.id}-${idx}` : `mob-fallback-${idx}`;
+              return (
+                <Link to={`/book/${book.id}`} key={uniqueKey} className="block group">
+                  <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-md mb-2 bg-zinc-100">
+                    <img src={book.cover_image || PH} onError={onErr} alt={book.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  </div>
+                  <h4 className="text-[11px] font-bold text-zinc-900 truncate leading-snug">{book.title || 'Untitled'}</h4>
+                  <p className="text-[9px] text-zinc-500 uppercase tracking-wider truncate">{book.author || ''}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── MOBILE: Footer ── */}
+        <div className="border-t border-zinc-200 pt-6 pb-4 mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-[#53389e] flex items-center justify-center">
+              <Play size={12} fill="white" color="white" />
+            </div>
+            <span className="font-bold text-base text-zinc-900 tracking-tight">BeteBrana</span>
+          </div>
+          <p className="text-xs text-zinc-400 leading-relaxed mb-4">Your digital library. Borrow, discover, and read anytime.</p>
+          <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
+            <Link to="/search" className="hover:text-[#53389e] transition-colors">Discover</Link>
+            <Link to="/library" className="hover:text-[#53389e] transition-colors">My Library</Link>
+            <Link to="/profile" className="hover:text-[#53389e] transition-colors">Account</Link>
+          </div>
+          <p className="text-[10px] text-zinc-300 mt-4">© {new Date().getFullYear()} BeteBrana. All rights reserved.</p>
+        </div>
+
       </div>
 
       {/* ── DESKTOP (Auca Style) ── */}

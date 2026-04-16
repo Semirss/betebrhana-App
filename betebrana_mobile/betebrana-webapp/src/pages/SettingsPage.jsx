@@ -51,7 +51,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] pt-32 md:pt-36 pb-24 px-6 md:px-16">
+    <div className="min-h-screen bg-[#FDFBF7] pt-4 md:pt-36 pb-24 px-6 md:px-16">
       <div className="max-w-[1200px] mx-auto">
 
         {/* Page Header */}

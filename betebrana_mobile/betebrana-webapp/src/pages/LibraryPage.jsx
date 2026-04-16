@@ -76,7 +76,7 @@ export default function LibraryPage() {
   const displayBooks = getDisplayBooks();
 
   return (
-    <div className="pt-24 md:pt-32 pb-24 px-6 md:px-8 max-w-[1200px] mx-auto relative min-h-screen">
+    <div className="pt-4 md:pt-32 pb-24 px-6 md:px-8 max-w-[1200px] mx-auto relative min-h-screen">
       <h1 className="text-3xl font-serif font-bold text-zinc-900 mb-8">My Library</h1>
 
       {/* Tabs */}

@@ -41,7 +41,7 @@ export default function SearchPage() {
     : books;
 
   return (
-    <div className="min-h-screen pt-24 md:pt-32 pb-24 px-6 md:px-8 bg-[#FDFBF7]">
+    <div className="min-h-screen pt-4 md:pt-32 pb-24 px-6 md:px-8 bg-[#FDFBF7]">
       <div className="max-w-[1200px] mx-auto">
         <h1 className="text-[2.5rem] font-serif font-bold text-zinc-900 mb-8">
           Search
