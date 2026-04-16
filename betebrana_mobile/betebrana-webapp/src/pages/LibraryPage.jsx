@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { getDownloadedBooks } from '../utils/storage';
 import api from '../api';
 
+const PH = 'https://placehold.co/300x450/e8e8e8/aaaaaa?text=No+Cover';
+const onErr = (e) => { e.target.onerror = null; e.target.src = PH; };
+
 export default function LibraryPage() {
   const [tab, setTab] = useState('downloaded');
   
@@ -38,9 +41,9 @@ export default function LibraryPage() {
 
   const getDisplayBooks = () => {
     switch (tab) {
-      case 'wishlist': return queue.map(q => ({ ...q, status: q.status === 'available' ? 'Available' : 'Waiting', cover: q.cover_image }));
-      case 'history': return rentals.map(r => ({ ...r, status: 'Active Rental', cover: r.cover_image }));
-      default: return downloaded.map(d => ({ ...d, status: 'Offline Ready', cover: d.cover_image }));
+      case 'wishlist': return queue.map(q => ({ ...q, status: q.status === 'available' ? 'Available' : 'Waiting', cover: q.cover_image || q.book?.cover_image || q.Book?.cover_image, title: q.title || q.book?.title || q.Book?.title, author: q.author || q.book?.author || q.Book?.author }));
+      case 'history': return rentals.map(r => ({ ...r, status: 'Active Rental', cover: r.cover_image || r.book?.cover_image || r.Book?.cover_image, title: r.title || r.book?.title || r.Book?.title, author: r.author || r.book?.author || r.Book?.author }));
+      default: return downloaded.map(d => ({ ...d, status: 'Offline Ready', cover: d.cover_image || d.book?.cover_image || d.Book?.cover_image, title: d.title || d.book?.title || d.Book?.title, author: d.author || d.book?.author || d.Book?.author }));
     }
   };
 
@@ -82,7 +85,7 @@ export default function LibraryPage() {
             return (
               <Link to={`/book/${actualBookId}`} key={book.id || actualBookId} className="block group">
                 <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 mb-4 bg-zinc-100 relative">
-                  {book.cover && <img src={book.cover} alt={book.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
+                  <img src={book.cover || PH} onError={onErr} alt={book.title || 'Book'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
                 <h4 className="text-sm font-bold text-zinc-900 truncate">{book.title}</h4>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider truncate mb-2">{book.author}</p>

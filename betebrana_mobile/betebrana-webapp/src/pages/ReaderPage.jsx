@@ -84,20 +84,40 @@ export default function ReaderPage() {
   return (
     <div className={`h-screen w-full flex flex-col relative transition-colors duration-300 ${getThemeClass()}`}>
       
-      {/* Top Header */}
-      <div className={`p-4 flex justify-between items-center z-10 transition-opacity ${showSettings ? 'opacity-100' : 'opacity-0 hover:opacity-100 absolute top-0 w-full'}`}>
-        <button onClick={() => navigate(-1)} className={`p-2 rounded-full ${theme==='dark'?'bg-zinc-800':'bg-zinc-100'}`}>
-          <ChevronLeft size={24} />
+      {/* Top Header — always visible */}
+      <div className={`flex-shrink-0 px-6 py-3 flex justify-between items-center z-10 border-b ${
+        theme === 'dark' ? 'border-zinc-800 bg-[#121212]' : 
+        theme === 'sepia' ? 'border-amber-200 bg-[#f4ecd8]' : 
+        'border-zinc-100 bg-white'
+      }`}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+            theme === 'dark' ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200' : 
+            'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+          }`}
+        >
+          <ChevronLeft size={18} /> Back
         </button>
 
-        <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-full ${theme==='dark'?'bg-zinc-800':'bg-zinc-100'}`}>
-          <Settings size={20} />
+        <button 
+          onClick={() => setShowSettings(!showSettings)} 
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+            showSettings 
+              ? 'bg-[#53389e] text-white'
+              : theme === 'dark' ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200' 
+              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+          }`}
+        >
+          <Settings size={18} /> Settings
         </button>
       </div>
 
       {/* Settings Panel Backdrop */}
       {showSettings && (
-        <div className="absolute top-16 right-4 p-4 rounded-2xl shadow-xl z-20 w-64 backdrop-blur-xl bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800">
+        <div className={`absolute top-[60px] right-6 p-5 rounded-2xl shadow-2xl z-20 w-72 border ${
+          theme === 'dark' ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-zinc-200'
+        }`}>
           <div className="flex flex-col gap-4">
             
             {/* Theme */}
@@ -150,8 +170,10 @@ export default function ReaderPage() {
         )}
 
         {textContent && (
-          <div className={`w-full max-w-2xl px-6 pb-20 ${mode === 'scroll' ? 'overflow-y-auto' : 'overflow-hidden'}`} style={{ fontSize: `${fontSize}px`, lineHeight: 1.8 }}>
-            <div className="whitespace-pre-wrap font-serif pt-12 pb-12">
+          <div className={`w-full ${
+            mode === 'scroll' ? 'overflow-y-auto' : 'overflow-hidden'
+          }`} style={{ fontSize: `${fontSize}px`, lineHeight: 1.8 }}>
+            <div className="whitespace-pre-wrap font-serif pt-10 pb-20 max-w-[900px] mx-auto px-10 md:px-20">
               {currentTextChunk()}
             </div>
             

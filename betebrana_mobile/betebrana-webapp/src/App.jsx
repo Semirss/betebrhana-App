@@ -18,9 +18,9 @@ function TopNav() {
   if (pathname.startsWith('/read/')) return null;
 
   return (
-    <header className="topnav hidden md:flex items-center justify-between px-16 py-6 absolute top-0 w-full z-50">
+    <header className="topnav hidden md:flex items-center justify-between px-16 py-4 fixed top-0 w-full z-[100] bg-[#FDFBF7]/80 backdrop-blur-lg border-b border-zinc-200/50 shadow-sm transition-all">
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-        <div className="w-8 h-8 rounded-lg bg-[#53389e] flex items-center justify-center text-white">
+        <div className="w-8 h-8 rounded-lg bg-[#53389e] flex items-center justify-center text-white shadow-md">
           <BookMarked size={18} />
         </div>
         <span className="font-bold text-xl text-zinc-900 tracking-tight">BeteBrana</span>
