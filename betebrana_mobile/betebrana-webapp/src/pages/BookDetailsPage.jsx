@@ -4,17 +4,16 @@ import { ChevronLeft, Search, Bookmark, Download, Star, ArrowRight } from 'lucid
 import { hasDownloadedBook, downloadBook } from '../utils/storage';
 import api from '../api';
 
-const PH = 'https://placehold.co/300x450/e8e8e8/aaaaaa?text=No+Cover';
+const PH = 'https://placehold.co/300x450/ede9fe/53389e?text=No+Cover';
 const onErr = (e) => { e.target.onerror = null; e.target.src = PH; };
 
 export default function BookDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [recommendedBooks, setRecommendedBooks] = useState([]);
-  
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -30,10 +29,7 @@ export default function BookDetailsPage() {
           const dlStatus = await hasDownloadedBook(found.id);
           setIsDownloaded(dlStatus);
         }
-        
-        // Grab some recommendations
         setRecommendedBooks(data.filter(b => b.id !== parseInt(id) && b.id !== id).slice(0, 5));
-
       } catch (err) {
         console.error("Failed to fetch book", err);
       } finally {
@@ -49,25 +45,21 @@ export default function BookDetailsPage() {
       setIsDownloading(true);
       await downloadBook(book.id, book);
       setIsDownloaded(true);
-      alert('Book downloaded successfully for offline reading.');
-    } catch (err) {
-      alert('Failed to download book. Make sure you have an active rental first!');
-    } finally {
-      setIsDownloading(false);
-    }
+      alert('Book downloaded for offline reading.');
+    } catch {
+      alert('Failed to download. Make sure you have an active rental first!');
+    } finally { setIsDownloading(false); }
   };
 
   const handleRent = async () => {
     try {
       setActionLoading(true);
       await api.post('/books/rent', { bookId: book.id });
-      alert("Success! You have rented the book.");
+      alert("Success! You have rented this book.");
       navigate(`/read/${book.id}`);
     } catch (err) {
       alert(err.response?.data?.error || "Error renting the book");
-    } finally {
-      setActionLoading(false);
-    }
+    } finally { setActionLoading(false); }
   };
 
   const handleQueue = async () => {
@@ -78,153 +70,172 @@ export default function BookDetailsPage() {
       window.location.reload();
     } catch (err) {
       alert(err.response?.data?.error || "Error joining queue");
-    } finally {
-      setActionLoading(false);
-    }
+    } finally { setActionLoading(false); }
   };
 
-  if (loading) return <div className="min-h-screen pt-32 text-center text-zinc-500 bg-[#FDFBF7]">Loading Book Data...</div>;
+  if (loading) return <div className="min-h-screen pt-32 text-center text-zinc-500 bg-[#FDFBF7]">Loading Book…</div>;
   if (!book) return <div className="min-h-screen pt-32 text-center text-zinc-500 bg-[#FDFBF7]">Book not found.</div>;
 
+  const primaryAction = book.userHasRental ? (
+    <button onClick={() => navigate(`/read/${book.id}`)}
+      className="flex-1 py-4 bg-[#20d9c0] hover:bg-[#17b8a6] text-white font-bold rounded-full shadow-lg shadow-teal-400/30 transition-all text-[15px]">
+      Read Now
+    </button>
+  ) : book.queueInfo?.effectiveAvailable ? (
+    <button onClick={handleRent} disabled={actionLoading}
+      className="flex-1 py-4 bg-[#20d9c0] hover:bg-[#17b8a6] text-white font-bold rounded-full shadow-lg shadow-teal-400/30 transition-all text-[15px]">
+      {actionLoading ? 'Please wait…' : 'Rent (Reserved)'}
+    </button>
+  ) : book.queueInfo?.userInQueue ? (
+    <button disabled
+      className="flex-1 py-4 bg-zinc-200 text-zinc-500 font-bold rounded-full text-[15px]">
+      #{book.queueInfo?.userPosition} in Queue
+    </button>
+  ) : book.available_copies > 0 ? (
+    <button onClick={handleRent} disabled={actionLoading}
+      className="flex-1 py-4 bg-[#20d9c0] hover:bg-[#17b8a6] text-white font-bold rounded-full shadow-lg shadow-teal-400/30 transition-all text-[15px]">
+      {actionLoading ? 'Please wait…' : 'Borrow Book'}
+    </button>
+  ) : (
+    <button onClick={handleQueue} disabled={actionLoading}
+      className="flex-1 py-4 bg-amber-400 hover:bg-amber-500 text-white font-bold rounded-full shadow-lg shadow-amber-400/30 transition-all text-[15px]">
+      {actionLoading ? 'Please wait…' : 'Join Queue'}
+    </button>
+  );
+
   return (
-    <div className="bg-[#FDFBF7] min-h-screen pt-24 md:pt-32 pb-24">
-      <div className="max-w-[1200px] mx-auto px-6 md:px-8">
-        
-        {/* Top Navbar Details */}
-        <div className="flex justify-between items-center mb-10">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-zinc-200 hover:bg-zinc-50 transition-colors shadow-sm text-sm font-bold text-zinc-700">
-            <ChevronLeft size={18} /> Back
-          </button>
-          <button onClick={() => navigate('/search')} className="p-3 bg-white rounded-full border border-zinc-200 shadow-sm text-zinc-500 hover:text-[#53389e] transition-colors">
-            <Search size={18} />
-          </button>
-        </div>
+    /* Outer container – gradient header fades into white, matching the reference design */
+    <div className="min-h-screen bg-[#FDFBF7]">
 
-        {/* Main Content Split Layout */}
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-20 mb-24">
-          
-          {/* Left Column - Image & Actions */}
-          <div className="w-full lg:w-[360px] flex-shrink-0 flex flex-col items-center lg:items-stretch">
-            <div className="w-[140px] sm:w-[280px] lg:w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-zinc-200 bg-white relative mb-8">
+      {/* Gradient hero band */}
+      <div className="w-full bg-gradient-to-b from-[#e8f0fe] via-[#f0eafd] to-[#FDFBF7] pt-24 md:pt-32 pb-24">
+        <div className="max-w-[720px] mx-auto px-6">
+
+          {/* Top bar */}
+          <div className="flex justify-between items-center mb-10">
+            <button onClick={() => navigate(-1)}
+              className="w-10 h-10 flex items-center justify-center bg-white/80 hover:bg-white backdrop-blur-sm rounded-full shadow-sm border border-zinc-200 text-zinc-600 transition-all">
+              <ChevronLeft size={20} />
+            </button>
+            <span className="text-xs font-bold tracking-[0.2em] text-zinc-500 uppercase">Book Details</span>
+            <button onClick={() => navigate('/search')}
+              className="w-10 h-10 flex items-center justify-center bg-white/80 hover:bg-white backdrop-blur-sm rounded-full shadow-sm border border-zinc-200 text-zinc-600 transition-all">
+              <Search size={18} />
+            </button>
+          </div>
+
+          {/* Book cover — centered like the reference */}
+          <div className="flex justify-center mb-8">
+            <div className="relative w-[190px] sm:w-[220px] aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/60">
               <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover" />
-             
-            </div>
-
-            {/* Action Buttons for Desktop (Shows here on Large screens, and centered on Mobile) */}
-            <div className="w-full max-w-[280px] lg:max-w-none flex flex-col gap-4">
-              {book.userHasRental ? (
-                <button onClick={() => navigate(`/read/${book.id}`)} className="w-full py-4 bg-[#bbf7d0] hover:bg-[#86efac] text-[#166534] font-bold rounded-xl shadow-sm transition-all border border-[#4ade80]">
-                  Read Now
-                </button>
-              ) : book.queueInfo?.effectiveAvailable ? (
-                 <button onClick={handleRent} disabled={actionLoading} className="w-full py-4 bg-[#53389e] hover:bg-[#432c81] text-white font-bold rounded-xl shadow-lg transition-all shadow-purple-900/20">
-                  Rent (Reserved for you)
-                </button>
-              ) : book.queueInfo?.userInQueue ? (
-                 <button disabled className="w-full py-4 bg-zinc-200 text-zinc-500 font-bold rounded-xl border border-zinc-300">
-                  Position #{book.queueInfo?.userPosition} in Queue
-                </button>
-              ) : book.available_copies > 0 ? (
-                 <button onClick={handleRent} disabled={actionLoading} className="w-full py-4 bg-[#53389e] hover:bg-[#432c81] text-white font-bold rounded-xl shadow-lg transition-all shadow-purple-900/20">
-                  Borrow Book
-                </button>
-              ) : (
-                 <button onClick={handleQueue} disabled={actionLoading} className="w-full py-4 bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold border border-orange-200 rounded-xl shadow-sm transition-all">
-                  Join Waiting Queue
-                </button>
-              )}
-
-              {book.userHasRental && (
-                <button 
-                  onClick={!isDownloaded ? handleDownload : undefined}
-                  disabled={isDownloading}
-                  className={`w-full py-4 rounded-xl flex items-center justify-center gap-3 font-bold transition-all border ${
-                    isDownloaded 
-                    ? 'bg-blue-50 border-blue-200 text-blue-600' 
-                    : 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 shadow-sm hover:shadow'
-                  }`}
-                >
-                  {isDownloading ? (
-                    <><span className="animate-spin text-xl">◌</span> Downloading...</>
-                  ) : isDownloaded ? (
-                    <><Bookmark size={18} fill="currentColor" /> Saved for Offline</>
-                  ) : (
-                    <><Download size={18} /> Download for Offline</>
-                  )}
-                </button>
+              {isDownloaded && (
+                <div className="absolute top-3 left-3 bg-[#53389e] text-white p-1.5 rounded-lg shadow-md">
+                  <Bookmark size={14} fill="currentColor" />
+                </div>
               )}
             </div>
           </div>
 
-          {/* Right Column - Book Info */}
-          <div className="flex-1 lg:pt-4 text-center lg:text-left">
-            <h1 className="text-3xl md:text-5xl font-serif font-bold text-zinc-900 mb-4 leading-tight">{book.title}</h1>
-            <p className="text-xl text-zinc-500 mb-8 font-medium">By <span className="text-zinc-800">{book.author}</span></p>
-            
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 md:gap-8 mb-10">
-              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-zinc-200 shadow-sm">
-                <Star fill="#53389e" color="#53389e" size={16} /> 
-                <span className="font-bold text-zinc-800 text-sm">4.8 <span className="text-zinc-400 font-normal">/ 5.0</span></span>
-              </div>
-              <div className="bg-[#ede9fe] text-[#53389e] px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border border-[#ddd6fe]">
-                {book.category || 'Literature'}
-              </div>
-              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full border border-zinc-200 shadow-sm">
-                <div className={`w-2 h-2 rounded-full ${book.available_copies > 0 ? "bg-green-500" : "bg-orange-500"}`}></div>
-                <span className="text-sm font-bold text-zinc-700">
-                  {book.available_copies > 0 ? `${book.available_copies} Copies Available` : `0 Copies (Queue)`}
-                </span>
-              </div>
+          {/* Title, author, category, stars — center aligned */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-zinc-900 mb-2 leading-snug">{book.title}</h1>
+            <p className="text-zinc-500 text-[15px] mb-2">
+              {book.author}
+              {book.file_type && <span className="text-zinc-400"> ({book.file_type.toUpperCase()})</span>}
+            </p>
+            {(book.category) && (
+              <p className="text-xs font-bold tracking-[0.15em] text-[#d8a892] uppercase mb-4">{book.category}</p>
+            )}
+
+            {/* Stars */}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              {[1,2,3,4].map(i => <Star key={i} size={18} fill="#f59e0b" color="#f59e0b" />)}
+              <Star size={18} fill="#d1d5db" color="#d1d5db" />
+              <span className="text-sm font-bold text-zinc-700 ml-1">4.8</span>
             </div>
 
-            <div className="bg-white rounded-3xl p-8 md:p-10 shadow-lg border border-zinc-100 relative">
-              <div className="absolute top-0 left-10 w-16 h-1 bg-[#53389e] rounded-b-lg"></div>
-              <h3 className="text-xl font-serif font-bold mb-6 text-zinc-900">Synopsis</h3>
-              <div className="text-zinc-500 leading-relaxed space-y-4 text-[15px]">
-                {book.description ? (
-                  book.description.split('\n').filter(p => p.trim() !== '').map((para, i) => (
-                    <p key={i}>{para}</p>
-                  ))
-                ) : (
-                  <p>No detailed synopsis available for this book yet. Dive in and explore the pages yourself!</p>
-                )}
-              </div>
+            {/* Available copies badge */}
+            <div className="inline-flex items-center gap-1.5 bg-white/80 border border-zinc-200 px-3 py-1.5 rounded-full text-xs font-bold text-zinc-600 shadow-sm mt-1">
+              <div className={`w-2 h-2 rounded-full ${book.available_copies > 0 ? 'bg-green-400' : 'bg-orange-400'}`} />
+              {book.available_copies > 0 ? `${book.available_copies} copies available` : 'All copies borrowed — join queue'}
             </div>
+          </div>
+
+          {/* Action row — avatars + primary CTA + bookmark */}
+          <div className="flex items-center gap-4 mb-2">
+            {/* Placeholder reader avatars */}
+            <div className="flex items-center flex-shrink-0">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="w-9 h-9 rounded-full border-2 border-white bg-gradient-to-br from-[#53389e]/60 to-[#9b82ff]/60 -ml-2 first:ml-0 shadow-sm" />
+              ))}
+              <span className="ml-2 text-xs font-bold text-zinc-500">+{book.total_copies || 0}</span>
+            </div>
+
+            {/* Primary action */}
+            {primaryAction}
+
+            {/* Bookmark / download */}
+            <button
+              onClick={book.userHasRental && !isDownloaded ? handleDownload : undefined}
+              disabled={isDownloading}
+              className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
+                isDownloaded
+                  ? 'bg-[#53389e] border-[#53389e] text-white'
+                  : 'bg-white border-zinc-200 text-zinc-400 hover:border-[#53389e] hover:text-[#53389e]'
+              }`}
+            >
+              {isDownloading
+                ? <span className="animate-spin text-sm">◌</span>
+                : <Bookmark size={18} fill={isDownloaded ? 'currentColor' : 'none'} />
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Synopsis — white sheet below gradient, matching the bottom-sheet style */}
+      <div className="max-w-[720px] mx-auto px-6 -mt-8 relative z-10 pb-20">
+        <div className="bg-white rounded-3xl shadow-lg border border-zinc-100 p-8">
+          {/* Drag-handle decorative element */}
+          <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-8" />
+          <h3 className="text-lg font-serif font-bold text-zinc-900 mb-4">Synopsis</h3>
+          <div className="text-zinc-500 leading-relaxed space-y-4 text-[15px]">
+            {book.description
+              ? book.description.split('\n').filter(p => p.trim()).map((para, i) => <p key={i}>{para}</p>)
+              : <p>No synopsis available for this book yet. Dive in and start reading!</p>
+            }
           </div>
         </div>
 
-        {/* Similar Books Section */}
+        {/* More books you might like */}
         {recommendedBooks.length > 0 && (
-          <div className="border-t border-zinc-200/60 pt-20">
-            <div className="flex justify-between items-end mb-10">
-              <div>
-                <h2 className="text-2xl font-serif font-bold text-zinc-900 tracking-tight">More Books You Might Like</h2>
-              </div>
-              <Link to="/search" className="hidden md:flex items-center gap-2 px-6 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-full text-sm font-bold transition-colors">
-                View All <ArrowRight size={16} />
+          <div className="mt-14">
+            <div className="flex justify-between items-end mb-6">
+              <h2 className="text-xl font-serif font-bold text-zinc-900">You Might Also Like</h2>
+              <Link to="/search" className="flex items-center gap-1.5 text-sm font-bold text-[#53389e] hover:underline">
+                View all <ArrowRight size={14} />
               </Link>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
+            <div className="grid grid-cols-5 gap-4">
               {recommendedBooks.map(rec => (
                 <Link to={`/book/${rec.id}`} key={rec.id} className="group">
-                  <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 mb-4 bg-zinc-100 relative">
+                  <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-md border border-zinc-100 mb-3 bg-zinc-100 relative">
                     <img src={rec.cover_image || PH} onError={onErr} alt={rec.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
-                      <div className="w-full py-2 bg-[#53389e] hover:bg-[#432c81] text-white text-[10px] uppercase tracking-wider font-bold rounded-lg shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all flex items-center justify-center">
-                        Details
+                    <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-full py-1.5 bg-[#20d9c0] text-white text-[9px] uppercase tracking-wider font-bold rounded-lg flex items-center justify-center">
+                        Borrow
                       </div>
                     </div>
                   </div>
-                  <h4 className="text-sm font-bold text-zinc-900 mb-1 leading-snug truncate" title={rec.title}>{rec.title}</h4>
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest truncate">{rec.author}</p>
+                  <h4 className="text-xs font-bold text-zinc-800 truncate leading-snug" title={rec.title}>{rec.title}</h4>
+                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider truncate mt-0.5">{rec.author}</p>
                 </Link>
               ))}
             </div>
           </div>
         )}
-
       </div>
+
     </div>
   );
 }
