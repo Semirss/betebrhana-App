@@ -14,7 +14,7 @@ const metaDb = localforage.createInstance({
 });
 
 export async function hasDownloadedBook(bookId) {
-  const meta = await metaDb.getItem(bookId);
+  const meta = await metaDb.getItem(bookId.toString());
   return !!meta;
 }
 
@@ -39,9 +39,9 @@ export async function downloadBook(bookId, bookMeta) {
     };
     
     // Save metadata
-    await metaDb.setItem(bookId, localMeta);
+    await metaDb.setItem(bookId.toString(), localMeta);
     // Save encrypted file
-    await booksDb.setItem(bookId, encryptedData);
+    await booksDb.setItem(bookId.toString(), encryptedData);
 
     return true;
   } catch (error) {
@@ -51,7 +51,7 @@ export async function downloadBook(bookId, bookMeta) {
 }
 
 export async function readBookFile(bookId) {
-  const encryptedData = await booksDb.getItem(bookId);
+  const encryptedData = await booksDb.getItem(bookId.toString());
   if (!encryptedData) {
     throw new Error('Book file not found offline');
   }
@@ -70,6 +70,6 @@ export async function getDownloadedBooks() {
 }
 
 export async function deleteBook(bookId) {
-  await booksDb.removeItem(bookId);
-  await metaDb.removeItem(bookId);
+  await booksDb.removeItem(bookId.toString());
+  await metaDb.removeItem(bookId.toString());
 }

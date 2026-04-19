@@ -174,7 +174,7 @@ export default function BookDetailsPage() {
                 {/* Placeholder reader avatars */}
                 <div className="flex items-center flex-shrink-0 hidden sm:flex">
                   {[0, 1, 2].map(i => (
-                    <div key={i} className="w-9 h-9 rounded-full border-2 border-white dark:border-zinc-900 bg-gradient-to-br from-[#53389e]/60 to-[#9b82ff]/60 -ml-2 first:ml-0 shadow-sm" />
+                    <img key={i} src={`https://i.pravatar.cc/100?img=${i + 12}`} alt="Reader avatar" className="w-9 h-9 rounded-full border-2 border-white dark:border-zinc-900 object-cover -ml-2 first:ml-0 shadow-sm bg-zinc-100 dark:bg-zinc-800" />
                   ))}
                   <span className="ml-2 text-xs font-bold text-zinc-500 dark:text-zinc-400">+{book.total_copies || 0}</span>
                 </div>
