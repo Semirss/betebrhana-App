@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Play, ArrowRight, Star } from 'lucide-react';
 import api from '../api';
+import { useLanguage } from '../context/LanguageContext';
 
 const PH = 'https://placehold.co/300x450/e8e8e8/aaaaaa?text=No+Cover';
 const onErr = (e) => { e.target.onerror = null; e.target.src = PH; };
@@ -10,6 +11,7 @@ export default function HomePage() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCatTab, setActiveCatTab] = useState('Fiction');
+  const { t } = useLanguage();
 
   useEffect(() => {
     async function fetchData() {
@@ -26,7 +28,7 @@ export default function HomePage() {
   }, []);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen text-zinc-400 text-sm bg-[#FDFBF7]">Loading…</div>;
+    return <div className="flex items-center justify-center h-screen text-zinc-400 text-sm bg-[#FDFBF7] dark:bg-[#121212]">Loading…</div>;
   }
 
   const popular = books.slice(0, 4);
@@ -36,7 +38,6 @@ export default function HomePage() {
   const TABS = ["Fiction", "Science & Math", "History", "Art & Design", "Philosophy"];
   const tabIndex = TABS.indexOf(activeCatTab);
   
-  // Pad the books to have at least 6 to display, shifting the array based on the active tab so they change
   const categoryBooks = Array.from({ length: 6 }).map((_, i) => {
     if (books.length === 0) return null;
     return books[(i + (tabIndex * 2)) % books.length];
@@ -45,22 +46,22 @@ export default function HomePage() {
   return (
     <>
       {/* ── MOBILE (Unaffected) ── */}
-      <div className="md:hidden mobile-discover pt-12 pb-6 px-4 bg-[#FDFBF7] min-h-screen">
+      <div className="md:hidden mobile-discover pt-12 pb-6 px-4 bg-[#FDFBF7] dark:bg-[#121212] min-h-screen transition-colors">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#18181b', margin: 0 }}>Discover</h1>
-          <Link to="/search" style={{ padding: 8, borderRadius: '50%', background: 'white', border: '1px solid #e4e4e7', display: 'flex' }}>
-            <Search size={18} color="#52525b" />
+          <h1 className="text-[22px] font-[800] text-[#18181b] dark:text-zinc-100 m-0">{t('Discover')}</h1>
+          <Link to="/search" className="p-2 rounded-full bg-white dark:bg-zinc-800 border border-[#e4e4e7] dark:border-zinc-700 flex">
+            <Search size={18} className="text-[#52525b] dark:text-zinc-300" />
           </Link>
         </div>
         
         {featuredMobile && (
           <div className="flex flex-col items-center mb-12">
-            <h3 className="text-2xl font-serif font-bold text-zinc-900 mb-6">{featuredMobile.category || 'Featured'}</h3>
-            <div className="relative w-full max-w-xs aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl mb-6 bg-zinc-100">
+            <h3 className="text-2xl font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-6">{featuredMobile.category || 'Featured'}</h3>
+            <div className="relative w-full max-w-xs aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl mb-6 bg-zinc-100 dark:bg-zinc-800">
               <img src={featuredMobile.cover_image || PH} onError={onErr} alt="Cover" className="w-full h-full object-cover" />
             </div>
-            <h4 className="text-xl text-center font-serif font-bold text-zinc-900 mb-1">{featuredMobile.title}</h4>
-            <p className="text-sm text-center text-zinc-500 mb-6">{featuredMobile.author}</p>
+            <h4 className="text-xl text-center font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-1">{featuredMobile.title}</h4>
+            <p className="text-sm text-center text-zinc-500 dark:text-zinc-400 mb-6">{featuredMobile.author}</p>
             <Link to={`/book/${featuredMobile.id}`} className="px-8 py-3 rounded-full bg-[#53389e] text-white font-semibold text-sm">
               Open Now
             </Link>
@@ -68,15 +69,15 @@ export default function HomePage() {
         )}
 
         <div className="mb-6">
-          <h3 className="font-serif font-bold text-lg text-zinc-900 mb-4">New Arrivals</h3>
+          <h3 className="font-serif font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-4">{t('New Arrivals')}</h3>
           <div className="flex gap-4 overflow-x-auto pb-4 snap-x no-scrollbar">
             {mobileArrivals.map(book => (
               <Link to={`/book/${book.id}`} key={book.id} className="block w-32 flex-shrink-0 snap-start">
-                <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-md mb-3 bg-zinc-100">
+                <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-md mb-3 bg-zinc-100 dark:bg-zinc-800">
                   <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover" />
                 </div>
-                <h4 className="text-sm font-bold text-zinc-900 truncate">{book.title}</h4>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider truncate">{book.author}</p>
+                <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{book.title}</h4>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wider truncate">{book.author}</p>
               </Link>
             ))}
           </div>
@@ -84,8 +85,7 @@ export default function HomePage() {
 
         {/* ── MOBILE: Browse by Category ── */}
         <div className="mb-8">
-          <h3 className="font-serif font-bold text-lg text-zinc-900 mb-4">Browse by Category</h3>
-          {/* Horizontal scrollable category tabs */}
+          <h3 className="font-serif font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-4">{t('Browse by Category')}</h3>
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar mb-5">
             {TABS.map((cat) => (
               <button
@@ -94,24 +94,23 @@ export default function HomePage() {
                 className={`flex-shrink-0 px-5 py-2 rounded-full text-xs font-bold border transition-all ${
                   activeCatTab === cat
                     ? 'bg-[#53389e] border-[#53389e] text-white'
-                    : 'bg-white border-zinc-200 text-zinc-600'
+                    : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300'
                 }`}
               >
                 {cat}
               </button>
             ))}
           </div>
-          {/* 2-column grid of category books */}
           <div className="grid grid-cols-3 gap-3">
             {categoryBooks.slice(0, 6).map((book, idx) => {
               const uniqueKey = book.id ? `mob-${book.id}-${idx}` : `mob-fallback-${idx}`;
               return (
                 <Link to={`/book/${book.id}`} key={uniqueKey} className="block group">
-                  <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-md mb-2 bg-zinc-100">
+                  <div className="aspect-[3/4] rounded-xl overflow-hidden shadow-md mb-2 bg-zinc-100 dark:bg-zinc-800">
                     <img src={book.cover_image || PH} onError={onErr} alt={book.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   </div>
-                  <h4 className="text-[11px] font-bold text-zinc-900 truncate leading-snug">{book.title || 'Untitled'}</h4>
-                  <p className="text-[9px] text-zinc-500 uppercase tracking-wider truncate">{book.author || ''}</p>
+                  <h4 className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 truncate leading-snug">{book.title || 'Untitled'}</h4>
+                  <p className="text-[9px] text-zinc-500 dark:text-zinc-400 uppercase tracking-wider truncate">{book.author || ''}</p>
                 </Link>
               );
             })}
@@ -119,49 +118,49 @@ export default function HomePage() {
         </div>
 
         {/* ── MOBILE: Footer ── */}
-        <div className="border-t border-zinc-200 pt-6 pb-4 mt-4">
+        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6 pb-4 mt-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-7 h-7 rounded-lg bg-[#53389e] flex items-center justify-center">
               <Play size={12} fill="white" color="white" />
             </div>
-            <span className="font-bold text-base text-zinc-900 tracking-tight">BeteBrana</span>
+            <span className="font-bold text-base text-zinc-900 dark:text-zinc-100 tracking-tight">BeteBrana</span>
           </div>
-          <p className="text-xs text-zinc-400 leading-relaxed mb-4">Your digital library. Borrow, discover, and read anytime.</p>
-          <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
-            <Link to="/search" className="hover:text-[#53389e] transition-colors">Discover</Link>
-            <Link to="/library" className="hover:text-[#53389e] transition-colors">My Library</Link>
-            <Link to="/profile" className="hover:text-[#53389e] transition-colors">Account</Link>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed mb-4">{t('Your digital library. Borrow, discover, and read anytime.')}</p>
+          <div className="flex flex-wrap gap-4 text-xs text-zinc-400 dark:text-zinc-500">
+            <Link to="/search" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('Discover')}</Link>
+            <Link to="/library" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('My Library')}</Link>
+            <Link to="/profile" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('Profile')}</Link>
           </div>
-          <p className="text-[10px] text-zinc-300 mt-4">© {new Date().getFullYear()} BeteBrana. All rights reserved.</p>
+          <p className="text-[10px] text-zinc-300 dark:text-zinc-600 mt-4">© {new Date().getFullYear()} BeteBrana. All rights reserved.</p>
         </div>
 
       </div>
 
       {/* ── DESKTOP (Auca Style) ── */}
-      <div className="hidden md:block pt-32 lg:pt-20 pb-0 bg-[#FDFBF7] min-h-screen">
+      <div className="hidden md:block pt-32 lg:pt-20 pb-0 bg-[#FDFBF7] dark:bg-[#121212] min-h-screen transition-colors">
         
         {/* HERO SECTION */}
         <section className="max-w-[1200px] mx-auto px-8 flex items-center justify-between gap-16 mb-40">
           
           {/* Left Text */}
           <div className="max-w-[500px]">
-            <h1 className="text-[3.5rem] leading-[1.1] font-bold text-zinc-900 mb-6 font-serif">
-              Find the perfect book for <span style={{ color: '#53389e', position: 'relative', display: 'inline-block' }}>
-                every moment.
+            <h1 className="text-[3.5rem] leading-[1.1] font-bold text-zinc-900 dark:text-zinc-100 mb-6 font-serif">
+              {t('Find the perfect book for ')}<span style={{ color: '#53389e', position: 'relative', display: 'inline-block' }}>
+                {t('every moment.')}
                 <svg className="absolute w-full h-[8px] left-0 -bottom-1" viewBox="0 0 100 10" preserveAspectRatio="none">
                   <path d="M0,5 Q50,0 100,5" stroke="#bbf7d0" strokeWidth="4" fill="transparent" strokeLinecap="round" />
                 </svg>
               </span>
             </h1>
-            <p className="text-lg text-zinc-500 mb-10 leading-relaxed max-w-[400px]">
-              Borrow books easily, explore curated collections, and enjoy reading anytime, anywhere.
+            <p className="text-lg text-zinc-500 dark:text-zinc-400 mb-10 leading-relaxed max-w-[400px]">
+              {t('Borrow books easily, explore curated collections, and enjoy reading anytime, anywhere.')}
             </p>
             <div className="flex items-center gap-4">
               <Link to="/library" className="px-8 py-4 bg-[#53389e] hover:bg-[#432c81] text-white rounded-xl font-bold transition-all shadow-lg shadow-purple-900/20">
-                Borrow Now
+                {t('Borrow Now')}
               </Link>
-              <Link to="/search" className="px-8 py-4 bg-white hover:bg-zinc-50 text-zinc-800 rounded-xl font-bold transition-all border border-zinc-200">
-                Browse Collection
+              <Link to="/search" className="px-8 py-4 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl font-bold transition-all border border-zinc-200 dark:border-zinc-700">
+                {t('Browse Collection')}
               </Link>
             </div>
           </div>
@@ -170,57 +169,55 @@ export default function HomePage() {
           <div className="relative flex-1 h-[550px] lg:h-[600px] mt-10 md:mt-0 flex items-center justify-center">
             
             {/* Soft background glow */}
-            <div className="absolute w-[400px] h-[400px] bg-gradient-to-tr from-[#ede9fe] to-[#ecfdf5] rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+            <div className="absolute w-[400px] h-[400px] bg-gradient-to-tr from-[#ede9fe] to-[#ecfdf5] dark:from-[#2e1d52] dark:to-[#1a402d] rounded-full blur-3xl opacity-50 pointer-events-none transition-colors"></div>
             
             {/* The Main Hero Visual */}
-            <div className="relative z-10 w-[300px] lg:w-[340px] h-[400px] lg:h-[460px] bg-zinc-100 rounded-3xl overflow-hidden shadow-2xl border border-zinc-200" style={{ transform: 'rotate(2deg)' }}>
-               {/* Replace with a woman reading/listening from reference */}
+            <div className="relative z-10 w-[300px] lg:w-[340px] h-[400px] lg:h-[460px] bg-zinc-100 dark:bg-zinc-800 rounded-3xl overflow-hidden shadow-2xl border border-zinc-200 dark:border-zinc-700" style={{ transform: 'rotate(2deg)' }}>
                <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=600" alt="Reading" className="w-full h-full object-cover opacity-90" />
             </div>
 
             {/* Top Right Info Pills Group */}
             <div className="absolute top-10 -right-8 lg:-right-4 flex gap-4 z-30">
-              <div className="bg-[#dcfce7] px-6 py-3 rounded-2xl shadow-lg border border-[#bbf7d0] text-center">
-                <p className="text-xl font-bold text-[#166534] mb-0.5">21K+</p>
-                <p className="text-[9px] text-[#166534] uppercase tracking-widest font-bold opacity-80">Titles</p>
+              <div className="bg-[#dcfce7] dark:bg-[#14532d] px-6 py-3 rounded-2xl shadow-lg border border-[#bbf7d0] dark:border-[#166534] text-center transition-colors">
+                <p className="text-xl font-bold text-[#166534] dark:text-[#bbf7d0] mb-0.5">21K+</p>
+                <p className="text-[9px] text-[#166534] dark:text-[#bbf7d0] uppercase tracking-widest font-bold opacity-80">{t('Titles')}</p>
               </div>
-              <div className="bg-[#ede9fe] px-6 py-3 rounded-2xl shadow-lg border border-[#ddd6fe] text-center">
-                <p className="text-xl font-bold text-[#53389e] mb-0.5">57K+</p>
-                <p className="text-[9px] text-[#53389e] uppercase tracking-widest font-bold opacity-80">Readers</p>
+              <div className="bg-[#ede9fe] dark:bg-[#3b0764] px-6 py-3 rounded-2xl shadow-lg border border-[#ddd6fe] dark:border-[#581c87] text-center transition-colors">
+                <p className="text-xl font-bold text-[#53389e] dark:text-[#d8b4fe] mb-0.5">57K+</p>
+                <p className="text-[9px] text-[#53389e] dark:text-[#d8b4fe] uppercase tracking-widest font-bold opacity-80">{t('Readers')}</p>
               </div>
             </div>
 
-            {/* Static Floating Book 1 (Top Left) */}
-            <div className="absolute top-16 lg:top-24 left-0 lg:-left-6 w-[120px] lg:w-[140px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border-4 border-white z-20" style={{ transform: 'rotate(-12deg)' }}>
+            {/* Static Floating Book 1 */}
+            <div className="absolute top-16 lg:top-24 left-0 lg:-left-6 w-[120px] lg:w-[140px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#1e1e1e] z-20 transition-colors" style={{ transform: 'rotate(-12deg)' }}>
               <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover" alt="Book Cover 1" />
             </div>
 
-            {/* Static Floating Book 2 (Bottom Right) */}
-            <div className="absolute bottom-12 lg:bottom-16 -right-6 w-[140px] lg:w-[160px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border-4 border-white z-20" style={{ transform: 'rotate(8deg)' }}>
+            {/* Static Floating Book 2 */}
+            <div className="absolute bottom-12 lg:bottom-16 -right-6 w-[140px] lg:w-[160px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#1e1e1e] z-20 transition-colors" style={{ transform: 'rotate(8deg)' }}>
               <img src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover" alt="Book Cover 2" />
             </div>
 
-             {/* Small circular play button near Book 2 */}
-             <div className="absolute bottom-40 -right-10 lg:-right-2 w-12 h-12 bg-[#bbf7d0] border-2 border-white rounded-full shadow-lg flex items-center justify-center z-30 hidden md:flex">
-               <Play size={18} fill="#166534" className="text-[#166534] ml-1" />
+             <div className="absolute bottom-40 -right-10 lg:-right-2 w-12 h-12 bg-[#bbf7d0] dark:bg-[#14532d] border-2 border-white dark:border-[#1e1e1e] rounded-full shadow-lg flex items-center justify-center z-30 hidden md:flex transition-colors">
+               <Play size={18} fill="#166534" className="text-[#166534] dark:text-[#bbf7d0] ml-1" />
              </div>
 
-            {/* Audio/Progress Widget (Bottom Left) */}
-            <div className="absolute bottom-20 -left-12 lg:-left-20 bg-white p-4 lg:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-5 z-30 border border-zinc-100">
+            {/* Audio/Progress Widget */}
+            <div className="absolute bottom-20 -left-12 lg:-left-20 bg-white dark:bg-[#1e1e1e] p-4 lg:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-5 z-30 border border-zinc-100 dark:border-zinc-800 transition-colors">
               <div className="w-12 h-12 rounded-full bg-[#53389e] flex items-center justify-center text-white shadow-md cursor-pointer hover:bg-[#432c81] transition-colors">
                 <Play size={18} fill="white" className="ml-1" />
               </div>
               <div className="flex flex-col gap-2.5">
-                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Chapter Eight</div>
-                <div className="w-32 h-1.5 bg-zinc-100 rounded-full">
+                <div className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Chapter Eight</div>
+                <div className="w-32 h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full">
                   <div className="w-1/2 h-full bg-[#53389e] rounded-full relative">
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-[#53389e] rounded-full shadow-sm"></div>
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-[#1e1e1e] border-2 border-[#53389e] rounded-full shadow-sm"></div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center px-1 mt-1">
-                   <div className="w-3 h-3 rounded-full border border-zinc-300"></div>
+                   <div className="w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-600"></div>
                    <div className="w-3 h-3 rounded-full border border-[#53389e] bg-[#53389e]/10"></div>
-                   <div className="w-3 h-3 rounded-full border border-zinc-300"></div>
+                   <div className="w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-600"></div>
                 </div>
               </div>
             </div>
@@ -232,36 +229,32 @@ export default function HomePage() {
         <section className="max-w-[1200px] mx-auto px-8 mb-32">
           <div className="flex justify-between items-end mb-10">
             <div>
-              <p className="text-[#53389e] font-bold text-sm tracking-widest uppercase mb-2">Curated for you</p>
-              <h2 className="text-3xl font-serif font-bold text-zinc-900 tracking-tight">Popular Books This Week</h2>
+              <p className="text-[#53389e] dark:text-[#a78bfa] font-bold text-sm tracking-widest uppercase mb-2">{t('Curated for you')}</p>
+              <h2 className="text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{t('Popular Books This Week')}</h2>
             </div>
-            <Link to="/search" className="flex items-center gap-2 px-6 py-2.5 bg-[#bbf7d0] hover:bg-[#86efac] text-[#166534] rounded-full text-sm font-bold transition-colors">
-              Explore More <ArrowRight size={16} />
+            <Link to="/search" className="flex items-center gap-2 px-6 py-2.5 bg-[#bbf7d0] dark:bg-emerald-900/50 hover:bg-[#86efac] dark:hover:bg-emerald-800/60 text-[#166534] dark:text-emerald-300 rounded-full text-sm font-bold transition-colors">
+              {t('Explore More ')}<ArrowRight size={16} />
             </Link>
           </div>
 
           <div className="grid grid-cols-4 gap-8">
             {popular.map(book => (
               <div key={book.id} className="group">
-                <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 mb-5 relative bg-white">
+                <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 dark:border-zinc-800 mb-5 relative bg-white dark:bg-[#1e1e1e] transition-colors">
                   <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  {/* Status Pill */}
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-zinc-800 shadow-sm border border-black/5">
-                    {book.total_copies > 0 ? "Available" : "Borrowed"}
+                  <div className="absolute top-3 right-3 bg-white/90 dark:bg-[#1e1e1e]/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-zinc-800 dark:text-zinc-200 shadow-sm border border-black/5 dark:border-white/5 transition-colors">
+                    {book.total_copies > 0 ? t('Available') : t('Borrowed')}
                   </div>
-                  {/* Hover Borrow Overlay */}
                   <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
                     <Link to={`/book/${book.id}`} className="w-full py-2.5 bg-[#53389e] hover:bg-[#432c81] text-white text-xs font-bold rounded-xl shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all flex items-center justify-center">
-                      View Details
+                      {t('View Details')}
                     </Link>
                   </div>
                 </div>
-                
-                <h4 className="text-base font-bold text-zinc-900 mb-1 leading-snug truncate" title={book.title}>{book.title}</h4>
-                
+                <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-1 leading-snug truncate" title={book.title}>{book.title}</h4>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-zinc-500 uppercase tracking-widest truncate max-w-[70%]">{book.author}</p>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-600">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate max-w-[70%]">{book.author}</p>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400">
                     <Star fill="#53389e" color="#53389e" size={12} /> 4.8
                   </div>
                 </div>
@@ -271,14 +264,13 @@ export default function HomePage() {
         </section>
 
         {/* BROWSE CATEGORIES SECTION */}
-        <section className="bg-white py-24">
+        <section className="bg-white dark:bg-[#1e1e1e] py-24 transition-colors">
           <div className="max-w-[1200px] mx-auto px-8">
             <div className="flex flex-col items-center text-center mb-10">
-              <h2 className="text-3xl font-serif font-bold text-zinc-900 mb-4">Browse by Category</h2>
-              <p className="text-zinc-500 max-w-xl">Dive into your favorite genres and discover new topics.</p>
+              <h2 className="text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-4">{t('Browse by Category')}</h2>
+              <p className="text-zinc-500 dark:text-zinc-400 max-w-xl">{t('Dive into your favorite genres and discover new topics.')}</p>
             </div>
             
-            {/* Uniform Style Tabs */}
             <div className="flex flex-wrap justify-center gap-4 mb-16">
               {TABS.map((cat) => (
                 <button 
@@ -287,7 +279,7 @@ export default function HomePage() {
                   className={`px-8 py-3 rounded-full text-sm font-bold border transition-all duration-300 ${
                     activeCatTab === cat 
                       ? "bg-[#53389e] border-[#53389e] text-white shadow-md shadow-purple-900/20 scale-105" 
-                      : "bg-white border-zinc-200 text-zinc-600 hover:border-[#53389e] hover:text-[#53389e]"
+                      : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-[#53389e] dark:hover:border-[#a78bfa] hover:text-[#53389e] dark:hover:text-[#a78bfa]"
                   }`}
                 >
                   {cat}
@@ -295,22 +287,21 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* Grid of 6 Books for Active Tab */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
               {categoryBooks.map((book, idx) => {
                  const uniqueKey = book.id ? `${book.id}-${idx}` : `fallback-${idx}`;
                  return (
                    <Link to={`/book/${book.id}`} key={uniqueKey} className="group cursor-pointer">
-                     <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-md border border-zinc-100 mb-4 bg-zinc-100 relative">
+                     <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-md border border-zinc-100 dark:border-zinc-800 mb-4 bg-zinc-100 dark:bg-zinc-800 relative transition-colors">
                        <img src={book.cover_image || PH} onError={onErr} alt={book.title || "Book cover"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
                          <div className="w-full py-2 bg-[#53389e] hover:bg-[#432c81] text-white text-[10px] uppercase tracking-wider font-bold rounded-lg shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all flex items-center justify-center">
-                           Details
+                           {t('Details')}
                          </div>
                        </div>
                      </div>
-                     <h4 className="text-sm font-bold text-zinc-900 mb-1 leading-snug truncate" title={book.title}>{book.title || "Untitled"}</h4>
-                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest truncate">{book.author || "Unknown"}</p>
+                     <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 mb-1 leading-snug truncate" title={book.title}>{book.title || "Untitled"}</h4>
+                     <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate">{book.author || "Unknown"}</p>
                    </Link>
                  );
               })}
@@ -319,53 +310,53 @@ export default function HomePage() {
         </section>
 
         {/* FOOTER */}
-        <footer className="bg-white border-t border-zinc-200/80 pt-16 pb-8">
+        <footer className="bg-white dark:bg-[#121212] border-t border-zinc-200/80 dark:border-zinc-800/80 pt-16 pb-8 transition-colors">
           <div className="max-w-[1200px] mx-auto px-8 grid grid-cols-4 gap-12 mb-16">
             <div className="col-span-1">
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-8 h-8 rounded-lg bg-[#53389e] flex items-center justify-center text-white">
                   <Play size={18} />
                 </div>
-                <span className="font-bold text-xl text-zinc-900 tracking-tight">BeteBrana</span>
+                <span className="font-bold text-xl text-zinc-900 dark:text-zinc-100 tracking-tight">BeteBrana</span>
               </div>
-              <p className="text-xs text-zinc-500 leading-relaxed max-w-[250px]">
-                Providing accessible reading materials and curated collections for learners and enthusiasts.
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-[250px]">
+                {t('Providing accessible reading materials and curated collections for learners and enthusiasts.')}
               </p>
             </div>
             
             <div>
-              <h4 className="font-bold text-zinc-900 text-sm mb-6">Platform</h4>
-              <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500">
-                <li><Link to="/search" className="hover:text-[#53389e] transition-colors">Browse Library</Link></li>
-                <li><Link to="/search?filter=new" className="hover:text-[#53389e] transition-colors">New Arrivals</Link></li>
-                <li><Link to="/search?filter=popular" className="hover:text-[#53389e] transition-colors">Trending Now</Link></li>
+              <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mb-6">{t('Platform')}</h4>
+              <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <li><Link to="/search" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('Browse Library')}</Link></li>
+                <li><Link to="/search?filter=new" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('New Arrivals')}</Link></li>
+                <li><Link to="/search?filter=popular" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('Trending Now')}</Link></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-bold text-zinc-900 text-sm mb-6">Support</h4>
-              <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500">
-                <li><Link to="/faq" className="hover:text-[#53389e] transition-colors">Help Center</Link></li>
-                <li><Link to="/contact" className="hover:text-[#53389e] transition-colors">Contact Us</Link></li>
-                <li><Link to="/status" className="hover:text-[#53389e] transition-colors">System Status</Link></li>
+              <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mb-6">{t('Support')}</h4>
+              <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <li><Link to="/faq" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('Help Center')}</Link></li>
+                <li><Link to="/contact" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('Contact Us')}</Link></li>
+                <li><Link to="/status" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('System Status')}</Link></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold text-zinc-900 text-sm mb-6">Legal</h4>
-              <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500">
-                <li><Link to="/terms" className="hover:text-[#53389e] transition-colors">Terms of Service</Link></li>
-                <li><Link to="/privacy" className="hover:text-[#53389e] transition-colors">Privacy Policy</Link></li>
+              <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mb-6">{t('Legal')}</h4>
+              <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <li><Link to="/terms" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('Terms of Service')}</Link></li>
+                <li><Link to="/privacy" className="hover:text-[#53389e] dark:hover:text-[#a78bfa] transition-colors">{t('Privacy Policy')}</Link></li>
               </ul>
             </div>
           </div>
           
-          <div className="max-w-[1200px] mx-auto px-8 pt-8 border-t border-zinc-100 flex justify-between items-center text-[11px] text-zinc-400 font-medium">
-            <p>© {new Date().getFullYear()} BeteBrana Digital Library. All rights reserved.</p>
+          <div className="max-w-[1200px] mx-auto px-8 pt-8 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">
+            <p>© {new Date().getFullYear()} {t('BeteBrana Digital Library. All rights reserved.')}</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-zinc-600 transition-colors">Twitter</a>
-              <a href="#" className="hover:text-zinc-600 transition-colors">Instagram</a>
-              <a href="#" className="hover:text-zinc-600 transition-colors">LinkedIn</a>
+              <a href="#" className="hover:text-zinc-600 dark:hover:text-zinc-400 transition-colors">Twitter</a>
+              <a href="#" className="hover:text-zinc-600 dark:hover:text-zinc-400 transition-colors">Instagram</a>
+              <a href="#" className="hover:text-zinc-600 dark:hover:text-zinc-400 transition-colors">LinkedIn</a>
             </div>
           </div>
         </footer>
