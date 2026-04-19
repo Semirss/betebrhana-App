@@ -29,7 +29,7 @@ export default function BookDetailsPage() {
           const dlStatus = await hasDownloadedBook(found.id);
           setIsDownloaded(dlStatus);
         }
-        setRecommendedBooks(data.filter(b => b.id !== parseInt(id) && b.id !== id).slice(0, 5));
+        setRecommendedBooks(data.filter(b => b.id !== parseInt(id) && b.id !== id).slice(0, 6));
       } catch (err) {
         console.error("Failed to fetch book", err);
       } finally {
@@ -104,15 +104,15 @@ export default function BookDetailsPage() {
   );
 
   return (
-    /* Outer container – gradient header fades into white, matching the reference design */
+    /* Outer container */
     <div className="min-h-screen bg-[#FDFBF7]">
 
-      {/* Gradient hero band */}
-      <div className="w-full bg-gradient-to-b from-[#e8f0fe] via-[#f0eafd] to-[#FDFBF7] pt-24 md:pt-32 pb-24">
-        <div className="max-w-[720px] mx-auto px-6">
+      {/* Gradient hero band spanning full width but containing the grid */}
+      <div className="w-full bg-gradient-to-b from-[#e8f0fe] via-[#f0eafd] to-[#FDFBF7] pt-24 md:pt-32 pb-12 md:pb-20">
+        <div className="max-w-5xl mx-auto px-6">
 
           {/* Top bar */}
-          <div className="flex justify-between items-center mb-10">
+          <div className="flex justify-between items-center mb-10 md:mb-16">
             <button onClick={() => navigate(-1)}
               className="w-10 h-10 flex items-center justify-center bg-white/80 hover:bg-white backdrop-blur-sm rounded-full shadow-sm border border-zinc-200 text-zinc-600 transition-all">
               <ChevronLeft size={20} />
@@ -124,99 +124,108 @@ export default function BookDetailsPage() {
             </button>
           </div>
 
-          {/* Book cover — centered like the reference */}
-          <div className="flex justify-center mb-8">
-            <div className="relative w-[190px] sm:w-[220px] aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/60">
-              <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover" />
-              {isDownloaded && (
-                <div className="absolute top-3 left-3 bg-[#53389e] text-white p-1.5 rounded-lg shadow-md">
-                  <Bookmark size={14} fill="currentColor" />
-                </div>
+          {/* Main 2-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-10 md:gap-16 items-start">
+            
+            {/* Left Column: Cover */}
+            <div className="flex justify-center md:justify-start md:sticky md:top-32">
+              <div className="relative w-[190px] sm:w-[220px] md:w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/60">
+                <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover" />
+                {isDownloaded && (
+                  <div className="absolute top-3 left-3 bg-[#53389e] text-white p-1.5 rounded-lg shadow-md">
+                    <Bookmark size={14} fill="currentColor" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Details & Synopsis */}
+            <div className="flex flex-col text-center md:text-left">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-zinc-900 mb-3 leading-snug md:leading-tight">{book.title}</h1>
+              
+              <p className="text-zinc-500 text-[15px] md:text-lg mb-3">
+                {book.author}
+                {book.file_type && <span className="text-zinc-400"> ({book.file_type.toUpperCase()})</span>}
+              </p>
+              
+              {(book.category) && (
+                <p className="text-xs font-bold tracking-[0.15em] text-[#d8a892] uppercase mb-5">{book.category}</p>
               )}
+
+              {/* Stars */}
+              <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
+                {[1,2,3,4].map(i => <Star key={i} size={18} fill="#f59e0b" color="#f59e0b" />)}
+                <Star size={18} fill="#d1d5db" color="#d1d5db" />
+                <span className="text-sm font-bold text-zinc-700 ml-1">4.8</span>
+              </div>
+
+              {/* Available copies badge */}
+              <div className="flex justify-center md:justify-start mb-8">
+                <div className="inline-flex items-center gap-1.5 bg-white/80 border border-zinc-200 px-3 py-1.5 rounded-full text-xs font-bold text-zinc-600 shadow-sm">
+                  <div className={`w-2 h-2 rounded-full ${book.available_copies > 0 ? 'bg-green-400' : 'bg-orange-400'}`} />
+                  {book.available_copies > 0 ? `${book.available_copies} copies available` : 'All copies borrowed — join queue'}
+                </div>
+              </div>
+
+              {/* Action row */}
+              <div className="flex items-center justify-center md:justify-start gap-4 mb-10 w-full md:max-w-md">
+                {/* Placeholder reader avatars */}
+                <div className="flex items-center flex-shrink-0 hidden sm:flex">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="w-9 h-9 rounded-full border-2 border-white bg-gradient-to-br from-[#53389e]/60 to-[#9b82ff]/60 -ml-2 first:ml-0 shadow-sm" />
+                  ))}
+                  <span className="ml-2 text-xs font-bold text-zinc-500">+{book.total_copies || 0}</span>
+                </div>
+
+                {/* Primary action */}
+                <div className="flex-1 flex min-w-0">
+                  {primaryAction}
+                </div>
+
+                {/* Bookmark / download */}
+                <button
+                  onClick={book.userHasRental && !isDownloaded ? handleDownload : undefined}
+                  disabled={isDownloading}
+                  className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
+                    isDownloaded
+                      ? 'bg-[#53389e] border-[#53389e] text-white'
+                      : 'bg-white border-zinc-200 text-zinc-400 hover:border-[#53389e] hover:text-[#53389e]'
+                  }`}
+                >
+                  {isDownloading
+                    ? <span className="animate-spin text-sm">◌</span>
+                    : <Bookmark size={18} fill={isDownloaded ? 'currentColor' : 'none'} />
+                  }
+                </button>
+              </div>
+
+              {/* Synopsis Section */}
+              <div className="bg-white rounded-3xl shadow-lg border border-zinc-100 p-6 md:p-8 text-left">
+                <h3 className="text-lg font-serif font-bold text-zinc-900 mb-4">Synopsis</h3>
+                <div className="text-zinc-500 leading-relaxed space-y-4 text-[15px]">
+                  {book.description
+                    ? book.description.split('\n').filter(p => p.trim()).map((para, i) => <p key={i}>{para}</p>)
+                    : <p>No synopsis available for this book yet. Dive in and start reading!</p>
+                  }
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Title, author, category, stars — center aligned */}
-          <div className="text-center mb-8">
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-zinc-900 mb-2 leading-snug">{book.title}</h1>
-            <p className="text-zinc-500 text-[15px] mb-2">
-              {book.author}
-              {book.file_type && <span className="text-zinc-400"> ({book.file_type.toUpperCase()})</span>}
-            </p>
-            {(book.category) && (
-              <p className="text-xs font-bold tracking-[0.15em] text-[#d8a892] uppercase mb-4">{book.category}</p>
-            )}
-
-            {/* Stars */}
-            <div className="flex items-center justify-center gap-2 mb-2">
-              {[1,2,3,4].map(i => <Star key={i} size={18} fill="#f59e0b" color="#f59e0b" />)}
-              <Star size={18} fill="#d1d5db" color="#d1d5db" />
-              <span className="text-sm font-bold text-zinc-700 ml-1">4.8</span>
-            </div>
-
-            {/* Available copies badge */}
-            <div className="inline-flex items-center gap-1.5 bg-white/80 border border-zinc-200 px-3 py-1.5 rounded-full text-xs font-bold text-zinc-600 shadow-sm mt-1">
-              <div className={`w-2 h-2 rounded-full ${book.available_copies > 0 ? 'bg-green-400' : 'bg-orange-400'}`} />
-              {book.available_copies > 0 ? `${book.available_copies} copies available` : 'All copies borrowed — join queue'}
-            </div>
-          </div>
-
-          {/* Action row — avatars + primary CTA + bookmark */}
-          <div className="flex items-center gap-4 mb-2">
-            {/* Placeholder reader avatars */}
-            <div className="flex items-center flex-shrink-0">
-              {[0, 1, 2].map(i => (
-                <div key={i} className="w-9 h-9 rounded-full border-2 border-white bg-gradient-to-br from-[#53389e]/60 to-[#9b82ff]/60 -ml-2 first:ml-0 shadow-sm" />
-              ))}
-              <span className="ml-2 text-xs font-bold text-zinc-500">+{book.total_copies || 0}</span>
-            </div>
-
-            {/* Primary action */}
-            {primaryAction}
-
-            {/* Bookmark / download */}
-            <button
-              onClick={book.userHasRental && !isDownloaded ? handleDownload : undefined}
-              disabled={isDownloading}
-              className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
-                isDownloaded
-                  ? 'bg-[#53389e] border-[#53389e] text-white'
-                  : 'bg-white border-zinc-200 text-zinc-400 hover:border-[#53389e] hover:text-[#53389e]'
-              }`}
-            >
-              {isDownloading
-                ? <span className="animate-spin text-sm">◌</span>
-                : <Bookmark size={18} fill={isDownloaded ? 'currentColor' : 'none'} />
-              }
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Synopsis — white sheet below gradient, matching the bottom-sheet style */}
-      <div className="max-w-[720px] mx-auto px-6 -mt-8 relative z-10 pb-20">
-        <div className="bg-white rounded-3xl shadow-lg border border-zinc-100 p-8">
-          {/* Drag-handle decorative element */}
-          <div className="w-10 h-1 bg-zinc-200 rounded-full mx-auto mb-8" />
-          <h3 className="text-lg font-serif font-bold text-zinc-900 mb-4">Synopsis</h3>
-          <div className="text-zinc-500 leading-relaxed space-y-4 text-[15px]">
-            {book.description
-              ? book.description.split('\n').filter(p => p.trim()).map((para, i) => <p key={i}>{para}</p>)
-              : <p>No synopsis available for this book yet. Dive in and start reading!</p>
-            }
-          </div>
-        </div>
-
-        {/* More books you might like */}
+      {/* Recommended Books Section at the bottom */}
+      <div className="max-w-5xl mx-auto px-6 pb-20">
         {recommendedBooks.length > 0 && (
-          <div className="mt-14">
+          <div className="mt-8">
             <div className="flex justify-between items-end mb-6">
-              <h2 className="text-xl font-serif font-bold text-zinc-900">You Might Also Like</h2>
+              <h2 className="text-xl md:text-2xl font-serif font-bold text-zinc-900">You Might Also Like</h2>
               <Link to="/search" className="flex items-center gap-1.5 text-sm font-bold text-[#53389e] hover:underline">
                 View all <ArrowRight size={14} />
               </Link>
             </div>
-            <div className="grid grid-cols-5 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 sm:gap-5">
               {recommendedBooks.map(rec => (
                 <Link to={`/book/${rec.id}`} key={rec.id} className="group">
                   <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-md border border-zinc-100 mb-3 bg-zinc-100 relative">
@@ -227,8 +236,8 @@ export default function BookDetailsPage() {
                       </div>
                     </div>
                   </div>
-                  <h4 className="text-xs font-bold text-zinc-800 truncate leading-snug" title={rec.title}>{rec.title}</h4>
-                  <p className="text-[10px] text-zinc-400 uppercase tracking-wider truncate mt-0.5">{rec.author}</p>
+                  <h4 className="text-xs md:text-sm font-bold text-zinc-800 truncate leading-snug" title={rec.title}>{rec.title}</h4>
+                  <p className="text-[10px] md:text-xs text-zinc-400 uppercase tracking-wider truncate mt-0.5">{rec.author}</p>
                 </Link>
               ))}
             </div>
