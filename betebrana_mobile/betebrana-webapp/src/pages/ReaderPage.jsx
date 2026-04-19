@@ -133,9 +133,9 @@ export default function ReaderPage() {
             {/* Mode */}
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-zinc-500 uppercase">Read Mode</span>
-              <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
-                <button onClick={()=>setMode('scroll')} className={`px-3 py-1 text-xs rounded-md ${mode==='scroll'?'bg-white dark:bg-zinc-700 shadow-sm font-bold':''}`}>Scroll</button>
-                <button onClick={()=>setMode('slide')} className={`px-3 py-1 text-xs rounded-md ${mode==='slide'?'bg-white dark:bg-zinc-700 shadow-sm font-bold':''}`}>Slide</button>
+              <div className={`flex rounded-lg p-1 ${theme === 'dark' ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
+                <button onClick={()=>setMode('scroll')} className={`px-3 py-1 text-xs rounded-md ${mode==='scroll'?(theme==='dark'?'bg-zinc-700 text-white shadow-sm font-bold':'bg-white text-zinc-900 shadow-sm font-bold'):(theme==='dark'?'text-zinc-400':'text-zinc-500')}`}>Scroll</button>
+                <button onClick={()=>setMode('slide')} className={`px-3 py-1 text-xs rounded-md ${mode==='slide'?(theme==='dark'?'bg-zinc-700 text-white shadow-sm font-bold':'bg-white text-zinc-900 shadow-sm font-bold'):(theme==='dark'?'text-zinc-400':'text-zinc-500')}`}>Slide</button>
               </div>
             </div>
 
