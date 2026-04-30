@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext();
 
@@ -7,6 +6,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
+  // Load persisted session on mount
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem('access_token');
@@ -28,13 +28,22 @@ export function AuthProvider({ children }) {
     setUser(userData);
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
     window.location.href = '/login';
-  };
+  }, []);
+
+  // Listen for the 'auth:expired' event dispatched by the axios interceptor
+  // when the server returns 401 (unauthorized) or 403 (session expired).
+  // This ensures React state is properly cleared, not just localStorage.
+  useEffect(() => {
+    const handleExpired = () => logout();
+    window.addEventListener('auth:expired', handleExpired);
+    return () => window.removeEventListener('auth:expired', handleExpired);
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>

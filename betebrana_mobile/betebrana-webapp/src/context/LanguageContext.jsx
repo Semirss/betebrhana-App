@@ -93,7 +93,25 @@ const translations = {
     "You Might Also Like": "You Might Also Like",
     "View all": "View all",
     "Borrow": "Borrow",
-    "Please wait…": "Please wait…"
+    "Please wait…": "Please wait…",
+
+    // LoginPage
+    "Welcome back": "Welcome back",
+    "Create account": "Create account",
+    "Sign in to access your library.": "Sign in to access your library.",
+    "Join BeteBrana for free.": "Join BeteBrana for free.",
+    "Register": "Register",
+    "Create Account": "Create Account",
+    "Full name": "Full name",
+    "Email address": "Email address",
+    "Password": "Password",
+    "Your digital library awaits.": "Your digital library awaits.",
+    "Discover thousands of books. Borrow, read, and explore at your own pace. Anytime, anywhere.": "Discover thousands of books. Borrow, read, and explore at your own pace. Anytime, anywhere.",
+    "Books Available": "Books Available",
+    "Active Readers": "Active Readers",
+    "← Back to Home": "← Back to Home",
+    "Don't have an account? ": "Don't have an account? ",
+    "Already have an account? ": "Already have an account? "
   },
   am: {
     // Nav & General
@@ -187,7 +205,25 @@ const translations = {
     "You Might Also Like": "እርስዎም ሊወዱት ይችላሉ",
     "View all": "ሁሉንም ይመልከቱ",
     "Borrow": "ይዋሱ",
-    "Please wait…": "እባክዎ ይጠብቁ…"
+    "Please wait…": "እባክዎ ይጠብቁ…",
+
+    // LoginPage
+    "Welcome back": "እንኳን ደህና መጡ",
+    "Create account": "መለያ ይፍጠሩ",
+    "Sign in to access your library.": "ቤተ-መጽሐፍትዎን ለመጠቀም ይግቡ።",
+    "Join BeteBrana for free.": "ቤተ-ብራናን በነጻ ይቀላቀሉ።",
+    "Register": "ይመዝገቡ",
+    "Create Account": "መለያ ፍጠር",
+    "Full name": "ሙሉ ስም",
+    "Email address": "የኢሜይል አድራሻ",
+    "Password": "የይለፍ ቃል",
+    "Your digital library awaits.": "ዲጂታል ቤተ-መጽሐፍትዎ ይጠብቅዎታል።",
+    "Discover thousands of books. Borrow, read, and explore at your own pace. Anytime, anywhere.": "በሺዎች የሚቆጠሩ መጽሐፍት ያግኙ። ይዋሱ፣ ያንብቡ እና ባለዎት ፍጥነት ያስሱ። በማንኛውም ጊዜ እና ቦታ።",
+    "Books Available": "መጽሐፍት ይገኛሉ",
+    "Active Readers": "ንቁ አንባቢዎች",
+    "← Back to Home": "← ወደ ዋና ገጽ ተመለስ",
+    "Don't have an account? ": "መለያ የለዎትም? ",
+    "Already have an account? ": "መለያ አለዎት? "
   }
 };
 

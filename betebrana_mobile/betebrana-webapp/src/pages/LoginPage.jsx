@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { BookMarked, Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const PH = 'https://placehold.co/300x450/ede9fe/53389e?text=📖';
 
@@ -24,6 +25,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t } = useLanguage();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -68,10 +70,10 @@ export default function LoginPage() {
         {/* Center Content */}
         <div className="relative z-10">
           <h2 className="text-5xl font-serif font-bold text-white leading-tight mb-6">
-            Your digital<br />library awaits.
+            {t('Your digital library awaits.')}
           </h2>
           <p className="text-purple-200 text-lg leading-relaxed mb-12">
-            Discover thousands of books. Borrow, read, and explore<br />at your own pace. Anytime, anywhere.
+            {t('Discover thousands of books. Borrow, read, and explore at your own pace. Anytime, anywhere.')}
           </p>
 
          
@@ -80,17 +82,17 @@ export default function LoginPage() {
           <div className="flex gap-8 mt-10">
             <div>
               <div className="text-3xl font-bold text-white">13+</div>
-              <div className="text-purple-300 text-sm mt-1">Books Available</div>
+              <div className="text-purple-300 text-sm mt-1">{t('Books Available')}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-white">1K+</div>
-              <div className="text-purple-300 text-sm mt-1">Active Readers</div>
+              <div className="text-purple-300 text-sm mt-1">{t('Active Readers')}</div>
             </div>
           </div>
         </div>
 
         <Link to="/" className="text-purple-300 hover:text-white text-sm font-medium transition-colors z-10 relative">
-          ← Back to Home
+          {t('← Back to Home')}
         </Link>
 
         {/* Large background decoration circles */}
@@ -112,24 +114,24 @@ export default function LoginPage() {
 
           <div className="mb-8">
             <h1 className="text-3xl font-serif font-bold text-zinc-900 mb-2">
-              {tab === 'login' ? 'Welcome back' : 'Create account'}
+              {tab === 'login' ? t('Welcome back') : t('Create account')}
             </h1>
             <p className="text-zinc-500">
-              {tab === 'login' ? 'Sign in to access your library.' : 'Join BeteBrana for free.'}
+              {tab === 'login' ? t('Sign in to access your library.') : t('Join BeteBrana for free.')}
             </p>
           </div>
 
           {/* Tabs */}
           <div className="flex bg-zinc-100 rounded-2xl p-1 mb-8">
-            {['login', 'register'].map((t) => (
+            {['login', 'register'].map((tabKey) => (
               <button
-                key={t}
-                onClick={() => { setTab(t); setError(''); setSuccess(''); }}
+                key={tabKey}
+                onClick={() => { setTab(tabKey); setError(''); setSuccess(''); }}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all capitalize ${
-                  tab === t ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
+                  tab === tabKey ? 'bg-white text-zinc-900 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
                 }`}
               >
-                {t === 'login' ? 'Sign In' : 'Register'}
+                {tabKey === 'login' ? t('Sign In') : t('Register')}
               </button>
             ))}
           </div>
@@ -157,7 +159,7 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Full name"
+                  placeholder={t('Full name')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -173,7 +175,7 @@ export default function LoginPage() {
               </div>
               <input
                 type="email"
-                placeholder="Email address"
+                placeholder={t('Email address')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -188,7 +190,7 @@ export default function LoginPage() {
               </div>
               <input
                 type={showPass ? 'text' : 'password'}
-                placeholder="Password"
+                placeholder={t('Password')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -209,7 +211,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-4 mt-2 bg-[#53389e] hover:bg-[#432c81] text-white font-bold rounded-2xl shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
             >
-              {loading ? 'Please wait...' : (tab === 'login' ? 'Sign In' : 'Create Account')}
+              {loading ? t('Please wait…') : (tab === 'login' ? t('Sign In') : t('Create Account'))}
               {!loading && <ArrowRight size={18} />}
             </button>
 
@@ -217,12 +219,12 @@ export default function LoginPage() {
 
           {/* Footer switch */}
           <p className="text-center text-zinc-500 text-sm mt-8">
-            {tab === 'login' ? "Don't have an account? " : 'Already have an account? '}
+            {tab === 'login' ? t("Don't have an account? ") : t('Already have an account? ')}
             <button
               onClick={() => { setTab(tab === 'login' ? 'register' : 'login'); setError(''); setSuccess(''); }}
               className="text-[#53389e] font-bold hover:underline"
             >
-              {tab === 'login' ? 'Register' : 'Sign In'}
+              {tab === 'login' ? t('Register') : t('Sign In')}
             </button>
           </p>
 

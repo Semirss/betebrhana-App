@@ -14,15 +14,16 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle Auth errors globally (like 401s to force logout)
+// Handle Auth errors globally (401 = unauthorized, 403 = session expired/forbidden)
+// We fire a custom event so that AuthContext can react and clear React state properly,
+// rather than just wiping localStorage while the UI stays logged-in.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Clear token and redirect to login contextually
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+    const status = error.response?.status;
+    if (status === 401 || status === 403) {
+      // Dispatch a custom event; AuthContext listens for this and calls logout()
+      window.dispatchEvent(new Event('auth:expired'));
     }
     return Promise.reject(error);
   }
