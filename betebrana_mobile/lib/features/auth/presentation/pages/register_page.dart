@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../../../core/theme/app_theme.dart';
 import '../../presentation/bloc/authentication_bloc.dart';
 import '../../presentation/bloc/authentication_event.dart';
 import '../../presentation/bloc/authentication_state.dart';
@@ -22,11 +23,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final _confirmPasswordController = TextEditingController();
 
   // Theme Colors (Matching Login Page)
-  static const Color _backgroundColor = Color(0xFF121212);
-  static const Color _surfaceColor = Color(0xFF1E1E1E);
-  static const Color _accentColor = Color(0xFFFF6D00); // Vibrant Orange
-  static const Color _textPrimary = Colors.white;
-  static const Color _textSecondary = Colors.white70;
+  static const Color _backgroundColor = AppColors.lightBackground;
+  static const Color _surfaceColor = AppColors.lightCard;
+  static const Color _accentColor = AppColors.purple;
+  static const Color _textPrimary = AppColors.lightText;
+  static const Color _textSecondary = AppColors.lightSubtext;
 
   String? _errorMessage;
   bool _isRegistrationSuccessful = false;
@@ -192,12 +193,12 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.error_outline, color: Colors.red[400], size: 20),
+                              Icon(Icons.error_outline, color: Colors.red[700], size: 20),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   _errorMessage!,
-                                  style: TextStyle(color: Colors.red[200], fontSize: 13),
+                                  style: TextStyle(color: Colors.red[800], fontSize: 13),
                                 ),
                               ),
                             ],

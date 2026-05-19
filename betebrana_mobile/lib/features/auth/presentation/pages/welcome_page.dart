@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_theme.dart';
 import 'login_page.dart'; // Ensure correct path
 
 class WelcomePage extends StatelessWidget {
@@ -78,8 +79,8 @@ class WelcomePage extends StatelessWidget {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 212, 108, 10),
-                      foregroundColor: Colors.black,
+                      backgroundColor: AppColors.purple,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
