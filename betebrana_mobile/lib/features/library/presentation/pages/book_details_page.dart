@@ -926,482 +926,372 @@ Future<void> _returnCurrentBook() async {
     );
   }
 
-  Widget _buildActionButton() {
-    if (_loadingStatus) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey.shade300,
-            disabledBackgroundColor: Colors.grey.shade300,
-            disabledForegroundColor: Colors.grey.shade600,
-            minimumSize: const Size.fromHeight(60),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
-          ),
-          icon: SizedBox(
-            width: 20, height: 20, 
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey.shade500)
-          ),
-          label: const Text('Loading details...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ),
-      );
-    } else if (_activeRental != null) {
-      // Return button when book is borrowed
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.redAccent.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.redAccent,
-            minimumSize: const Size.fromHeight(60),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Colors.redAccent, width: 1.5),
-            ),
-            elevation: 0,
-          ),
-          icon: const Icon(Icons.undo),
-          label: const Text('Return Book', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ),
-      );
-    } else if (_canRent) {
-      // Rent/borrow button
-      final isReserved = widget.book.queueInfo?.hasReservation ?? false;
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: isReserved 
-                ? [Colors.teal.shade400, Colors.teal.shade700]
-                : [const Color(0xFFE6A15C), const Color(0xFFD68B3F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (isReserved ? Colors.teal : const Color(0xFFD68B3F)).withOpacity(0.4),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: (!_actionInProgress && !_isOffline) ? _rentCurrentBook : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(60),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
-            shadowColor: Colors.transparent,
-          ),
-          icon: isReserved ? const Icon(Icons.access_time_filled) : const Icon(Icons.library_add),
-          label: Text(
-            isReserved ? 'BORROW NOW (Reserved!)' : 'Borrow (21 days)',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-          ),
-        ),
-      );
-    } else if (_canJoinQueue) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.orange.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange.shade400,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(60),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
-          ),
-          icon: const Icon(Icons.schedule),
-          label: const Text('Join Queue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ),
-      );
-    } else if (_canLeaveQueue) {
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey.shade800,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(60),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
-          ),
-          icon: const Icon(Icons.cancel),
-          label: const Text('Leave Queue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ),
-      );
-    } else {
-      return Container(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
-        child: ElevatedButton.icon(
-          onPressed: null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey.shade200,
-            disabledBackgroundColor: Colors.grey.shade200,
-            disabledForegroundColor: Colors.grey.shade400,
-            minimumSize: const Size.fromHeight(60),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
-          ),
-          icon: const Icon(Icons.block),
-          label: const Text('Not Available', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ),
-      );
-    }
-  }
-
-  Widget _buildSecondaryActions() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    
-    return Column(
-      children: [
-        _buildActionButton(),
-        const SizedBox(height: 16),
-        
-        // Read button - High priority when book is active
-        if (_canRead) ...[
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4A90E2), Color(0xFF0052D4)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.4),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: (!_actionInProgress) 
-                ? () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ReaderPage(
-                          book: widget.book,
-                          rentalDueDate: _activeRental?.dueDate,
-                          sponsorId: _selectedSponsorId,
-                        ),
-                      ),
-                    );
-                  } 
-                : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(60),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-                shadowColor: Colors.transparent,
-              ),
-              icon: const Icon(Icons.menu_book),
-              label: const Text('Read Book', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // Download/Remove download actions
-        if (_canDownload || _isDownloaded)
-          Row(
-            children: [
-              Expanded(
-                child: _isDownloaded
-                  ? OutlinedButton.icon(
-                      onPressed: (!_actionInProgress) ? _removeDownloadedBook : null,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        side: BorderSide(color: Colors.redAccent.withOpacity(0.5)),
-                        minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      label: const Text('Remove offline copy', style: TextStyle(fontWeight: FontWeight.w600)),
-                    )
-                  : OutlinedButton.icon(
-                      onPressed: (!_actionInProgress && !_downloading) ? _downloadCurrentBook : null,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: isDark ? Colors.white70 : Colors.black87,
-                        side: BorderSide(color: isDark ? Colors.white30 : Colors.black26),
-                        minimumSize: const Size.fromHeight(50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: _downloading 
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.cloud_download_outlined, size: 20),
-                      label: Text(_downloading ? 'Downloading...' : 'Download for Offline', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    
+    // We keep the theme's surface colors but adopt the layout from the design
+    final scaffoldBg = isDark ? const Color(0xFF121212) : const Color(0xFFF2F2F2); // Clean premium background
 
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : const Color.fromARGB(255, 73, 73, 72),
-      body: Stack(
-        children: [
-          // Custom Scroll View for immersive header
-          CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              // Parallax header with book cover
-              SliverAppBar(
-                expandedHeight: 350,
-                collapsedHeight: 0,
-                toolbarHeight: 0,
-                pinned: false,
-                floating: false,
-                snap: false,
-                stretch: true,
-                backgroundColor: Colors.transparent,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
+      backgroundColor: scaffoldBg,
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            // Top Section (Gradient + Top Bar + Cover)
+            Stack(
+              alignment: Alignment.topCenter,
+              clipBehavior: Clip.none,
+              children: [
+                // Top Background Gradient Shape
+                Container(
+                  height: 380,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark 
+                          ? [const Color(0xFF3E2723), const Color(0xFF1E1E1E)] 
+                          : [const Color(0xFFFAF2EB), const Color(0xFFE8D6C4)],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(40),
+                      bottomRight: Radius.circular(40),
+                    ),
+                  ),
+                ),
+                
+                // Top Bar
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  left: 16,
+                  right: 16,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Book cover with parallax effect
-                      Transform.translate(
-                        offset: Offset(0, -_scrollOffset * 0.3),
+                      _buildTopButton(Icons.arrow_back, () => Navigator.pop(context), isDark),
+                      Row(
+                        children: [
+                          if (_loadingStatus || _downloading || _actionInProgress)
+                            const Padding(
+                              padding: EdgeInsets.only(right: 16.0),
+                              child: SizedBox(
+                                width: 20, height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          _buildTopButton(Icons.bookmark, () {}, isDark), // Bookmark placeholder
+                        ]
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Cover Image
+                Padding(
+                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 80),
+                  child: Hero(
+                    tag: 'book_cover_${book.id}',
+                    child: Container(
+                      height: 280,
+                      width: 190,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
                         child: _buildCoverImage(book, isDark),
                       ),
-                      // Gradient overlay
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              isDark ? Colors.black.withOpacity(0.5) : const Color.fromARGB(255, 39, 39, 39).withOpacity(0.7),
-                              isDark ? Colors.black : const Color.fromARGB(255, 73, 73, 72),
-                            ],
-                            stops: const [0.4, 0.8, 1.0],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Floating content card
-              SliverToBoxAdapter(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(32),
-                      topRight: Radius.circular(32),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Book title and author
-                        Text(
-                          book.title.isEmpty ? 'Untitled' : book.title,
-                          style: theme.textTheme.headlineMedium!.copyWith(
-                            color: isDark ? Colors.white : Colors.black87,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        Text(
-                          book.author.isEmpty ? 'Unknown author' : 'By ${book.author}',
-                          style: theme.textTheme.titleMedium!.copyWith(
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Description section immediately follows Title & Author
-                        if ((book.description ?? '').isNotEmpty) ...[
-                          Text(
-                            'About this book',
-                            style: theme.textTheme.titleMedium!.copyWith(
-                              color: isDark ? Colors.white : Colors.black87,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            book.description!,
-                            style: theme.textTheme.bodyMedium!.copyWith(
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
-                              height: 1.6,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                        ],
-                        
-                        // Key info badges
-                        _buildKeyInfoBadges(),
-                        const SizedBox(height: 24),
-                        
-                        // Status indicators
-                        if (_rentalStatusText().isNotEmpty)
-                          _buildStatusIndicator(
-                            Icons.library_books,
-                            _rentalStatusText(),
-                            _rentalStatusColor(),
-                          ),
-                        
-                        if (_queueStatusText().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: _buildStatusIndicator(
-                              Icons.groups,
-                              _queueStatusText(),
-                              _queueStatusColor(),
-                            ),
-                          ),
-                        
-                        const SizedBox(height: 36),
-                        
-                        // Action buttons right at the bottom of the content
-                        _buildSecondaryActions(),
-                        
-                        // Bottom padding
-                        const SizedBox(height: 40),
-                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          
-          // App bar with back button
-          Positioned(
-            top: MediaQuery.of(context).padding.top,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 56,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
+              ],
+            ),
+            
+            // Content below the cover
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: (isDark ? Colors.black : Colors.white).withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.arrow_back, 
-                        color: isDark ? Colors.white : Colors.black
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                  const Spacer(),
-                  if (_loadingStatus || _downloading || _actionInProgress)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: (isDark ? Colors.black : Colors.white).withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: (isDark ? Colors.black : Colors.white).withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.refresh, 
-                        color: isDark ? Colors.white : Colors.black
-                      ),
-                      onPressed: _loadStatus,
-                      tooltip: 'Refresh status',
+                  const SizedBox(height: 24),
+                  
+                  // Title
+                  Text(
+                    book.title.isEmpty ? 'Untitled' : book.title,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineMedium!.copyWith(
+                      color: isDark ? Colors.white : const Color(0xFF2C4856),
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                      fontSize: 24,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  
+                  // Author
+                  Text(
+                    book.author.isEmpty ? 'Unknown author' : book.author,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium!.copyWith(
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                    ),
+                  ),
+                  
+                  // Star Rating Placeholder
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('4.9', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade400 : const Color(0xFF2C4856))),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.star, color: Colors.orange, size: 16),
+                      const Icon(Icons.star, color: Colors.orange, size: 16),
+                      const Icon(Icons.star, color: Colors.orange, size: 16),
+                      const Icon(Icons.star, color: Colors.orange, size: 16),
+                      const Icon(Icons.star_half, color: Colors.orange, size: 16),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Metadata Row
+                  _buildMetadataBox(isDark),
+                  const SizedBox(height: 32),
+                  
+                  // Description
+                  if ((book.description ?? '').isNotEmpty) ...[
+                    Text(
+                      book.description!,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium!.copyWith(
+                        color: isDark ? Colors.grey.shade300 : const Color(0xFF4A6B7C),
+                        height: 1.6,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                  
+
+                  
+                  // Actions
+                  _buildActions(isDark),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
-          ),
-          
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildTopButton(IconData icon, VoidCallback onPressed, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: (isDark ? Colors.grey.shade800 : Colors.white).withOpacity(0.5),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: isDark ? Colors.white : Colors.black38),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  Widget _buildMetadataBox(bool isDark) {
+    if (_loadingStatus) return const SizedBox.shrink();
+
+    String statusStr = 'Available';
+    String detailLabel = 'Copies';
+    String detailValue = '${widget.book.availableCopies}/${widget.book.totalCopies}';
+    
+    if (_activeRental != null) {
+      statusStr = 'Borrowed';
+      detailLabel = 'Until';
+      detailValue = _activeRental!.dueDate.toLocal().toString().split(' ')[0];
+    } else if (_queueItem != null) {
+      statusStr = 'In Queue';
+      detailLabel = 'Position';
+      detailValue = widget.book.queueInfo?.userPosition.toString() ?? '-';
+    } else if (!widget.book.isAvailable) {
+      statusStr = 'Unavailable';
+      detailLabel = 'Copies';
+      detailValue = '0/${widget.book.totalCopies}';
+    }
+
+    String sponsorStr = widget.book.isSponsored ? (_selectedSponsorName ?? 'Anonymous') : 'None';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        borderRadius: BorderRadius.circular(12),
+        color: isDark ? Colors.white.withOpacity(0.02) : Colors.white,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildMetaItem('Status', statusStr, isDark),
+          Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.15)),
+          _buildMetaItem(detailLabel, detailValue, isDark),
+          Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.15)),
+          _buildMetaItem('Sponsor', sponsorStr, isDark),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMetaItem(String title, String value, bool isDark) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          Text(value, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF2C4856))),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildActions(bool isDark) {
+    if (_loadingStatus) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    
+    List<Widget> secondaryActions = [];
+    Widget? primaryAction;
+
+    // Secondary actions:
+    if (_activeRental != null) {
+      secondaryActions.add(
+        _buildSecondaryButton('Return Book', Icons.undo, Colors.redAccent, (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null, isDark)
+      );
+    }
+
+    if (_canDownload || _isDownloaded) {
+      if (_isDownloaded) {
+        secondaryActions.add(
+          _buildSecondaryButton('Remove Offline', Icons.delete_outline, Colors.redAccent, (!_actionInProgress) ? _removeDownloadedBook : null, isDark)
+        );
+      } else {
+        secondaryActions.add(
+          _buildSecondaryButton(_downloading ? 'Downloading...' : 'Download for Offline', _downloading ? Icons.hourglass_bottom : Icons.cloud_download_outlined, isDark ? Colors.white70 : Colors.black87, (!_actionInProgress && !_downloading) ? _downloadCurrentBook : null, isDark)
+        );
+      }
+    }
+
+    // Primary action:
+    if (_canRead) {
+      primaryAction = _buildPrimaryButton('Start reading', null, (!_actionInProgress) ? () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReaderPage(
+          book: widget.book,
+          rentalDueDate: _activeRental?.dueDate,
+          sponsorId: _selectedSponsorId,
+        )));
+      } : null, gradient: const [Color(0xFFFF9A5E), Color(0xFFFF7A3B)]); // Exactly like the image
+    } else if (_canRent) {
+      final isReserved = widget.book.queueInfo?.hasReservation ?? false;
+      primaryAction = _buildPrimaryButton(
+        isReserved ? 'BORROW NOW (Reserved!)' : 'Borrow (21 days)', 
+        isReserved ? Icons.access_time_filled : null, 
+        (!_actionInProgress && !_isOffline) ? _rentCurrentBook : null,
+        gradient: isReserved ? [Colors.teal.shade400, Colors.teal.shade700] : const [Color(0xFFFF9A5E), Color(0xFFFF7A3B)],
+      );
+    } else if (_canJoinQueue) {
+      primaryAction = _buildPrimaryButton('Join Queue', null, (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null, color: Colors.orange.shade400);
+    } else if (_canLeaveQueue) {
+      primaryAction = _buildPrimaryButton('Leave Queue', null, (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null, color: Colors.grey.shade800);
+    } else if (_activeRental == null) {
+      primaryAction = _buildPrimaryButton('Not Available', null, null, color: Colors.grey.shade300, textColor: Colors.grey.shade500);
+    }
+
+    return Column(
+      children: [
+        if (secondaryActions.isNotEmpty) ...[
+          Row(
+            children: secondaryActions.asMap().entries.map((entry) {
+              int idx = entry.key;
+              Widget btn = entry.value;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: idx == 0 && secondaryActions.length > 1 ? 6.0 : 0,
+                    left: idx == 1 && secondaryActions.length > 1 ? 6.0 : 0
+                  ),
+                  child: btn,
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (primaryAction != null) primaryAction,
+      ],
+    );
+  }
+
+  Widget _buildSecondaryButton(String label, IconData icon, Color color, VoidCallback? onPressed, bool isDark) {
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color.withOpacity(0.5)),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      icon: Icon(icon, size: 18),
+      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12), overflow: TextOverflow.ellipsis, maxLines: 1),
+    );
+  }
+
+  Widget _buildPrimaryButton(String label, IconData? icon, VoidCallback? onPressed, {List<Color>? gradient, Color? color, Color textColor = Colors.white}) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: gradient != null ? LinearGradient(colors: gradient) : null,
+        color: gradient == null ? (color ?? Colors.blue) : null,
+        boxShadow: onPressed != null ? [
+          BoxShadow(
+            color: (gradient?.last ?? color ?? Colors.blue).withOpacity(0.4),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ] : null,
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: textColor,
+          shadowColor: Colors.transparent,
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon),
+              const SizedBox(width: 8),
+            ],
+            Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          ],
+        ),
       ),
     );
   }
@@ -1447,30 +1337,6 @@ Future<void> _returnCurrentBook() async {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildStatusIndicator(IconData icon, String text, Color color) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: color,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: color,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
