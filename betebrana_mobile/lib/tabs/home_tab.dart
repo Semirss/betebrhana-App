@@ -30,218 +30,495 @@ class HomeTab extends StatefulWidget {
 
 class HomeTabState extends State<HomeTab> {
   final GlobalKey<_AdSliderState> _adKey = GlobalKey<_AdSliderState>();
+  PageController? _pageController;
+  int _currentIndex = 0;
+  Timer? _carouselTimer;
+
+  @override
+  void dispose() {
+    _carouselTimer?.cancel();
+    _pageController?.dispose();
+    super.dispose();
+  }
 
   void refresh() {
     _adKey.currentState?.refresh();
     DefaultCacheManager().emptyCache();
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
-    context.read<LibraryBloc>().add(LibraryRefreshed());
+    context.read<LibraryBloc>().add(const LibraryRefreshed());
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final lang = context.watch<LanguageBloc>().state;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+  void _initControllerIfNeeded(int totalBooks) {
+    if (_pageController == null) {
+      _currentIndex = totalBooks > 2 ? 1 : 0;
+      _pageController = PageController(viewportFraction: 0.65, initialPage: _currentIndex);
+      _startCarouselTimer();
+    }
+  }
 
-    return BlocBuilder<LibraryBloc, LibraryState>(
-      builder: (context, state) {
-        List<Book> books = state is LibraryLoaded ? state.books : [];
-        final featured = books.isNotEmpty ? books.first : null;
-        final arrivals = books.length > 1 ? books.sublist(1, math.min(books.length, 10)) : [];
-        final trending = books.reversed.take(5).toList();
-
-        return Scaffold(
-          backgroundColor: bg,
-          body: SafeArea(
-            child: CustomScrollView(
-              slivers: [
-                // ── Header bar ──
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          lang.t('Discover'),
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            color: isDark ? AppColors.darkText : AppColors.lightText,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.search,
-                              color: isDark ? AppColors.darkText : AppColors.lightText),
-                          onPressed: () {
-                            showSearch(
-                              context: context,
-                              delegate: _QuickSearchDelegate(books: books),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                if (state is LibraryLoading)
-                  const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else ...[
-                  // ── Featured ──
-                  if (featured != null) ...[
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                        child: Text(
-                          lang.t('Featured'),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? AppColors.darkSubtext : AppColors.lightSubtext,
-                          ),
-                        ),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: _FeaturedCard(book: featured, lang: lang),
-                      ),
-                    ),
-                  ],
-
-                  // ── New Arrivals ──
-                  if (arrivals.isNotEmpty) ...[
-                    SliverToBoxAdapter(
-                      child: _SectionHeader(
-                        title: lang.t('New Arrivals'),
-                        onSeeAll: () => context
-                            .findAncestorStateOfType<MainLibraryViewState>()
-                            ?.switchToTab(1),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 165,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: arrivals.length,
-                          itemBuilder: (_, i) => _SmallBookCard(
-                            book: arrivals[i],
-                            onTap: () => _goDetails(context, arrivals[i]),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  // ── Ad slider ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: _AdSlider(key: _adKey),
-                    ),
-                  ),
-
-                  // ── Trending ──
-                  if (trending.isNotEmpty) ...[
-                    SliverToBoxAdapter(
-                      child: _SectionHeader(
-                        title: lang.t('Trending Now'),
-                        onSeeAll: () => context
-                            .findAncestorStateOfType<MainLibraryViewState>()
-                            ?.switchToTab(1),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: 165,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: trending.length,
-                          itemBuilder: (_, i) => _SmallBookCard(
-                            book: trending[i],
-                            onTap: () => _goDetails(context, trending[i]),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
-    );
+  void _startCarouselTimer() {
+    _carouselTimer?.cancel();
+    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (!mounted || _pageController == null || !_pageController!.hasClients) return;
+      final libraryBloc = context.read<LibraryBloc>();
+      if (libraryBloc.state is LibraryLoaded) {
+        final books = (libraryBloc.state as LibraryLoaded).books;
+        if (books.isNotEmpty) {
+          int nextPage = _currentIndex + 1;
+          if (nextPage >= books.length) {
+            nextPage = 0;
+          }
+          _pageController!.animateToPage(
+            nextPage,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
   }
 
   void _goDetails(BuildContext context, Book book) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailsPage(book: book)));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => BookDetailsPage(book: book))).then((_) {
+      context.read<LibraryBloc>().add(const LibraryRefreshed());
+    });
   }
-}
 
-class _FeaturedCard extends StatelessWidget {
-  final Book book;
-  final LanguageState lang;
-  const _FeaturedCard({required this.book, required this.lang});
+  String _queueSubtitleText(Book book) {
+    final info = book.queueInfo;
+
+    if (book.userHasRental) {
+      return 'Rented';
+    }
+
+    if (info == null) {
+      if (!book.isAvailable) {
+        return 'Currently unavailable';
+      }
+      return 'Available';
+    }
+
+    if (info.hasReservation) {
+      final expiresAt = info.expiresAt;
+      if (expiresAt != null) {
+        final now = DateTime.now();
+        final difference = expiresAt.difference(now);
+        
+        if (difference.inHours > 0) {
+          return 'Reserved - ${difference.inHours}h ${difference.inMinutes.remainder(60)}m left';
+        } else if (difference.inMinutes > 0) {
+          return 'Reserved - ${difference.inMinutes}m left';
+        } else {
+          return 'Reserved - Expiring soon';
+        }
+      }
+      return 'Reserved for you';
+    }
+
+    if (info.userInQueue) {
+      if (info.userPosition > 0) {
+        return 'In queue (position ${info.userPosition})';
+      }
+      return 'In queue';
+    }
+
+    if (info.totalInQueue > 0) {
+      return 'Queue: ${info.totalInQueue} waiting';
+    }
+
+    return book.isAvailable ? 'Available' : 'Currently unavailable';
+  }
+
+  Color _getQueueStatusColor(BuildContext context, Book book) {
+    if (book.userHasRental) {
+      return Colors.green;
+    }
+    final info = book.queueInfo;
+    if (info?.hasReservation ?? false) {
+      return Colors.green;
+    }
+    if (info?.userInQueue ?? false) {
+      return Colors.orange;
+    }
+    if (book.isAvailable) {
+      return Theme.of(context).colorScheme.secondary;
+    }
+    return Theme.of(context).colorScheme.error;
+  }
+
+  Widget _buildBookCard(Book book, int index, int currentIndex, double viewportHeight, double viewportWidth) {
+    final coverUrl = book.coverImagePath?.isNotEmpty == true 
+        ? AppConfig.resolveUrl(book.coverImagePath)
+        : null;
+
+    return AnimatedBuilder(
+      animation: _pageController!,
+      builder: (context, child) {
+        double value = 1.0;
+        if (_pageController!.position.haveDimensions) {
+          value = _pageController!.page! - index;
+          // Make scaling more subtle and professional
+          value = (1 - (value.abs() * 0.1)).clamp(0.9, 1.0);
+        } else {
+          value = index == currentIndex ? 1.0 : 0.9;
+        }
+
+        return Align(
+          alignment: Alignment.center,
+          child: Transform.scale(
+            scale: Curves.easeInOut.transform(value),
+            child: child,
+          ),
+        );
+      },
+      child: GestureDetector(
+        onTap: () {
+          if (index == currentIndex) {
+            _goDetails(context, book);
+          } else {
+            _pageController!.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        },
+        child: AspectRatio(
+          aspectRatio: 0.65, // Perfect book cover proportions
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 15),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black38,
+                  blurRadius: 15,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: coverUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: coverUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.book, size: 50, color: Colors.grey),
+                      ),
+                    )
+                  : Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.book, size: 50, color: Colors.grey),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => BookDetailsPage(book: book)),
-      ),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: AspectRatio(
-              aspectRatio: 3 / 4,
-              child: BookCoverImage(path: book.coverImagePath, borderRadius: 16),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${book.title} (${book.author})',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(book.author,
-              style: TextStyle(
-                  fontSize: 13, color: Colors.grey.shade500)),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: 160,
-            child: ElevatedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => BookDetailsPage(book: book)),
+    return BlocBuilder<LibraryBloc, LibraryState>(
+      builder: (context, state) {
+        if (state is LibraryLoading || state is LibraryInitial) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+
+        if (state is LibraryError) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Failed to load books',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: refresh,
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.purple,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: Text(lang.t('Open Now'),
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
-          ),
-        ],
-      ),
+          );
+        }
+
+        if (state is LibraryLoaded) {
+          final books = state.books;
+          if (books.isEmpty) {
+            return const Scaffold(body: Center(child: Text('No books available')));
+          }
+
+          _initControllerIfNeeded(books.length);
+
+          final safeIndex = _currentIndex < books.length ? _currentIndex : 0;
+          final currentBook = books[safeIndex];
+          final currentCoverUrl = currentBook.coverImagePath?.isNotEmpty == true 
+              ? AppConfig.resolveUrl(currentBook.coverImagePath)
+              : null;
+              
+          final arrivals = books.length > 1 ? books.sublist(1, math.min(books.length, 10)) : <Book>[];
+          final trending = books.reversed.take(5).toList();
+
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                final viewportHeight = constraints.maxHeight;
+                final viewportWidth = constraints.maxWidth;
+
+                return SingleChildScrollView(
+                  child: Stack(
+                    children: [
+                      // 1. Animated Background (Stretches exactly 55% of the viewport)
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: viewportHeight * 0.55,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 600),
+                          transitionBuilder: (Widget child, Animation<double> animation) {
+                            return FadeTransition(opacity: animation, child: child);
+                          },
+                          child: currentCoverUrl != null
+                              ? Container(
+                                  key: ValueKey<String>(currentCoverUrl),
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                      image: CachedNetworkImageProvider(currentCoverUrl),
+                                      fit: BoxFit.cover,
+                                      colorFilter: ColorFilter.mode(
+                                        Colors.black.withOpacity(0.3),
+                                        BlendMode.darken,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  key: const ValueKey('placeholder'),
+                                  color: Colors.grey.shade800,
+                                ),
+                        ),
+                      ),
+
+                      // 2. White Bottom Section (Covers the rest of the scrollable content)
+                      Positioned(
+                        top: viewportHeight * 0.45,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(30),
+                              topRight: Radius.circular(30),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // 3. The Content
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // ── MAIN PAGE VIEWPORT ──
+                          // This container perfectly occupies exactly one screen height
+                          Container(
+                            height: viewportHeight,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Header Row (Discover & Search)
+                                SafeArea(
+                                  bottom: false,
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Discover',
+                                          style: TextStyle(
+                                            fontSize: 26,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.white,
+                                            shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.search, color: Colors.white, shadows: [Shadow(color: Colors.black45, blurRadius: 4)]),
+                                          onPressed: () {
+                                            showSearch(
+                                              context: context,
+                                              delegate: _QuickSearchDelegate(books: books),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                
+                                const Spacer(flex: 1),
+                                
+                                // Carousel
+                                SizedBox(
+                                  height: viewportHeight * 0.55, 
+                                  child: PageView.builder(
+                                    controller: _pageController,
+                                    onPageChanged: (index) {
+                                      setState(() {
+                                        _currentIndex = index;
+                                      });
+                                    },
+                                    itemCount: books.length,
+                                    itemBuilder: (context, index) {
+                                      return _buildBookCard(books[index], index, safeIndex, viewportHeight, viewportWidth);
+                                    },
+                                  ),
+                                ),
+                                
+                                const Spacer(flex: 1),
+                                
+                                // Book Details (Title, Author)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        currentBook.title.isEmpty ? 'Untitled' : currentBook.title,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                                          letterSpacing: -0.5,
+                                          height: 1.2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        currentBook.author.isEmpty ? 'Unknown author' : 'By ${currentBook.author}',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      
+                                      // Queue Status Badge
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: _getQueueStatusColor(context, currentBook).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          _queueSubtitleText(currentBook),
+                                          style: TextStyle(
+                                            color: _getQueueStatusColor(context, currentBook),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        '${currentBook.availableCopies}/${currentBook.totalCopies} available',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(flex: 2), // Pushes content up comfortably inside the viewport
+                              ],
+                            ),
+                          ),
+                          
+                          // ── SCROLLABLE FOOTER CONTENT ──
+                          // This starts exactly after scrolling down 1 full page
+
+                          // ── New Arrivals ──
+                          if (arrivals.isNotEmpty) ...[
+                            _SectionHeader(
+                              title: context.read<LanguageBloc>().state.t('New Arrivals'),
+                              onSeeAll: () => context
+                                  .findAncestorStateOfType<MainLibraryViewState>()
+                                  ?.switchToTab(1),
+                            ),
+                            SizedBox(
+                              height: 165,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: arrivals.length,
+                                itemBuilder: (_, i) => _SmallBookCard(
+                                  book: arrivals[i],
+                                  onTap: () => _goDetails(context, arrivals[i]),
+                                ),
+                              ),
+                            ),
+                          ],
+
+                          // ── Ad slider ──
+                          Padding(
+                            padding: const EdgeInsets.only(top: 20),
+                            child: _AdSlider(key: _adKey),
+                          ),
+
+                          // ── Trending ──
+                          if (trending.isNotEmpty) ...[
+                            _SectionHeader(
+                              title: context.read<LanguageBloc>().state.t('Trending Now'),
+                              onSeeAll: () => context
+                                  .findAncestorStateOfType<MainLibraryViewState>()
+                                  ?.switchToTab(1),
+                            ),
+                            SizedBox(
+                              height: 165,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                itemCount: trending.length,
+                                itemBuilder: (_, i) => _SmallBookCard(
+                                  book: trending[i],
+                                  onTap: () => _goDetails(context, trending[i]),
+                                ),
+                              ),
+                            ),
+                          ],
+                          
+                          const SizedBox(height: 100),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }
+            ),
+          );
+        }
+
+        return const SizedBox.shrink();
+      },
     );
   }
 }
@@ -307,7 +584,6 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// Quick search delegate reused from existing code
 class _QuickSearchDelegate extends SearchDelegate {
   final List<Book> books;
   _QuickSearchDelegate({required this.books});
