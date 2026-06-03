@@ -68,16 +68,8 @@ class _RegisterPageState extends State<RegisterPage> {
   void _showError(String message) {
     if (mounted) {
       setState(() {
-        _errorMessage = message;
+        _errorMessage = message.replaceAll('Exception: ', '');
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message, style: const TextStyle(color: Colors.white)),
-          backgroundColor: Colors.red.shade900,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
     }
   }
 
@@ -135,11 +127,11 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             child: BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) {
                 final isLoading = state is AuthLoading && !_isRegistrationSuccessful;
@@ -148,38 +140,67 @@ class _RegisterPageState extends State<RegisterPage> {
                   key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // --- Back Button & Branding ---
+                      // --- Back Button ---
                       Align(
                         alignment: Alignment.topLeft,
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: _textPrimary),
+                          icon: const Icon(Icons.arrow_back, color: Colors.black87),
                           onPressed: () => Navigator.of(context).pop(),
                         ),
                       ),
                       
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 16),
                       
-                      // --- Title ---
+                      // Logo
+                      Container(
+                        width: 80,
+                        height: 80,
+                        clipBehavior: Clip.antiAlias,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                        ),
+                        child: Image.asset(
+                          'assets/icon/betebranalogo.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Title
                       const Text(
                         'Create Account',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: _textPrimary,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          height: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Sign up to get started',
-                        style: TextStyle(
-                          color: _textSecondary,
-                          fontSize: 16,
-                        ),
+                      const SizedBox(height: 16),
+                      
+                      // Subtitle Badge
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.library_music_rounded, color: Color(0xFF1E1E1E), size: 14),
+                          SizedBox(width: 8),
+                          Text(
+                            ' Book Library',
+                            style: TextStyle(
+                              color: Color(0xFF1E1E1E),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                       
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 48),
 
                       // --- Error Display ---
                       if (_errorMessage != null)
@@ -208,7 +229,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       // --- Inputs ---
                       _buildTextField(
                         controller: _nameController,
-                        label: 'Full Name',
+                        hint: 'Full Name',
                         icon: Icons.person_outline,
                         validator: (value) {
                           if (value == null || value.isEmpty) return 'Please enter your name';
@@ -216,11 +237,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       
                       _buildTextField(
                         controller: _emailController,
-                        label: 'Email',
+                        hint: 'Email',
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
@@ -229,11 +250,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       
                       _buildTextField(
                         controller: _passwordController,
-                        label: 'Password',
+                        hint: 'Password',
                         icon: Icons.lock_outline,
                         isPassword: true,
                         validator: (value) {
@@ -242,11 +263,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       
                       _buildTextField(
                         controller: _confirmPasswordController,
-                        label: 'Confirm Password',
+                        hint: 'Confirm Password',
                         icon: Icons.lock_outline,
                         isPassword: true,
                         validator: (value) {
@@ -261,48 +282,48 @@ class _RegisterPageState extends State<RegisterPage> {
                       // --- Register Button ---
                       if (isLoading)
                         const Center(
-                          child: CircularProgressIndicator(color: _accentColor),
+                          child: CircularProgressIndicator(color: Color(0xFFFF7A3B)),
                         )
                       else
-                        SizedBox(
+                        Container(
                           width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _onSubmit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _accentColor,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
+                          height: 60,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF9A5E), Color(0xFFFF7A3B)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
                             ),
-                            child: const Text(
-                              'Sign Up',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFF7A3B).withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(30),
+                              splashColor: Colors.white.withOpacity(0.2),
+                              highlightColor: Colors.white.withOpacity(0.1),
+                              onTap: _onSubmit,
+                              child: const Center(
+                                child: Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       
-                      const SizedBox(height: 32),
-
-                      // // --- Social Login ---
-                      // const Row(
-                      //   children: [
-                      //     Expanded(child: Divider(color: _surfaceColor, thickness: 2)),
-                      //     Padding(
-                      //       padding: EdgeInsets.symmetric(horizontal: 16),
-                      //       child: Text('Or sign up with', style: TextStyle(color: _textSecondary, fontSize: 12)),
-                      //     ),
-                      //     Expanded(child: Divider(color: _surfaceColor, thickness: 2)),
-                      //   ],
-                      // ),
-                      // const SizedBox(height: 24),
-
                       const SizedBox(height: 32),
 
                       // --- Footer ---
@@ -311,14 +332,19 @@ class _RegisterPageState extends State<RegisterPage> {
                         children: [
                           const Text(
                             "Already have an account? ",
-                            style: TextStyle(color: _textSecondary),
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           GestureDetector(
                             onTap: _navigateToLogin,
                             child: const Text(
                               "Login",
                               style: TextStyle(
-                                color: _accentColor,
+                                color: Color(0xFFFF7A3B),
+                                fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -338,62 +364,48 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildTextField({
     required TextEditingController controller,
-    required String label,
+    required String hint,
     required IconData icon,
     bool isPassword = false,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: _textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+    return TextFormField(
+      controller: controller,
+      obscureText: isPassword,
+      keyboardType: keyboardType,
+      style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w500),
+      cursorColor: const Color(0xFFFF7A3B),
+      validator: validator,
+      onChanged: (_) => _clearError(),
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFFF5F6F8),
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.black38, fontSize: 15, fontWeight: FontWeight.w500),
+        prefixIcon: Icon(icon, color: Colors.black54, size: 20),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
         ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: isPassword,
-          keyboardType: keyboardType,
-          style: const TextStyle(color: _textPrimary),
-          cursorColor: _accentColor,
-          validator: validator,
-          onChanged: (_) => _clearError(),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: _surfaceColor,
-            hintText: 'Enter your ${label.toLowerCase()}',
-            hintStyle: TextStyle(color: Colors.grey[700], fontSize: 14),
-            prefixIcon: Icon(icon, color: Colors.grey[500]),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: _accentColor, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.red.shade400, width: 1),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
-            ),
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
         ),
-      ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: const BorderSide(color: Color(0xFFFF7A3B), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+        ),
+      ),
     );
   }
 }

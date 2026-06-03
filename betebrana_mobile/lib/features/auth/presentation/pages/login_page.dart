@@ -62,16 +62,8 @@ class _LoginPageState extends State<LoginPage> {
       listener: (context, state) {
         if (state is AuthFailure) {
           setState(() {
-            _errorMessage = state.message;
+            _errorMessage = state.message.replaceAll('Exception: ', '');
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message, style: const TextStyle(color: Colors.white)),
-              backgroundColor: Colors.red.shade900,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
         } else if (state is AuthAuthenticated) {
            setState(() {
             _errorMessage = null;
@@ -80,11 +72,11 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: _backgroundColor,
+        backgroundColor: Colors.white,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
               child: BlocBuilder<AuthBloc, AuthState>(
                 builder: (context, state) {
                   final isLoading = state is AuthLoading;
@@ -93,29 +85,58 @@ class _LoginPageState extends State<LoginPage> {
                     key: _formKey,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        const SizedBox(height: 24),
+
+                        // Logo
+                        Container(
+                          width: 80,
+                          height: 80,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                          ),
+                          child: Image.asset(
+                            'assets/icon/betebranalogo.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Title
+                        const Text(
+                          'Betebrana',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Subtitle Badge
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.library_music_rounded, color: Color(0xFF1E1E1E), size: 14),
+                            SizedBox(width: 8),
+                            Text(
+                              ' Book Library',
+                              style: TextStyle(
+                                color: Color(0xFF1E1E1E),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+
                         const SizedBox(height: 48),
-
-                        // --- Welcome Text ---
-                        const Text(
-                          'Welcome Back',
-                          style: TextStyle(
-                            color: _textPrimary,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Sign in to access your library',
-                          style: TextStyle(
-                            color: _textSecondary,
-                            fontSize: 16,
-                          ),
-                        ),
-
-                        const SizedBox(height: 32),
 
                         // --- Error Display ---
                         if (_errorMessage != null)
@@ -129,14 +150,12 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.error_outline,
-                                    color: Colors.red[700], size: 20),
+                                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: TextStyle(
-                                        color: Colors.red[800], fontSize: 13),
+                                    style: TextStyle(color: Colors.red[800], fontSize: 13),
                                   ),
                                 ),
                               ],
@@ -146,50 +165,29 @@ class _LoginPageState extends State<LoginPage> {
                         // --- Email Input ---
                         _buildTextField(
                           controller: _emailController,
-                          label: 'Email',
-                          icon: Icons.email_outlined,
+                          hint: 'Email',
+                          icon: Icons.person_outline,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.isEmpty)
-                              return 'Email is required';
-                            if (!value.contains('@'))
-                              return 'Invalid email address';
+                            if (value == null || value.isEmpty) return 'Email is required';
+                            if (!value.contains('@')) return 'Invalid email address';
                             return null;
                           },
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
                         // --- Password Input ---
                         _buildTextField(
                           controller: _passwordController,
-                          label: 'Password',
+                          hint: 'Password',
                           icon: Icons.lock_outline,
                           isPassword: true,
                           validator: (value) {
-                            if (value == null || value.isEmpty)
-                              return 'Password is required';
-                            if (value.length < 6)
-                              return 'Minimum 6 characters';
+                            if (value == null || value.isEmpty) return 'Password is required';
+                            if (value.length < 6) return 'Minimum 6 characters';
                             return null;
                           },
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // Forgot Password Link
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              // TODO: Implement forgot password
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: _accentColor,
-                              padding: EdgeInsets.zero,
-                            ),
-                            child: const Text('Forgot Password?'),
-                          ),
                         ),
 
                         const SizedBox(height: 32),
@@ -197,28 +195,43 @@ class _LoginPageState extends State<LoginPage> {
                         // --- Login Button ---
                         if (isLoading)
                           const Center(
-                            child: CircularProgressIndicator(color: _accentColor),
+                            child: CircularProgressIndicator(color: Color(0xFFFF7A3B)),
                           )
                         else
-                          SizedBox(
+                          Container(
                             width: double.infinity,
-                            height: 56,
-                            child: ElevatedButton(
-                              onPressed: _onSubmit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _accentColor,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
+                            height: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF9A5E), Color(0xFFFF7A3B)],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
                               ),
-                              child: const Text(
-                                'Log In',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFFF7A3B).withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(30),
+                                splashColor: Colors.white.withOpacity(0.2),
+                                highlightColor: Colors.white.withOpacity(0.1),
+                                onTap: _onSubmit,
+                                child: const Center(
+                                  child: Text(
+                                    'Login',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -226,20 +239,39 @@ class _LoginPageState extends State<LoginPage> {
 
                         const SizedBox(height: 24),
 
+                        // Forgot Password Link
+                        TextButton(
+                          onPressed: () {},
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.black45,
+                          ),
+                          child: const Text(
+                            'Forgot Password',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+
+                        const SizedBox(height: 48),
+
                         // --- Footer ---
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text(
-                              "Don't have an account? ",
-                              style: TextStyle(color: _textSecondary),
+                              "Don't have an account yet? ",
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             GestureDetector(
                               onTap: _navigateToRegister,
                               child: const Text(
-                                "Register",
+                                "Signup Now",
                                 style: TextStyle(
-                                  color: _accentColor,
+                                  color: Color(0xFFFF7A3B),
+                                  fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -260,70 +292,54 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildTextField({
     required TextEditingController controller,
-    required String label,
+    required String hint,
     required IconData icon,
     bool isPassword = false,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: _textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+    return TextFormField(
+      controller: controller,
+      obscureText: isPassword,
+      keyboardType: keyboardType,
+      style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w500),
+      cursorColor: const Color(0xFFFF7A3B),
+      validator: validator,
+      onChanged: (_) {
+        if (_errorMessage != null) {
+          setState(() {
+            _errorMessage = null;
+          });
+        }
+      },
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: const Color(0xFFF5F6F8),
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.black38, fontSize: 15, fontWeight: FontWeight.w500),
+        prefixIcon: Icon(icon, color: Colors.black54, size: 20),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
         ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: isPassword,
-          keyboardType: keyboardType,
-          style: const TextStyle(color: _textPrimary),
-          cursorColor: _accentColor,
-          validator: validator,
-          // Clear error when user types
-          onChanged: (_) {
-            if (_errorMessage != null) {
-              setState(() {
-                _errorMessage = null;
-              });
-            }
-          },
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: _surfaceColor,
-            hintText: 'Enter your ${label.toLowerCase()}',
-            hintStyle: TextStyle(color: Colors.grey[700], fontSize: 14),
-            prefixIcon: Icon(icon, color: Colors.grey[500]),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: _accentColor, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.red.shade400, width: 1),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
-            ),
-          ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide.none,
         ),
-      ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: const BorderSide(color: Color(0xFFFF7A3B), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+        ),
+      ),
     );
   }
 }

@@ -530,15 +530,23 @@ class _ReaderPageState extends State<ReaderPage>
             elevation: 0,
             backgroundColor: theme.scaffoldBackgroundColor,
             foregroundColor: theme.colorScheme.onBackground,
+            titleSpacing: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
             title: Text(
               widget.book.title.isEmpty ? 'Reader' : widget.book.title,
-              style: const TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             bottom: type == 'txt'
                 ? TabBar(
-                    labelColor: theme.colorScheme.primary,
+                    labelColor: const Color(0xFFFF7A3B), // Orange color from design
                     unselectedLabelColor: theme.colorScheme.onBackground.withOpacity(0.5),
-                    indicatorColor: theme.colorScheme.primary,
+                    indicatorColor: const Color(0xFFFF7A3B),
+                    indicatorWeight: 3.0,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 14),
                     tabs: const [
                       Tab(text: 'Scroll'),
                       Tab(text: 'Paged'),
@@ -549,16 +557,24 @@ class _ReaderPageState extends State<ReaderPage>
               if (type == 'txt' || type == 'epub') ...[
                 IconButton(
                   onPressed: _zoomOut,
-                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  icon: const Icon(Icons.remove_circle_outline, size: 22),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  constraints: const BoxConstraints(),
                 ),
                 Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
-                  '${(_textScale * 100).round()}%',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                )),
+                      '${(_textScale * 100).round()}%',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                  ),
+                ),
                 IconButton(
                   onPressed: _zoomIn,
-                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  icon: const Icon(Icons.add_circle_outline, size: 22),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  constraints: const BoxConstraints(),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
@@ -566,12 +582,16 @@ class _ReaderPageState extends State<ReaderPage>
                   icon: Icon(
                     _currentThemeIndex == 1 || _currentThemeIndex == 3 
                         ? Icons.light_mode 
-                        : Icons.dark_mode
+                        : Icons.dark_mode,
+                    size: 22,
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  constraints: const BoxConstraints(),
                   tooltip: 'Theme: ${_getThemeName()}',
                 ),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
+                  icon: const Icon(Icons.more_vert, size: 22),
+                  padding: EdgeInsets.zero,
                   onSelected: (value) {
                     if (value == 'download') {
                       if (!(widget.book.isDownloaded == true || _hasOfflineCopy)) {
@@ -600,6 +620,7 @@ class _ReaderPageState extends State<ReaderPage>
                     ),
                   ],
                 ),
+                const SizedBox(width: 8),
               ],
             ],
           ),
