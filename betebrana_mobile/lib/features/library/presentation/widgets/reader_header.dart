@@ -13,6 +13,9 @@ class ReaderHeader extends StatelessWidget {
   final Function(String) onSearchSubmitted;
   final VoidCallback onToggleLock;
   final VoidCallback onSearchNext;
+  final GlobalKey? searchKey;
+  final GlobalKey? lockKey;
+  final GlobalKey? pageInfoKey;
 
   const ReaderHeader({
     super.key,
@@ -28,6 +31,9 @@ class ReaderHeader extends StatelessWidget {
     required this.onSearchSubmitted,
     required this.onToggleLock,
     required this.onSearchNext,
+    this.searchKey,
+    this.lockKey,
+    this.pageInfoKey,
   });
 
   @override
@@ -115,6 +121,7 @@ class ReaderHeader extends StatelessWidget {
                   ),
                 ),
                 IconButton(
+                  key: searchKey,
                   icon: Icon(Icons.search_rounded, color: textColor, size: 22),
                   onPressed: onToggleSearch,
                   tooltip: 'Search',
@@ -123,6 +130,7 @@ class ReaderHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 IconButton(
+                  key: lockKey,
                   icon: Icon(
                     isLockEnabled
                         ? Icons.lock_rounded
@@ -131,12 +139,13 @@ class ReaderHeader extends StatelessWidget {
                     size: 20,
                   ),
                   onPressed: onToggleLock,
-                  tooltip: 'Lock Zoom',
+                  tooltip: 'Lock Settings',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
                 const SizedBox(width: 12),
                 Container(
+                  key: pageInfoKey,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(

@@ -73,11 +73,13 @@ class ReaderSettings {
 class DisplaySettingsSheet extends StatefulWidget {
   final ReaderSettings currentSettings;
   final ValueChanged<ReaderSettings> onSettingsChanged;
+  final bool isLocked;
 
   const DisplaySettingsSheet({
     super.key,
     required this.currentSettings,
     required this.onSettingsChanged,
+    this.isLocked = false,
   });
 
   @override
@@ -123,6 +125,8 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
     final dividerColor = isDark ? Colors.white24 : Colors.black12;
     final accentColor = const Color(0xFFFF7A3B); // App accent
 
+    final bool disableForm = widget.isLocked || _settings.usePublisherDefaults;
+
     return Container(
       decoration: BoxDecoration(
         color: bgColor,
@@ -167,77 +171,108 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
             ),
             const SizedBox(height: 24),
 
-            // Theme Section
-            _buildSectionLabel('THEME', secondaryTextColor),
-            const SizedBox(height: 12),
-            _buildThemeSelector(accentColor, dividerColor),
-            const SizedBox(height: 28),
+            AbsorbPointer(
+              absorbing: widget.isLocked,
+              child: Opacity(
+                opacity: widget.isLocked ? 0.5 : 1.0,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AbsorbPointer(
+                      absorbing: disableForm,
+                      child: Opacity(
+                        opacity: disableForm ? 0.5 : 1.0,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Theme Section
+                            _buildSectionLabel('THEME', secondaryTextColor),
+                            const SizedBox(height: 12),
+                            _buildThemeSelector(accentColor, dividerColor),
+                            const SizedBox(height: 28),
 
-            // Typeface Section
-            _buildSectionLabel('TYPEFACE', secondaryTextColor),
-            const SizedBox(height: 12),
-            _buildTypefaceDropdown(bgColor, textColor, dividerColor),
-            const SizedBox(height: 28),
+                            // Typeface Section
+                            _buildSectionLabel('TYPEFACE', secondaryTextColor),
+                            const SizedBox(height: 12),
+                            _buildTypefaceDropdown(
+                                bgColor, textColor, dividerColor),
+                            const SizedBox(height: 28),
 
-            // Size & Layout Section
-            _buildSectionLabel('SIZE & LAYOUT', secondaryTextColor),
-            const SizedBox(height: 16),
+                            // Size & Layout Section
+                            _buildSectionLabel(
+                                'SIZE & LAYOUT', secondaryTextColor),
+                            const SizedBox(height: 16),
 
-            // Text Size Slider
-            _buildSliderRow(
-              label: 'Text Size',
-              value: _settings.textSize,
-              min: 12,
-              max: 32,
-              divisions: 20,
-              displayValue: '${_settings.textSize.round()}px',
-              textColor: textColor,
-              secondaryTextColor: secondaryTextColor,
-              accentColor: accentColor,
-              onChanged: (value) {
-                _updateSettings(_settings.copyWith(textSize: value));
-              },
+                            // Text Size Slider
+                            _buildSliderRow(
+                              label: 'Text Size',
+                              value: _settings.textSize,
+                              min: 12,
+                              max: 32,
+                              divisions: 20,
+                              displayValue: '${_settings.textSize.round()}px',
+                              textColor: textColor,
+                              secondaryTextColor: secondaryTextColor,
+                              accentColor: accentColor,
+                              onChanged: (value) {
+                                _updateSettings(
+                                    _settings.copyWith(textSize: value));
+                              },
+                            ),
+                            // Auto Scroll Speed Slider
+                            _buildSliderRow(
+                              label: 'Auto Scroll Speed',
+                              value: _settings.autoScrollSpeed,
+                              min: 0.5,
+                              max: 10.0,
+                              divisions: 19,
+                              displayValue:
+                                  '${_settings.autoScrollSpeed.toStringAsFixed(1)}x',
+                              textColor: textColor,
+                              secondaryTextColor: secondaryTextColor,
+                              accentColor: accentColor,
+                              onChanged: (value) {
+                                _updateSettings(
+                                    _settings.copyWith(autoScrollSpeed: value));
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Line Height Slider
+                            _buildSliderRow(
+                              label: 'Line Height',
+                              value: _settings.lineHeight,
+                              min: 1.0,
+                              max: 2.5,
+                              divisions: 15,
+                              displayValue:
+                                  _settings.lineHeight.toStringAsFixed(1),
+                              textColor: textColor,
+                              secondaryTextColor: secondaryTextColor,
+                              accentColor: accentColor,
+                              onChanged: (value) {
+                                _updateSettings(
+                                    _settings.copyWith(lineHeight: value));
+                              },
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Alignment Buttons
+                            _buildAlignmentSelector(
+                                textColor, accentColor, dividerColor),
+                            const SizedBox(height: 28),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Publisher Defaults Toggle (only disabled if widget.isLocked is true)
+                    _buildPublisherDefaultsToggle(
+                        textColor, accentColor, dividerColor),
+                  ],
+                ),
+              ),
             ),
-            // Auto Scroll Speed Slider
-            _buildSliderRow(
-              label: 'Auto Scroll Speed',
-              value: _settings.autoScrollSpeed,
-              min: 0.5,
-              max: 10.0,
-              divisions: 19,
-              displayValue: '${_settings.autoScrollSpeed.toStringAsFixed(1)}x',
-              textColor: textColor,
-              secondaryTextColor: secondaryTextColor,
-              accentColor: accentColor,
-              onChanged: (value) {
-                _updateSettings(_settings.copyWith(autoScrollSpeed: value));
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Line Height Slider
-            _buildSliderRow(
-              label: 'Line Height',
-              value: _settings.lineHeight,
-              min: 1.0,
-              max: 2.5,
-              divisions: 15,
-              displayValue: _settings.lineHeight.toStringAsFixed(1),
-              textColor: textColor,
-              secondaryTextColor: secondaryTextColor,
-              accentColor: accentColor,
-              onChanged: (value) {
-                _updateSettings(_settings.copyWith(lineHeight: value));
-              },
-            ),
-            const SizedBox(height: 20),
-
-            // Alignment Buttons
-            _buildAlignmentSelector(textColor, accentColor, dividerColor),
-            const SizedBox(height: 28),
-
-            // Publisher Defaults Toggle
-            _buildPublisherDefaultsToggle(textColor, accentColor, dividerColor),
           ],
         ),
       ),
@@ -488,6 +523,7 @@ void showDisplaySettingsSheet(
   BuildContext context, {
   required ReaderSettings currentSettings,
   required ValueChanged<ReaderSettings> onSettingsChanged,
+  bool isLocked = false,
 }) {
   showModalBottomSheet(
     context: context,
@@ -496,6 +532,7 @@ void showDisplaySettingsSheet(
     builder: (context) => DisplaySettingsSheet(
       currentSettings: currentSettings,
       onSettingsChanged: onSettingsChanged,
+      isLocked: isLocked,
     ),
   );
 }

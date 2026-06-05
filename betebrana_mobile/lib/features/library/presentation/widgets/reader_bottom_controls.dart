@@ -9,6 +9,10 @@ class ReaderBottomControls extends StatelessWidget {
   final VoidCallback onToggleAutoScroll;
   final VoidCallback onToggleOrientation;
   final VoidCallback onShowDisplaySettings;
+  final GlobalKey? chapterKey;
+  final GlobalKey? bookmarkKey;
+  final GlobalKey? autoScrollKey;
+  final GlobalKey? settingsKey;
 
   const ReaderBottomControls({
     super.key,
@@ -20,14 +24,18 @@ class ReaderBottomControls extends StatelessWidget {
     required this.onToggleAutoScroll,
     required this.onToggleOrientation,
     required this.onShowDisplaySettings,
+    this.chapterKey,
+    this.bookmarkKey,
+    this.autoScrollKey,
+    this.settingsKey,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final bgColor = theme.scaffoldBackgroundColor;
+    final textColor = theme.colorScheme.onSurface;
     final accentColor = const Color(0xFFFF7A3B);
 
     return Container(
@@ -57,12 +65,14 @@ class ReaderBottomControls extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _ControlButton(
+                key: chapterKey,
                 icon: Icons.format_list_bulleted_rounded,
                 color: textColor,
                 onTap: onShowChapterList,
                 tooltip: 'Chapters',
               ),
               _ControlButton(
+                key: bookmarkKey,
                 icon: isBookmarked
                     ? Icons.bookmark_rounded
                     : Icons.bookmark_outline_rounded,
@@ -71,6 +81,7 @@ class ReaderBottomControls extends StatelessWidget {
                 tooltip: 'Bookmark',
               ),
               _ControlButton(
+                key: autoScrollKey,
                 icon: isAutoScrolling
                     ? Icons.pause_circle_outline_rounded
                     : Icons.play_circle_outline_rounded,
@@ -85,6 +96,7 @@ class ReaderBottomControls extends StatelessWidget {
                 tooltip: 'Rotate Screen',
               ),
               _ControlButton(
+                key: settingsKey,
                 icon: Icons.text_fields_rounded,
                 color: textColor,
                 onTap: onShowDisplaySettings,
@@ -105,6 +117,7 @@ class _ControlButton extends StatelessWidget {
   final String tooltip;
 
   const _ControlButton({
+    super.key,
     required this.icon,
     required this.color,
     required this.onTap,

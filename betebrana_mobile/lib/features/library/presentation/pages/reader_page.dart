@@ -20,9 +20,12 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:epub_view/epub_view.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import '../../../../core/utils/tutorial_helper.dart';
 import '../widgets/reader_header.dart';
 import '../widgets/reader_bottom_controls.dart';
 import '../widgets/display_settings_sheet.dart';
+import '../widgets/chapter_list_sheet.dart';
 
 class ReaderPage extends StatefulWidget {
   const ReaderPage(
@@ -55,6 +58,7 @@ class _ReaderPageState extends State<ReaderPage>
   bool _isOrientationLandscape = false;
   bool _isLockEnabled = false;
   bool _isSearching = false;
+  bool _showUI = true;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
@@ -64,6 +68,15 @@ class _ReaderPageState extends State<ReaderPage>
   int _totalPages = 1;
   double _currentProgress = 0.0;
   double? _initialProgress;
+
+  // Global Keys for Tutorial
+  final GlobalKey _searchKey = GlobalKey();
+  final GlobalKey _lockKey = GlobalKey();
+  final GlobalKey _pageInfoKey = GlobalKey();
+  final GlobalKey _chapterKey = GlobalKey();
+  final GlobalKey _bookmarkKey = GlobalKey();
+  final GlobalKey _autoScrollKey = GlobalKey();
+  final GlobalKey _settingsKey = GlobalKey();
 
   // Ad State
   Map<String, dynamic>?
@@ -78,7 +91,7 @@ class _ReaderPageState extends State<ReaderPage>
     super.initState();
     _loadSettings();
     _loadBookmark();
-    
+
     _scrollController.addListener(() {
       if (_scrollController.hasClients) {
         final max = _scrollController.position.maxScrollExtent;
@@ -93,6 +106,91 @@ class _ReaderPageState extends State<ReaderPage>
     _fetchAds();
     // Hide status bar for immersive reading
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowTutorial();
+    });
+  }
+
+  Future<void> _checkAndShowTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShown = prefs.getBool('is_first_launch_reader_tutorial') ?? false;
+    if (!hasShown) {
+      _showTutorial();
+    }
+  }
+
+  void _showTutorial() {
+    final targets = [
+      TutorialHelper.createTarget(
+        identify: "chapter",
+        keyTarget: _chapterKey,
+        title: "Chapters",
+        description: "Quickly navigate through the book's chapters.",
+        contentAlign: ContentAlign.top,
+      ),
+      TutorialHelper.createTarget(
+        identify: "bookmark",
+        keyTarget: _bookmarkKey,
+        title: "Bookmarks",
+        description: "Save your spot so you don't lose your place.",
+        contentAlign: ContentAlign.top,
+      ),
+      TutorialHelper.createTarget(
+        identify: "autoScroll",
+        keyTarget: _autoScrollKey,
+        title: "Auto-Scroll",
+        description:
+            "Let the app scroll for you. Perfect for hands-free reading.",
+        contentAlign: ContentAlign.top,
+      ),
+      TutorialHelper.createTarget(
+        identify: "settings",
+        keyTarget: _settingsKey,
+        title: "Display Settings",
+        description:
+            "Change font, size, theme, and more for the perfect reading experience.",
+        contentAlign: ContentAlign.top,
+        alignSkip: Alignment.topLeft,
+      ),
+      TutorialHelper.createTarget(
+        identify: "search",
+        keyTarget: _searchKey,
+        title: "Search",
+        description: "Find specific words or phrases in the text.",
+        contentAlign: ContentAlign.bottom,
+      ),
+      TutorialHelper.createTarget(
+        identify: "lock",
+        keyTarget: _lockKey,
+        title: "Lock Settings",
+        description:
+            "Lock your current display settings to prevent accidental changes.",
+        contentAlign: ContentAlign.bottom,
+      ),
+      TutorialHelper.createTarget(
+        identify: "pageInfo",
+        keyTarget: _pageInfoKey,
+        title: "Page Info",
+        description: "See your current progress and page number here.",
+        contentAlign: ContentAlign.bottom,
+      ),
+    ];
+
+    TutorialHelper.showTutorial(
+      context: context,
+      targets: targets,
+      onFinish: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_first_launch_reader_tutorial', true);
+      },
+      onSkip: () {
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setBool('is_first_launch_reader_tutorial', true);
+        });
+        return true;
+      },
+    );
   }
 
   Future<void> _fetchAds() async {
@@ -281,19 +379,21 @@ class _ReaderPageState extends State<ReaderPage>
   void _toggleBookmark() async {
     final prefs = await SharedPreferences.getInstance();
     final key = 'book_${widget.book.id}_bookmark_progress';
-    
+
     if (_isBookmarked) {
-       await prefs.remove(key);
-       setState(() => _isBookmarked = false);
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark removed')));
-       }
+      await prefs.remove(key);
+      setState(() => _isBookmarked = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Bookmark removed')));
+      }
     } else {
-       await prefs.setDouble(key, _currentProgress);
-       setState(() => _isBookmarked = true);
-       if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bookmark saved!')));
-       }
+      await prefs.setDouble(key, _currentProgress);
+      setState(() => _isBookmarked = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Bookmark saved!')));
+      }
     }
   }
 
@@ -659,6 +759,44 @@ class _ReaderPageState extends State<ReaderPage>
       context,
       currentSettings: _settings,
       onSettingsChanged: _saveSettings,
+      isLocked: _isLockEnabled,
+    );
+  }
+
+  void _showChapterList(String fullText) {
+    // Basic regex-based chapter extraction for txt files
+    final lines = fullText.split('\n');
+    final List<Chapter> chapters = [];
+    final RegExp chapterRegex =
+        RegExp(r'^(Chapter\s+\d+|ምዕራፍ\s+\d+)', caseSensitive: false);
+
+    int charCount = 0;
+    final totalChars = fullText.length;
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (chapterRegex.hasMatch(line) && line.length < 50) {
+        // Approximate progress
+        final progress = totalChars > 0 ? charCount / totalChars : 0.0;
+        chapters.add(Chapter(
+          title: line,
+          index: chapters.length,
+          scrollOffset: progress,
+        ));
+      }
+      charCount += lines[i].length + 1; // +1 for newline character
+    }
+
+    showChapterListSheet(
+      context,
+      chapters: chapters,
+      onChapterSelected: (chapter) {
+        // Jump to progress
+        final maxScroll = _scrollController.position.maxScrollExtent;
+        if (maxScroll > 0) {
+          _scrollController.jumpTo(chapter.scrollOffset * maxScroll);
+        }
+      },
     );
   }
 
@@ -668,6 +806,15 @@ class _ReaderPageState extends State<ReaderPage>
     });
     // In a real app we'd highlight or jump to the result.
     // For now we just record it.
+  }
+
+  void _toggleUI() {
+    setState(() {
+      _showUI = !_showUI;
+      if (!_showUI && _isSearching) {
+        _isSearching = false; // Hide search when UI hides
+      }
+    });
   }
 
   @override
@@ -681,60 +828,97 @@ class _ReaderPageState extends State<ReaderPage>
         length: type == 'txt' ? 2 : 1,
         initialIndex: type == 'txt' ? 1 : 0,
         child: Scaffold(
-          bottomNavigationBar: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ReaderBottomControls(
-                isBookmarked: _isBookmarked,
-                isAutoScrolling: _isAutoScrolling,
-                isOrientationLandscape: _isOrientationLandscape,
-                onShowChapterList: () {},
-                onToggleBookmark: _toggleBookmark,
-                onToggleAutoScroll: _toggleAutoScroll,
-                onToggleOrientation: _toggleOrientation,
-                onShowDisplaySettings: _showDisplaySettingsSheet,
-              ),
-              if (_sharedAd != null && !_showInterstitial)
-                GestureDetector(
-                    onTap: () async {
-                      if (_sharedAd!['redirect_link'] != null) {
-                        final url = Uri.parse(_sharedAd!['redirect_link']);
-                        if (await canLaunchUrl(url)) {
-                          await launchUrl(url,
-                              mode: LaunchMode.externalApplication);
-                        }
-                      }
-                    },
-                    child: _buildBannerAd()),
-            ],
+          bottomNavigationBar: AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: !_showUI
+                ? const SizedBox.shrink()
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FutureBuilder<String>(
+                          future: type == 'txt' ? _txtFuture : Future.value(''),
+                          builder: (context, snapshot) {
+                            return ReaderBottomControls(
+                              isBookmarked: _isBookmarked,
+                              isAutoScrolling: _isAutoScrolling,
+                              isOrientationLandscape: _isOrientationLandscape,
+                              onShowChapterList: () {
+                                if (type == 'txt' && snapshot.hasData) {
+                                  _showChapterList(snapshot.data!);
+                                } else {
+                                  // For non-txt files or loading state
+                                  showChapterListSheet(
+                                    context,
+                                    chapters: [],
+                                    onChapterSelected: (_) {},
+                                  );
+                                }
+                              },
+                              onToggleBookmark: _toggleBookmark,
+                              onToggleAutoScroll: _toggleAutoScroll,
+                              onToggleOrientation: _toggleOrientation,
+                              onShowDisplaySettings: _showDisplaySettingsSheet,
+                              chapterKey: _chapterKey,
+                              bookmarkKey: _bookmarkKey,
+                              autoScrollKey: _autoScrollKey,
+                              settingsKey: _settingsKey,
+                            );
+                          }),
+                      if (_sharedAd != null && !_showInterstitial)
+                        GestureDetector(
+                            onTap: () async {
+                              if (_sharedAd!['redirect_link'] != null) {
+                                final url =
+                                    Uri.parse(_sharedAd!['redirect_link']);
+                                if (await canLaunchUrl(url)) {
+                                  await launchUrl(url,
+                                      mode: LaunchMode.externalApplication);
+                                }
+                              }
+                            },
+                            child: _buildBannerAd()),
+                    ],
+                  ),
           ),
           body: Column(
             children: [
-              ReaderHeader(
-                title: widget.book.title.isEmpty ? 'Reader' : widget.book.title,
-                pageInfo: 'Page ${_currentPage + 1}',
-                isSearching: _isSearching,
-                isLockEnabled: _isLockEnabled,
-                searchController: _searchController,
-                searchFocusNode: _searchFocusNode,
-                onBackPressed: () => Navigator.pop(context),
-                onToggleSearch: () => setState(() {
-                  _isSearching = !_isSearching;
-                  if (_isSearching) {
-                    _searchFocusNode.requestFocus();
-                  } else {
-                    _searchController.clear();
-                    _searchQuery = '';
-                  }
-                }),
-                onClearSearch: () {
-                  _searchController.clear();
-                  _handleSearch();
-                },
-                onSearchSubmitted: (_) => _handleSearch(),
-                onToggleLock: () =>
-                    setState(() => _isLockEnabled = !_isLockEnabled),
-                onSearchNext: () {},
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                child: !_showUI
+                    ? const SizedBox.shrink()
+                    : ReaderHeader(
+                        title: widget.book.title.isEmpty
+                            ? 'Reader'
+                            : widget.book.title,
+                        pageInfo: 'Page ${_currentPage + 1}',
+                        isSearching: _isSearching,
+                        isLockEnabled: _isLockEnabled,
+                        searchController: _searchController,
+                        searchFocusNode: _searchFocusNode,
+                        searchKey: _searchKey,
+                        lockKey: _lockKey,
+                        pageInfoKey: _pageInfoKey,
+                        onBackPressed: () => Navigator.pop(context),
+                        onToggleSearch: () => setState(() {
+                          _isSearching = !_isSearching;
+                          if (_isSearching) {
+                            _searchFocusNode.requestFocus();
+                          } else {
+                            _searchController.clear();
+                            _searchQuery = '';
+                          }
+                        }),
+                        onClearSearch: () {
+                          _searchController.clear();
+                          _handleSearch();
+                        },
+                        onSearchSubmitted: (_) => _handleSearch(),
+                        onToggleLock: () =>
+                            setState(() => _isLockEnabled = !_isLockEnabled),
+                        onSearchNext: () {},
+                      ),
               ),
               if (type == 'txt')
                 Container(
@@ -812,11 +996,13 @@ class _ReaderPageState extends State<ReaderPage>
                                     scrollController: _scrollController,
                                     searchQuery: _searchQuery,
                                     initialProgress: _initialProgress,
+                                    onCenterTap: _toggleUI,
                                   ),
                                   _TxtPagedView(
                                     text: text,
                                     settings: _settings,
                                     initialProgress: _initialProgress,
+                                    onCenterTap: _toggleUI,
                                     textStyle: theme.textTheme.bodyMedium
                                             ?.copyWith(
                                           fontSize: _settings.textSize,
@@ -839,7 +1025,8 @@ class _ReaderPageState extends State<ReaderPage>
                                             _currentPage = page;
                                             _totalPages = total;
                                             if (total > 1) {
-                                              _currentProgress = page / (total - 1);
+                                              _currentProgress =
+                                                  page / (total - 1);
                                             } else {
                                               _currentProgress = 0.0;
                                             }
@@ -904,9 +1091,12 @@ class _ReaderPageState extends State<ReaderPage>
                               // Overlay Content
                               Positioned.fill(
                                   child: SafeArea(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
+                                child: Center(
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
                                     if (_sharedAd!['logo_path'] != null)
                                       Container(
                                         width: 90,
@@ -1053,6 +1243,7 @@ class _TxtScrollView extends StatefulWidget {
     required this.scrollController,
     required this.searchQuery,
     this.initialProgress,
+    this.onCenterTap,
   });
 
   final String text;
@@ -1060,6 +1251,7 @@ class _TxtScrollView extends StatefulWidget {
   final ScrollController scrollController;
   final String searchQuery;
   final double? initialProgress;
+  final VoidCallback? onCenterTap;
 
   @override
   State<_TxtScrollView> createState() => _TxtScrollViewState();
@@ -1075,15 +1267,16 @@ class _TxtScrollViewState extends State<_TxtScrollView> {
       _scrollToInitial();
     });
   }
-  
+
   @override
   void didUpdateWidget(covariant _TxtScrollView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!oldWidget.scrollController.hasClients && widget.scrollController.hasClients) {
-       _scrollToInitial();
+    if (!oldWidget.scrollController.hasClients &&
+        widget.scrollController.hasClients) {
+      _scrollToInitial();
     }
   }
-  
+
   void _scrollToInitial() {
     if (mounted && widget.initialProgress != null && !_hasScrolledToInitial) {
       if (widget.scrollController.hasClients) {
@@ -1109,19 +1302,23 @@ class _TxtScrollViewState extends State<_TxtScrollView> {
       }
     }
 
-    return Scrollbar(
-      controller: widget.scrollController,
-      child: SingleChildScrollView(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: widget.onCenterTap,
+      child: Scrollbar(
         controller: widget.scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Text(
-          widget.text,
-          textAlign: getTextAlign(),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontSize: widget.settings.textSize,
-                height: widget.settings.lineHeight,
-                fontFamily: widget.settings.typeface,
-              ),
+        child: SingleChildScrollView(
+          controller: widget.scrollController,
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 80),
+          child: Text(
+            widget.text,
+            textAlign: getTextAlign(),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontSize: widget.settings.textSize,
+                  height: widget.settings.lineHeight,
+                  fontFamily: widget.settings.typeface,
+                ),
+          ),
         ),
       ),
     );
@@ -1139,6 +1336,7 @@ class _TxtPagedView extends StatefulWidget {
     required this.isLockEnabled,
     this.initialProgress,
     this.onPageChanged,
+    this.onCenterTap,
   });
 
   final String text;
@@ -1147,6 +1345,7 @@ class _TxtPagedView extends StatefulWidget {
   final bool isLockEnabled;
   final double? initialProgress;
   final Function(int, int)? onPageChanged;
+  final VoidCallback? onCenterTap;
 
   @override
   State<_TxtPagedView> createState() => _TxtPagedViewState();
@@ -1207,7 +1406,9 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
     int end = text.length;
 
     // Safety margin to prevent edge clipping
-    final double pageHeight = size.height;
+    // Reduce height by one line height roughly to ensure the last line isn't cut off
+    final double estimatedLineHeight = (widget.textStyle.fontSize ?? 16.0) * (widget.textStyle.height ?? 1.5);
+    final double pageHeight = math.max(0, size.height - estimatedLineHeight);
     final double pageWidth = size.width;
 
     while (start < end) {
@@ -1261,23 +1462,26 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
       setState(() {
         _pages = pages;
         _isPaginating = false;
-        
-        if (widget.initialProgress != null && !_hasSetInitialPage && _pages.isNotEmpty) {
-           _currentPage = (widget.initialProgress! * (_pages.length - 1)).round();
-           if (_currentPage >= _pages.length) _currentPage = _pages.length - 1;
-           if (_currentPage < 0) _currentPage = 0;
-           _hasSetInitialPage = true;
+
+        if (widget.initialProgress != null &&
+            !_hasSetInitialPage &&
+            _pages.isNotEmpty) {
+          _currentPage =
+              (widget.initialProgress! * (_pages.length - 1)).round();
+          if (_currentPage >= _pages.length) _currentPage = _pages.length - 1;
+          if (_currentPage < 0) _currentPage = 0;
+          _hasSetInitialPage = true;
         } else if (_currentPage >= _pages.length) {
-           _currentPage = 0;
+          _currentPage = 0;
         }
       });
-      
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _pageController.hasClients) {
-           if (!_pageController.position.isScrollingNotifier.value && 
-               _pageController.page?.round() != _currentPage) {
-             _pageController.jumpToPage(_currentPage);
-           }
+          if (!_pageController.position.isScrollingNotifier.value &&
+              _pageController.page?.round() != _currentPage) {
+            _pageController.jumpToPage(_currentPage);
+          }
         }
       });
     }
@@ -1346,7 +1550,8 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
                 } else if (details.localPosition.dx < width * 0.33) {
                   _previousPage();
                 } else {
-                  // Center tap: toggle UI (optional, left empty here)
+                  // Center tap: toggle UI
+                  widget.onCenterTap?.call();
                 }
               },
               child: PageView.builder(

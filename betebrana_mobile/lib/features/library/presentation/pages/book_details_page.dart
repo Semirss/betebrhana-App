@@ -12,6 +12,7 @@ import 'package:betebrana_mobile/features/library/domain/entities/rental.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/user_queue_item.dart';
 import 'reader_page.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BookDetailsPage extends StatefulWidget {
   const BookDetailsPage({super.key, required this.book});
@@ -40,6 +41,9 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   // Scroll controller for parallax effect
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
+
+  bool _isBookmarked = false;
+  bool _isDescriptionExpanded = false;
 
   // Selected Sponsor for this session
   int? _selectedSponsorId;
@@ -72,6 +76,7 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     
     _checkConnectivity(); 
     _loadStatus();
+    _loadBookmark();
     _checkIfDownloaded();
     _startCountdownTimer();
     _downloadService.syncWithServerAndCleanup();
@@ -109,6 +114,32 @@ void _updateConnectivityStatus(ConnectivityResult result) {
     });
   }
 }
+
+  Future<void> _loadBookmark() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _isBookmarked = prefs.getBool('bookmark_${widget.book.id}') ?? false;
+      });
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    final prefs = await SharedPreferences.getInstance();
+    final newState = !_isBookmarked;
+    await prefs.setBool('bookmark_${widget.book.id}', newState);
+    if (mounted) {
+      setState(() {
+        _isBookmarked = newState;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(newState ? 'Added to bookmarks' : 'Removed from bookmarks'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
   Future<void> _checkIfDownloaded() async {
     final bookId = int.tryParse(widget.book.id);
@@ -984,7 +1015,11 @@ Future<void> _returnCurrentBook() async {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               ),
                             ),
-                          _buildTopButton(Icons.bookmark, () {}, isDark), // Bookmark placeholder
+                          _buildTopButton(
+                            _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                            _toggleBookmark,
+                            isDark
+                          ),
                         ]
                       ),
                     ],
@@ -1072,15 +1107,33 @@ Future<void> _returnCurrentBook() async {
                   
                   // Description
                   if ((book.description ?? '').isNotEmpty) ...[
-                    Text(
-                      book.description!,
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium!.copyWith(
-                        color: isDark ? Colors.grey.shade300 : const Color(0xFF4A6B7C),
-                        height: 1.6,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Column(
+                      children: [
+                        Text(
+                          book.description!,
+                          textAlign: TextAlign.center,
+                          maxLines: _isDescriptionExpanded ? null : 3,
+                          overflow: _isDescriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium!.copyWith(
+                            color: isDark ? Colors.grey.shade300 : const Color(0xFF4A6B7C),
+                            height: 1.6,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (book.description!.length > 100)
+                          TextButton(
+                            onPressed: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+                            child: Text(
+                              _isDescriptionExpanded ? 'Read less' : 'Read more',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: const Color(0xFFFF7A3B),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 32),
                   ],

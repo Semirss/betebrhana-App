@@ -350,9 +350,9 @@ class HomeTabState extends State<HomeTab> {
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        const Text(
-                                          'Discover',
-                                          style: TextStyle(
+                                        Text(
+                                          context.read<LanguageBloc>().state.t('Discover'),
+                                          style: const TextStyle(
                                             fontSize: 26,
                                             fontWeight: FontWeight.w900,
                                             color: Colors.white,
@@ -465,7 +465,7 @@ class HomeTabState extends State<HomeTab> {
                                   ?.switchToTab(1),
                             ),
                             SizedBox(
-                              height: 165,
+                              height: 220,
                               child: ListView.builder(
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -493,7 +493,7 @@ class HomeTabState extends State<HomeTab> {
                                   ?.switchToTab(1),
                             ),
                             SizedBox(
-                              height: 165,
+                              height: 220,
                               child: ListView.builder(
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -533,7 +533,7 @@ class _SmallBookCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 100,
+        width: 120,
         margin: const EdgeInsets.only(right: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,16 +541,16 @@ class _SmallBookCard extends StatelessWidget {
             Expanded(
               child: BookCoverImage(path: book.coverImagePath, borderRadius: 10),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(book.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style:
-                    const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
             Text(book.author,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
           ],
         ),
       ),
