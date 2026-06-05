@@ -89,7 +89,7 @@ class HomeTabState extends State<HomeTab> {
     final info = book.queueInfo;
 
     if (book.userHasRental) {
-      return 'Rented';
+      return 'Borrowed';
     }
 
     if (info == null) {
@@ -132,19 +132,19 @@ class HomeTabState extends State<HomeTab> {
 
   Color _getQueueStatusColor(BuildContext context, Book book) {
     if (book.userHasRental) {
-      return Colors.green;
+      return AppColors.orange; // Borrowed — brand orange
     }
     final info = book.queueInfo;
     if (info?.hasReservation ?? false) {
-      return Colors.green;
+      return AppColors.orange; // Reserved — brand orange
     }
     if (info?.userInQueue ?? false) {
-      return Colors.orange;
+      return AppColors.purple; // In queue — brand purple
     }
     if (book.isAvailable) {
-      return Theme.of(context).colorScheme.secondary;
+      return AppColors.orange; // Available — brand orange
     }
-    return Theme.of(context).colorScheme.error;
+    return AppColors.purple; // Unavailable — muted purple
   }
 
   Widget _buildBookCard(Book book, int index, int currentIndex, double viewportHeight, double viewportWidth) {
@@ -323,10 +323,6 @@ class HomeTabState extends State<HomeTab> {
                         child: Container(
                           decoration: BoxDecoration(
                             color: Theme.of(context).scaffoldBackgroundColor,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(30),
-                              topRight: Radius.circular(30),
-                            ),
                           ),
                         ),
                       ),
@@ -349,9 +345,10 @@ class HomeTabState extends State<HomeTab> {
                                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
                                         Text(
-                                          context.read<LanguageBloc>().state.t('Discover'),
+                                          context.watch<LanguageBloc>().state.t('Discover'),
                                           style: const TextStyle(
                                             fontSize: 26,
                                             fontWeight: FontWeight.w900,
@@ -359,14 +356,31 @@ class HomeTabState extends State<HomeTab> {
                                             shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
                                           ),
                                         ),
-                                        IconButton(
-                                          icon: const Icon(Icons.search, color: Colors.white, shadows: [Shadow(color: Colors.black45, blurRadius: 4)]),
-                                          onPressed: () {
-                                            showSearch(
-                                              context: context,
-                                              delegate: _QuickSearchDelegate(books: books),
-                                            );
-                                          },
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              context.watch<LanguageBloc>().state.isAmharic ? 'ቤተብርሃና' : 'Betebrhana',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                                shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            IconButton(
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              icon: const Icon(Icons.search, color: Colors.white, size: 24, shadows: [Shadow(color: Colors.black45, blurRadius: 4)]),
+                                              onPressed: () {
+                                                showSearch(
+                                                  context: context,
+                                                  delegate: _QuickSearchDelegate(books: books),
+                                                );
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -459,13 +473,13 @@ class HomeTabState extends State<HomeTab> {
                           // ── New Arrivals ──
                           if (arrivals.isNotEmpty) ...[
                             _SectionHeader(
-                              title: context.read<LanguageBloc>().state.t('New Arrivals'),
+                              title: context.watch<LanguageBloc>().state.t('New Arrivals'),
                               onSeeAll: () => context
                                   .findAncestorStateOfType<MainLibraryViewState>()
                                   ?.switchToTab(1),
                             ),
                             SizedBox(
-                              height: 220,
+                              height: 260,
                               child: ListView.builder(
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -487,13 +501,13 @@ class HomeTabState extends State<HomeTab> {
                           // ── Trending ──
                           if (trending.isNotEmpty) ...[
                             _SectionHeader(
-                              title: context.read<LanguageBloc>().state.t('Trending Now'),
+                              title: context.watch<LanguageBloc>().state.t('Trending Now'),
                               onSeeAll: () => context
                                   .findAncestorStateOfType<MainLibraryViewState>()
                                   ?.switchToTab(1),
                             ),
                             SizedBox(
-                              height: 220,
+                              height: 260,
                               child: ListView.builder(
                                 scrollDirection: Axis.horizontal,
                                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -533,24 +547,35 @@ class _SmallBookCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 120,
-        margin: const EdgeInsets.only(right: 12),
+        width: 150,
+        margin: const EdgeInsets.only(right: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: BookCoverImage(path: book.coverImagePath, borderRadius: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: BookCoverImage(path: book.coverImagePath, borderRadius: 12),
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(book.title,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, height: 1.2)),
+            const SizedBox(height: 4),
             Text(book.author,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
           ],
         ),
       ),
@@ -575,7 +600,7 @@ class _SectionHeader extends StatelessWidget {
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           TextButton(
             onPressed: onSeeAll,
-            child: Text(context.read<LanguageBloc>().state.t('See all'),
+            child: Text(context.watch<LanguageBloc>().state.t('See all'),
                 style: const TextStyle(color: AppColors.orange)),
           ),
         ],
@@ -622,14 +647,14 @@ class _QuickSearchDelegate extends SearchDelegate {
         children: [
           const Icon(Icons.search, size: 64, color: Colors.grey),
           const SizedBox(height: 12),
-          Text(context.read<LanguageBloc>().state.t('Search by title or author'),
+          Text(context.watch<LanguageBloc>().state.t('Search by title or author'),
               style: const TextStyle(color: Colors.grey)),
         ],
       ));
     }
     if (res.isEmpty) {
       return Center(
-          child: Text(context.read<LanguageBloc>().state.t('No books found')));
+          child: Text(context.watch<LanguageBloc>().state.t('No books found')));
     }
     return ListView.builder(
       itemCount: res.length,

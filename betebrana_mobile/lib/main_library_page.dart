@@ -22,28 +22,12 @@ class MainLibraryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<ThemeBloc>(create: (_) => ThemeBloc()),
-      ],
-      child: BlocBuilder<ThemeBloc, ThemeState>(
-        builder: (context, themeState) {
-          final isDark = themeState.isDarkMode;
-          
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: isDark ? AppTheme.dark() : AppTheme.light(),
-            themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
-            home: RepositoryProvider(
-              create: (_) => BookRepository(),
-              child: BlocProvider(
-                create: (context) => LibraryBloc(context.read<BookRepository>())
-                  ..add(const LibraryStarted()),
-                child: const _MainLibraryView(),
-              ),
-            ),
-          );
-        },
+    return RepositoryProvider(
+      create: (_) => BookRepository(),
+      child: BlocProvider(
+        create: (context) => LibraryBloc(context.read<BookRepository>())
+          ..add(const LibraryStarted()),
+        child: const _MainLibraryView(),
       ),
     );
   }
@@ -117,6 +101,7 @@ class MainLibraryViewState extends State<_MainLibraryView> with WidgetsBindingOb
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -126,17 +111,25 @@ class MainLibraryViewState extends State<_MainLibraryView> with WidgetsBindingOb
           const ProfileSettingsTab(),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(
-              color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
-              width: 1,
-            ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkCard : AppColors.lightCard,
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ),
-        child: BottomNavigationBar(
-          backgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BottomNavigationBar(
+              elevation: 0,
+              backgroundColor: isDark ? AppColors.darkCard : AppColors.lightCard,
           currentIndex: _currentIndex,
           onTap: (index) {
             if (index == 0) {
@@ -174,8 +167,10 @@ class MainLibraryViewState extends State<_MainLibraryView> with WidgetsBindingOb
               label: lang.t('Profile'),
             ),
           ],
-        ),
-      ),
-    );
+        ), // BottomNavigationBar
+      ), // ClipRRect
+    ), // Container
+  ), // SafeArea
+); // Scaffold
   }
 }

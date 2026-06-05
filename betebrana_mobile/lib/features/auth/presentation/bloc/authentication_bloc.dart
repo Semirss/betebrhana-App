@@ -2,7 +2,8 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 
 import '../../domain/entities/auth_user.dart';
-import '../../data/auth_repository.dart';
+import 'package:betebrana_mobile/core/utils/error_helper.dart';
+import 'package:betebrana_mobile/features/auth/data/auth_repository.dart';
 import 'authentication_event.dart';
 import 'authentication_state.dart';
 
@@ -52,7 +53,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // emit(const AuthLoading());
 
     } catch (e) {
-      emit(AuthFailure(e.toString()));
+      emit(AuthFailure(ErrorHelper.getFriendlyMessage(e, 'Failed to login. Please try again.')));
       // Don't emit AuthUnauthenticated here - keep showing the login page
       // The error will be displayed and user can try again
     }
@@ -79,7 +80,7 @@ Future<void> _onRegisterRequested(
     emit(const AuthUnauthenticated());
     
   } catch (e) {
-    emit(AuthFailure(e.toString()));
+    emit(AuthFailure(ErrorHelper.getFriendlyMessage(e, 'Failed to register. Please try again.')));
     emit(const AuthUnauthenticated());
   }
 }

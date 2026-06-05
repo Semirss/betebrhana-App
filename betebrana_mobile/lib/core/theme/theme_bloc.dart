@@ -11,27 +11,39 @@ class SetThemeEvent extends ThemeEvent {
   SetThemeEvent(this.isDarkMode);
 }
 
+class ChangeFontEvent extends ThemeEvent {
+  final String fontFamily;
+  ChangeFontEvent(this.fontFamily);
+}
+
 class ThemeState {
   final bool isDarkMode;
-  ThemeState({required this.isDarkMode});
+  final String fontFamily;
+  ThemeState({required this.isDarkMode, this.fontFamily = 'Abyssinica SIL'});
   // Default to LIGHT mode
-  factory ThemeState.initial() => ThemeState(isDarkMode: false);
+  factory ThemeState.initial() => ThemeState(isDarkMode: false, fontFamily: 'Abyssinica SIL');
 }
 
 class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
   static const _key = 'isDarkMode';
 
+  static const _fontKey = 'fontFamily';
+
   ThemeBloc() : super(ThemeState.initial()) {
     on<ToggleThemeEvent>(_onToggle);
     on<SetThemeEvent>(_onSet);
+    on<ChangeFontEvent>(_onChangeFont);
     _loadSaved();
   }
 
   Future<void> _loadSaved() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getBool(_key);
+    final savedFont = prefs.getString(_fontKey) ?? 'Abyssinica SIL';
     if (saved != null) {
-      emit(ThemeState(isDarkMode: saved));
+      emit(ThemeState(isDarkMode: saved, fontFamily: savedFont));
+    } else {
+      emit(ThemeState(isDarkMode: false, fontFamily: savedFont));
     }
   }
 
@@ -39,12 +51,18 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
     final next = !state.isDarkMode;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_key, next);
-    emit(ThemeState(isDarkMode: next));
+    emit(ThemeState(isDarkMode: next, fontFamily: state.fontFamily));
   }
 
   Future<void> _onSet(SetThemeEvent event, Emitter<ThemeState> emit) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_key, event.isDarkMode);
-    emit(ThemeState(isDarkMode: event.isDarkMode));
+    emit(ThemeState(isDarkMode: event.isDarkMode, fontFamily: state.fontFamily));
+  }
+
+  Future<void> _onChangeFont(ChangeFontEvent event, Emitter<ThemeState> emit) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_fontKey, event.fontFamily);
+    emit(ThemeState(isDarkMode: state.isDarkMode, fontFamily: event.fontFamily));
   }
 }

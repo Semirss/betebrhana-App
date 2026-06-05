@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// App-wide color palette matching the web design.
 class AppColors {
@@ -26,8 +27,21 @@ class AppColors {
 class AppTheme {
   AppTheme._();
 
-  static ThemeData light() {
+  static ThemeData light({String? fontFamily}) {
+    TextTheme customTextTheme = ThemeData.light().textTheme;
+    String? nativeFontFamily = fontFamily == 'System' ? null : fontFamily;
+
+    if (fontFamily == 'Abyssinica SIL') {
+      customTextTheme = GoogleFonts.abyssinicaSilTextTheme(customTextTheme);
+      nativeFontFamily = GoogleFonts.abyssinicaSil().fontFamily;
+    } else if (fontFamily == 'Noto Sans Ethiopic') {
+      customTextTheme = GoogleFonts.notoSansEthiopicTextTheme(customTextTheme);
+      nativeFontFamily = GoogleFonts.notoSansEthiopic().fontFamily;
+    }
+
     return ThemeData(
+      fontFamily: nativeFontFamily,
+      textTheme: customTextTheme,
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.lightBackground,
@@ -77,8 +91,21 @@ class AppTheme {
     );
   }
 
-  static ThemeData dark() {
+  static ThemeData dark({String? fontFamily}) {
+    TextTheme customTextTheme = ThemeData.dark().textTheme;
+    String? nativeFontFamily = fontFamily == 'System' ? null : fontFamily;
+
+    if (fontFamily == 'Abyssinica SIL') {
+      customTextTheme = GoogleFonts.abyssinicaSilTextTheme(customTextTheme);
+      nativeFontFamily = GoogleFonts.abyssinicaSil().fontFamily;
+    } else if (fontFamily == 'Noto Sans Ethiopic') {
+      customTextTheme = GoogleFonts.notoSansEthiopicTextTheme(customTextTheme);
+      nativeFontFamily = GoogleFonts.notoSansEthiopic().fontFamily;
+    }
+
     return ThemeData(
+      fontFamily: nativeFontFamily,
+      textTheme: customTextTheme,
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.darkBackground,

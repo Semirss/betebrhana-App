@@ -8,6 +8,7 @@ import 'package:betebrana_mobile/features/library/presentation/pages/book_detail
 import 'package:betebrana_mobile/widgets/book_cover_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:math' as math;
 
 class SearchTab extends StatefulWidget {
   const SearchTab({super.key});
@@ -19,6 +20,8 @@ class SearchTab extends StatefulWidget {
 class _SearchTabState extends State<SearchTab> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _query = '';
+  String _sortValue = 'A-Z';
+  int _randomSeed = 0;
 
   @override
   void dispose() {
@@ -39,16 +42,23 @@ class _SearchTabState extends State<SearchTab> {
 
         final books = state.books;
         final q = _query.toLowerCase();
-        final results = q.isEmpty
-            ? books
+        List<Book> results = q.isEmpty
+            ? List.from(books)
             : books.where((b) {
                 return b.title.toLowerCase().contains(q) ||
                     b.author.toLowerCase().contains(q);
               }).toList();
 
-        // Extract unique authors for chips (just taking first 5)
-        final allAuthors = books.map((b) => b.author).toSet().toList();
-        final popularAuthors = allAuthors.take(5).toList();
+        // Apply Sorting
+        if (_sortValue == 'A-Z') {
+          results.sort((a, b) => a.title.compareTo(b.title));
+        } else if (_sortValue == 'Z-A') {
+          results.sort((a, b) => b.title.compareTo(a.title));
+        } else if (_sortValue == 'Newest') {
+          results = results.reversed.toList(); // Simplistic newest approach
+        } else if (_sortValue == 'Randomize') {
+          results.shuffle(math.Random(_randomSeed));
+        }
 
         return Scaffold(
           backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
@@ -56,36 +66,116 @@ class _SearchTabState extends State<SearchTab> {
             title: Text(lang.t('Search'),
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(60),
+              preferredSize: const Size.fromHeight(110),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    hintText: lang.t('Titles, authors, or topics...'),
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              setState(() => _query = '');
-                            })
-                        : null,
-                    filled: true,
-                    fillColor: isDark ? AppColors.darkCard : Colors.grey[200],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchCtrl,
+                      onChanged: (v) => setState(() => _query = v),
+                      decoration: InputDecoration(
+                        hintText: lang.t('Titles, authors, or topics...'),
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _query.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchCtrl.clear();
+                                  setState(() => _query = '');
+                                })
+                            : null,
+                        filled: true,
+                        fillColor: isDark ? AppColors.darkCard : Colors.grey[200],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 48,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isDark 
+                                  ? [const Color(0xFF2C2C2E), const Color(0xFF1E1E1E)]
+                                  : [Colors.white, const Color(0xFFF4F4F5)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                              ),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: _sortValue,
+                                icon: Icon(
+                                  Icons.keyboard_arrow_down_rounded, 
+                                  color: isDark ? Colors.white70 : AppColors.purple,
+                                ),
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                dropdownColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                items: ['A-Z', 'Z-A', 'Newest', 'Randomize']
+                                    .map((v) => DropdownMenuItem(
+                                      value: v, 
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            v == 'Randomize' ? Icons.shuffle_rounded 
+                                            : v == 'Newest' ? Icons.new_releases_rounded 
+                                            : Icons.sort_by_alpha_rounded,
+                                            size: 18,
+                                            color: isDark ? Colors.white54 : AppColors.purple.withOpacity(0.7),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Text(lang.t(v)),
+                                        ],
+                                      )
+                                    ))
+                                    .toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() {
+                                      _sortValue = val;
+                                      if (val == 'Randomize') {
+                                        _randomSeed = DateTime.now().millisecondsSinceEpoch;
+                                      }
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
           body: _query.isEmpty
-              ? _buildDefaultState(context, lang, popularAuthors, books)
+              ? _buildDefaultState(context, lang, results)
               : _buildSearchResults(context, lang, results),
         );
       },
@@ -95,30 +185,11 @@ class _SearchTabState extends State<SearchTab> {
   Widget _buildDefaultState(
     BuildContext context,
     LanguageState lang,
-    List<String> authors,
     List<Book> books,
   ) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (authors.isNotEmpty) ...[
-          Text(lang.t('Popular Authors'),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: authors.map((a) => ActionChip(
-              label: Text(a),
-              onPressed: () {
-                _searchCtrl.text = a;
-                setState(() => _query = a);
-              },
-            )).toList(),
-          ),
-          const SizedBox(height: 24),
-        ],
-        
         Text(lang.t('Explore Complete Library'),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),

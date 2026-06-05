@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/services/language_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_bloc.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/bloc/authentication_bloc.dart';
 import 'features/auth/presentation/bloc/authentication_event.dart';
@@ -26,6 +27,7 @@ class BeteBranaApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<LanguageBloc>(create: (_) => LanguageBloc()),
+        BlocProvider<ThemeBloc>(create: (_) => ThemeBloc()),
         RepositoryProvider.value(value: authRepository),
         BlocProvider<AuthBloc>(
           create: (_) => AuthBloc(authRepository)..add(const AuthStarted()),
@@ -43,13 +45,18 @@ class _ThemeWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BeteBrana Library',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.light,
-      home: const _AppWrapper(),
+    return BlocBuilder<ThemeBloc, ThemeState>(
+      builder: (context, themeState) {
+        final isDark = themeState.isDarkMode;
+        return MaterialApp(
+          title: 'BeteBrana Library',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light(fontFamily: themeState.fontFamily),
+          darkTheme: AppTheme.dark(fontFamily: themeState.fontFamily),
+          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+          home: const _AppWrapper(),
+        );
+      },
     );
   }
 }

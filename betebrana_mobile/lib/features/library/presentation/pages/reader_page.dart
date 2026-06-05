@@ -98,6 +98,12 @@ class _ReaderPageState extends State<ReaderPage>
         if (max > 0) {
           _currentProgress = _scrollController.offset / max;
         }
+        if (_showUI) {
+          setState(() {
+            _showUI = false;
+            if (_isSearching) _isSearching = false;
+          });
+        }
       }
     });
     _offlineBookService = OfflineBookService();
@@ -1018,17 +1024,22 @@ class _ReaderPageState extends State<ReaderPage>
                                     onPageChanged: (page, total) {
                                       WidgetsBinding.instance
                                           .addPostFrameCallback((_) {
-                                        if (mounted &&
-                                            (_currentPage != page ||
-                                                _totalPages != total)) {
+                                        if (mounted) {
                                           setState(() {
-                                            _currentPage = page;
-                                            _totalPages = total;
-                                            if (total > 1) {
-                                              _currentProgress =
-                                                  page / (total - 1);
-                                            } else {
-                                              _currentProgress = 0.0;
+                                            if (_currentPage != page ||
+                                                _totalPages != total) {
+                                              _currentPage = page;
+                                              _totalPages = total;
+                                              if (total > 1) {
+                                                _currentProgress =
+                                                    page / (total - 1);
+                                              } else {
+                                                _currentProgress = 0.0;
+                                              }
+                                            }
+                                            if (_showUI) {
+                                              _showUI = false;
+                                              if (_isSearching) _isSearching = false;
                                             }
                                           });
                                         }
@@ -1215,9 +1226,12 @@ class _ReaderPageState extends State<ReaderPage>
                                     ],
                                     const SizedBox(height: 24),
                                   ],
-                                ),
-                              ))
-                            ],
+                                  ), // Column
+                                ), // SingleChildScrollView
+                              ), // Center
+                            ), // SafeArea
+                          ), // Positioned.fill
+                        ], // Stack children
                           ),
                         ),
                       ),

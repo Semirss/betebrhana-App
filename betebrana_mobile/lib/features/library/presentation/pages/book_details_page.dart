@@ -5,6 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:betebrana_mobile/features/library/data/book_download_service.dart';
 import 'package:betebrana_mobile/core/config/app_config.dart';
+import 'package:betebrana_mobile/core/utils/error_helper.dart';
+import 'package:betebrana_mobile/core/theme/app_theme.dart';
 import 'package:betebrana_mobile/features/library/data/queue_repository.dart';
 import 'package:betebrana_mobile/features/library/data/rental_repository.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
@@ -304,7 +306,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to download: ${e.toString()}'),
+          content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to download the book.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -386,7 +388,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to remove: ${e.toString()}'),
+          content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to remove the downloaded book.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -458,7 +460,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to borrow: ${e.toString()}'),
+            content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to borrow the book.')),
             backgroundColor: Colors.red,
           ),
         );
@@ -544,7 +546,7 @@ Future<void> _returnCurrentBook() async {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Failed to return: ${e.toString()}'),
+        content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to return the book.')),
         backgroundColor: Colors.red,
       ),
     );
@@ -587,7 +589,7 @@ Future<void> _returnCurrentBook() async {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to join queue: ${e.toString()}'),
+          content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to join the queue.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -620,7 +622,7 @@ Future<void> _returnCurrentBook() async {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to leave queue: ${e.toString()}'),
+          content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to leave the queue.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -1112,16 +1114,16 @@ Future<void> _returnCurrentBook() async {
                         Text(
                           book.description!,
                           textAlign: TextAlign.center,
-                          maxLines: _isDescriptionExpanded ? null : 3,
+                          maxLines: _isDescriptionExpanded ? null : 2,
                           overflow: _isDescriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium!.copyWith(
                             color: isDark ? Colors.grey.shade300 : const Color(0xFF4A6B7C),
-                            height: 1.6,
-                            fontSize: 14,
+                            height: 1.5,
+                            fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        if (book.description!.length > 100)
+                        if (book.description!.length > 80)
                           TextButton(
                             onPressed: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
                             child: Text(

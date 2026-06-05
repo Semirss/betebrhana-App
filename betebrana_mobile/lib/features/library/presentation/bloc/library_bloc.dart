@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 
+import 'package:betebrana_mobile/core/utils/error_helper.dart';
 import 'package:betebrana_mobile/features/library/data/book_repository.dart';
 import 'package:betebrana_mobile/features/library/domain/entities/book.dart';
 import 'package:betebrana_mobile/features/library/presentation/bloc/library_event.dart';
@@ -59,7 +60,7 @@ class LibraryBloc extends Bloc<LibraryEvent, LibraryState> {
           updateMessage: null,
         ));
       } else {
-        emit(LibraryError(e.toString()));
+        emit(LibraryError(ErrorHelper.getFriendlyMessage(e, 'Failed to load library. Please try again.')));
       }
     }
   }

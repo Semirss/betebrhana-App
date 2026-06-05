@@ -26,225 +26,201 @@ class ProfileSettingsTab extends StatelessWidget {
         title: Text(langState.t('Settings'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Card
+            // Authentic User Profile
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 36,
+                  backgroundColor: AppColors.purple.withOpacity(0.1),
+                  child: Text(
+                    initial,
+                    style: const TextStyle(fontSize: 28, color: AppColors.purple, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.name ?? langState.t('Guest User'),
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.email ?? langState.t('Sign in to sync your library'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? AppColors.darkSubtext : AppColors.lightSubtext,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 40),
+
+            Text(
+              langState.t('PREFERENCES').toUpperCase(),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
             Container(
-              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkCard : AppColors.lightCard,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                ],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? Colors.grey[850]! : Colors.grey[200]!),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 35,
-                    backgroundColor: AppColors.purple,
-                    child: Text(
-                      initial,
-                      style: const TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold),
+                  // Theme Toggle
+                  BlocBuilder<ThemeBloc, ThemeState>(
+                    builder: (context, themeState) {
+                      return ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: AppColors.orange.withOpacity(0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.dark_mode_outlined, color: AppColors.orange, size: 20),
+                        ),
+                        title: Text(langState.t('Dark Theme'), style: const TextStyle(fontWeight: FontWeight.w500)),
+                        trailing: Switch.adaptive(
+                          value: themeState.isDarkMode,
+                          onChanged: (_) => context.read<ThemeBloc>().add(ToggleThemeEvent()),
+                          activeColor: AppColors.orange,
+                        ),
+                      );
+                    },
+                  ),
+                  Divider(height: 1, color: isDark ? Colors.grey[850] : Colors.grey[200], indent: 56),
+                  
+                  // Language
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle),
+                      child: const Icon(Icons.language_outlined, color: Colors.blue, size: 20),
+                    ),
+                    title: Text(langState.t('App Language'), style: const TextStyle(fontWeight: FontWeight.w500)),
+                    trailing: Container(
+                      height: 36,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4F4F5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: langState.isAmharic ? 'am' : 'en',
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded, 
+                            color: isDark ? Colors.white70 : Colors.blue,
+                            size: 18,
+                          ),
+                          style: TextStyle(
+                            color: isDark ? Colors.white : Colors.black87,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          dropdownColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          items: const [
+                            DropdownMenuItem(value: 'en', child: Text('English')),
+                            DropdownMenuItem(value: 'am', child: Text('አማርኛ')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) context.read<LanguageBloc>().add(LanguageSet(val));
+                          },
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user?.name ?? langState.t('Guest User'),
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Divider(height: 1, color: isDark ? Colors.grey[850] : Colors.grey[200], indent: 56),
+
+                  // Font Style
+                  BlocBuilder<ThemeBloc, ThemeState>(
+                    builder: (context, themeState) {
+                      return ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: AppColors.purple.withOpacity(0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.font_download_outlined, color: AppColors.purple, size: 20),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user?.email ?? langState.t('Sign in to sync your library'),
-                          style: TextStyle(color: isDark ? AppColors.darkSubtext : AppColors.lightSubtext),
+                        title: Text(langState.t('Font Style'), style: const TextStyle(fontWeight: FontWeight.w500)),
+                        trailing: Container(
+                          height: 36,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF4F4F5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                            ),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: themeState.fontFamily,
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded, 
+                                color: isDark ? Colors.white70 : AppColors.purple,
+                                size: 18,
+                              ),
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              dropdownColor: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              items: const [
+                                DropdownMenuItem(value: 'System', child: Text('System')),
+                                DropdownMenuItem(value: 'Abyssinica SIL', child: Text('Abyssinica')),
+                                DropdownMenuItem(value: 'Kefa', child: Text('Kefa')),
+                                DropdownMenuItem(value: 'Noto Sans Ethiopic', child: Text('Noto Sans')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) context.read<ThemeBloc>().add(ChangeFontEvent(val));
+                              },
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-
-            // Preferences
-            Text(langState.t('Preferences'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
             
-            // Theme Toggle
-            BlocBuilder<ThemeBloc, ThemeState>(
-              builder: (context, themeState) {
-                return _SettingsTile(
-                  icon: Icons.dark_mode_outlined,
-                  title: langState.t('Dark Theme'),
-                  subtitle: themeState.isDarkMode
-                      ? langState.t('Currently enabled — dark mode is on')
-                      : langState.t('Currently disabled — using light mode'),
-                  trailing: Switch(
-                    value: themeState.isDarkMode,
-                    onChanged: (_) => context.read<ThemeBloc>().add(ToggleThemeEvent()),
-                  ),
-                );
-              },
-            ),
-            
-            const SizedBox(height: 16),
-
-            // Language Toggle
-            _SettingsTile(
-              icon: Icons.language_outlined,
-              title: langState.t('App Language'),
-              subtitle: langState.t('Choose your preferred interface language'),
-              trailing: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.grey[800] : Colors.grey[200],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _LangButton(
-                      text: 'EN',
-                      isSelected: !langState.isAmharic,
-                      onTap: () => context.read<LanguageBloc>().add(const LanguageSet('en')),
-                    ),
-                    _LangButton(
-                      text: 'አማ',
-                      isSelected: langState.isAmharic,
-                      onTap: () => context.read<LanguageBloc>().add(const LanguageSet('am')),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
             const SizedBox(height: 40),
 
             // Logout Button
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: TextButton.icon(
                 onPressed: () => context.read<AuthBloc>().add(const AuthLogoutRequested()),
                 icon: const Icon(Icons.logout, color: Colors.red),
-                label: Text(langState.t('Log Out')),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
+                label: Text(langState.t('Log Out'), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 16)),
+                style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.red.withOpacity(0.1),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget trailing;
-
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCard : AppColors.lightCard,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.orange.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: AppColors.orange),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.darkSubtext : AppColors.lightSubtext,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          trailing,
-        ],
-      ),
-    );
-  }
-}
-
-class _LangButton extends StatelessWidget {
-  final String text;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _LangButton({
-    required this.text,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.orange : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[600],
-            fontWeight: FontWeight.bold,
-          ),
         ),
       ),
     );
