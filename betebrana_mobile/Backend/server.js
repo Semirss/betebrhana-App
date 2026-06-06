@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
-const mysql = require("mysql2/promise");
+const mysql = require("mysql2/promise"); // Keeping for types/reference, but we will mock pool
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
@@ -30,7 +30,7 @@ app.use("/covers", express.static("covers"));
 
 // ===== END CORS MIDDLEWARE =====
 
-// GitHub Upload Helper
+// GitHub Upload Helper (Storage)
 async function uploadToGitHub(fileBuffer, originalName, folderPath) {
   const token = process.env.GITHUB_TOKEN;
   const repoSlug = process.env.GITHUB_REPO;
@@ -43,8 +43,6 @@ async function uploadToGitHub(fileBuffer, originalName, folderPath) {
   const fileName = uniqueSuffix + path.extname(originalName);
   const basePath = process.env.GITHUB_BASE_PATH || "";
 
-  // Combine basePath, folderPath and fileName (e.g. "betebrana_mobile/Backend/documents/file.jpg")
-  // Replace Windows backslashes with forward slashes for the GitHub API URL
   const filePath = basePath
     ? `${basePath}/${folderPath}/${fileName}`.replace(/\/+/g, '/')
     : `${folderPath}/${fileName}`;
@@ -89,16 +87,64 @@ const upload = multer({
   },
 });
 
-// MySQL connection pool
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST || "localhost",
-  user: process.env.MYSQL_USER || "root",
-  password: process.env.MYSQL_PASSWORD || "",
-  database: process.env.MYSQL_DATABASE || "betebrana",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+// Cloudflare D1 Custom Pool HTTP Wrapper
+const pool = {
+  execute: async (query, params = []) => {
+    // Basic conversion from MySQL to SQLite syntax
+    let sqliteQuery = query.replace(/\bNOW\(\)/gi, "CURRENT_TIMESTAMP");
+    sqliteQuery = sqliteQuery.replace(/\bDATE_SUB\(NOW\(\),\s*INTERVAL\s*(\d+)\s*DAY\)/gi, "datetime('now', '-$1 day')");
+
+    const accountId = process.env.CF_ACCOUNT_ID;
+    const dbId = process.env.CF_D1_DATABASE_ID;
+    const token = process.env.CF_API_TOKEN;
+
+    if (!accountId || !dbId || !token) {
+      throw new Error("Cloudflare D1 credentials missing");
+    }
+
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${dbId}/query`;
+    
+    const response = await axios.post(url, {
+      sql: sqliteQuery,
+      params: params
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = response.data;
+    if (!data.success) {
+      throw new Error(data.errors[0]?.message || 'D1 API Error');
+    }
+
+    const result = data.result[0];
+    
+    const isModification = /^\s*(INSERT|UPDATE|DELETE)/i.test(sqliteQuery);
+    if (isModification) {
+      // Mock MySQL result packet
+      return [{
+         insertId: result.meta.last_row_id,
+         affectedRows: result.meta.changes
+      }, result.meta];
+    } else {
+      // Return rows and meta
+      return [result.results, result.meta];
+    }
+  },
+  getConnection: async () => {
+    // Mock connection for transactions
+    // D1 HTTP API lacks stateful transactions, so we just run them without isolation.
+    return {
+      execute: pool.execute,
+      beginTransaction: async () => {},
+      commit: async () => {},
+      rollback: async () => {},
+      release: () => {}
+    };
+  }
+};
 
 // Initialize database
 async function initializeDatabase() {
