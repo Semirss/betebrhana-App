@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('edit-book-form').addEventListener('submit', handleSaveBookEdit);
     document.getElementById('create-promo-form').addEventListener('submit', handleCreateAd);
     document.getElementById('edit-promo-form').addEventListener('submit', handleSaveAdEdit);
+    document.getElementById('version-form').addEventListener('submit', handleVersionSubmit);
 
     // Live Preview Listeners
     ['promo-section', 'promo-text', 'promo-link', 'promo-sticky'].forEach(id => {
@@ -75,6 +76,7 @@ function showPage(pageId) {
         loadAdSponsors();
         loadAds();
     }
+    if (pageId === 'version') loadVersion();
 }
 
 function logout() {
@@ -92,6 +94,17 @@ async function loadAdSponsors() {
     }
 }
 
+async function loadVersion() {
+    const res = await apiFetch('/version');
+    if (res.ok) {
+        const v = await res.json();
+        document.getElementById('v-min').value = v.minimum_version || '1.0.0';
+        document.getElementById('v-latest').value = v.latest_version || '1.0.0';
+        document.getElementById('v-message').value = v.update_message || 'A new version of Betebrana is available. Please update.';
+        document.getElementById('v-force').checked = v.is_force_update === true;
+    }
+}
+
 // Handlers
 async function handleLogin(e) {
     e.preventDefault();
@@ -106,6 +119,34 @@ async function handleLogin(e) {
         const errorEl = document.getElementById('login-error');
         errorEl.textContent = result.error || "Login Failed";
         errorEl.classList.remove('hidden');
+    }
+}
+
+async function handleVersionSubmit(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.textContent = 'Saving...';
+    try {
+        const body = {
+            minimum_version: document.getElementById('v-min').value,
+            latest_version: document.getElementById('v-latest').value,
+            update_message: document.getElementById('v-message').value,
+            is_force_update: document.getElementById('v-force').checked
+        };
+        const res = await apiFetch('/admin/version', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (res.ok) {
+            alert('Version settings saved successfully');
+        } else {
+            alert('Failed to save version settings');
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    } finally {
+        btn.textContent = 'Save Version Settings';
     }
 }
 

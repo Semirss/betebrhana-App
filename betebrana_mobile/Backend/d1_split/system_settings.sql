@@ -1,5 +1,5 @@
 CREATE TABLE `system_settings` (
-  `setting_key` varchar(50) NOT NULL,
+  `setting_key` varchar(50) NOT NULL PRIMARY KEY,
   `setting_value` varchar(255) NOT NULL,
   `description` text DEFAULT NULL
 );

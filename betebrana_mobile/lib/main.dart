@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/services/language_service.dart';
+import 'core/services/update_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_bloc.dart';
 import 'features/auth/data/auth_repository.dart';
@@ -61,8 +62,22 @@ class _ThemeWrapper extends StatelessWidget {
   }
 }
 
-class _AppWrapper extends StatelessWidget {
+class _AppWrapper extends StatefulWidget {
   const _AppWrapper();
+
+  @override
+  State<_AppWrapper> createState() => _AppWrapperState();
+}
+
+class _AppWrapperState extends State<_AppWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    // Run update check shortly after the app launches (both Option 1 + Option 2)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateService.checkForUpdates(context);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

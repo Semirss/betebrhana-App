@@ -610,10 +610,52 @@ app.post("/api/admin/settings", authenticateAdmin, async (req, res) => {
   const { settings } = req.body; // { key: value, ... }
   try {
     for (const [key, value] of Object.entries(settings)) {
-      await pool.execute("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?", [key, String(value), String(value)]);
+      await pool.execute("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value", [key, String(value)]);
     }
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// --- App Version Control API ---
+
+app.get("/api/version", async (req, res) => {
+  try {
+    const [settings] = await pool.execute("SELECT * FROM system_settings WHERE setting_key IN ('app_minimum_version', 'app_latest_version', 'app_is_force_update', 'app_update_message')");
+    const vInfo = {
+      minimum_version: "1.0.0",
+      latest_version: "1.0.0",
+      is_force_update: false,
+      update_message: "A new version of Betebrana is available. Please update."
+    };
+    settings.forEach(s => {
+      if (s.setting_key === 'app_minimum_version') vInfo.minimum_version = s.setting_value;
+      if (s.setting_key === 'app_latest_version') vInfo.latest_version = s.setting_value;
+      if (s.setting_key === 'app_is_force_update') vInfo.is_force_update = s.setting_value === 'true' || s.setting_value === '1';
+      if (s.setting_key === 'app_update_message') vInfo.update_message = s.setting_value;
+    });
+    res.json(vInfo);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post("/api/admin/version", authenticateAdmin, async (req, res) => {
+  const { minimum_version, latest_version, is_force_update, update_message } = req.body;
+  try {
+    const settings = [
+      ['app_minimum_version', minimum_version || '1.0.0'],
+      ['app_latest_version', latest_version || '1.0.0'],
+      ['app_is_force_update', is_force_update ? '1' : '0'],
+      ['app_update_message', update_message || 'A new version of Betebrana is available. Please update.']
+    ];
+
+    for (const [key, value] of settings) {
+      await pool.execute("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value", [key, String(value)]);
+    }
+    res.json({ success: true, message: "Version settings updated successfully" });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // --- Admin Book Management ---

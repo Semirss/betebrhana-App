@@ -75,6 +75,9 @@
                 <button onclick="showPage('ads')" class="w-full text-left px-4 py-3 rounded-xl transition-colors font-medium text-[#6B5A4E] hover:bg-[#F8F6F0] nav-btn" data-page="ads">
                     Ad Campaigns
                 </button>
+                <button onclick="showPage('version')" class="w-full text-left px-4 py-3 rounded-xl transition-colors font-medium text-[#6B5A4E] hover:bg-[#F8F6F0] nav-btn" data-page="version">
+                    Version Control
+                </button>
             </nav>
             <div class="px-4 py-6 border-t border-[#EAE3D9]">
                 <button onclick="logout()" class="w-full text-left px-4 py-3 text-[#B07D7D] font-medium hover:bg-[#FDF6F6] rounded-xl">Sign Out</button>
@@ -83,6 +86,41 @@
 
         <!-- Main Content -->
         <main class="ml-72 flex-1 p-10 min-h-screen">
+
+            <!-- VERSION PAGE -->
+            <section id="page-version" class="page-section hidden max-w-3xl mx-auto py-4">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold tracking-tight text-[#3B2F2F]">App Version Control</h2>
+                    <p class="text-[#8D7B68] mt-1 text-sm">Force updates and configure minimum versions for the mobile app.</p>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-[#EAE3D9] p-8">
+                    <form id="version-form" class="space-y-6">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Minimum Required Version</label>
+                                <input type="text" id="v-min" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-[#8C7362]" placeholder="e.g. 1.0.0" required>
+                                <p class="text-xs text-[#8D7B68] mt-1">Users below this version will see the update screen.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Latest Version</label>
+                                <input type="text" id="v-latest" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-[#8C7362]" placeholder="e.g. 1.0.5" required>
+                                <p class="text-xs text-[#8D7B68] mt-1">The most recent version on the Play Store.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-[#6B5A4E] mb-1">Update Message</label>
+                            <textarea id="v-message" class="w-full border border-[#EAE3D9] bg-white p-3 rounded-lg outline-none focus:ring-2 focus:ring-[#8C7362]" rows="3" placeholder="A new version is available! Please update." required></textarea>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="v-force" class="w-5 h-5 rounded border-[#EAE3D9] text-[#8C7362] focus:ring-[#8C7362]">
+                            <label for="v-force" class="text-sm font-medium text-[#6B5A4E]">Is this a forced update? (Cannot be dismissed)</label>
+                        </div>
+                        <div class="pt-4 flex justify-end">
+                            <button type="submit" class="bg-[#8C7362] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#6B5A4E]">Save Version Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
 
             <!-- BOOKS PAGE -->
             <section id="page-books" class="page-section hidden max-w-7xl mx-auto py-4">
