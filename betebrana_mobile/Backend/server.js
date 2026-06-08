@@ -405,6 +405,11 @@ app.get("/", (req, res) => {
   });
 });
 
+// Health check endpoint (used by keep-alive self-ping)
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // Test endpoint
 app.get("/api/test", async (req, res) => {
   try {
@@ -1736,6 +1741,31 @@ async function startServer() {
     console.log("Automatic systems running:");
     console.log("- Queue cleanup: every hour");
     console.log("- Rental expiry check: every 5 minutes");
+    console.log("- Self-ping keep-alive: every 10 minutes");
+
+    // ============================================================
+    // KEEP-ALIVE: Self-ping to prevent Render free tier from
+    // spinning down due to inactivity (spins down after 15 min).
+    // Pings own /api/health endpoint every 10 minutes.
+    // ============================================================
+    const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+    if (RENDER_URL) {
+      const PING_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+      setInterval(async () => {
+        try {
+          const response = await axios.get(`${RENDER_URL}/api/health`, {
+            timeout: 10000, // 10 second timeout
+          });
+          console.log(`[Keep-Alive] Self-ping OK — ${new Date().toISOString()} (status: ${response.status})`);
+        } catch (err) {
+          console.warn(`[Keep-Alive] Self-ping failed — ${err.message}`);
+        }
+      }, PING_INTERVAL_MS);
+
+      console.log(`[Keep-Alive] Active. Pinging ${RENDER_URL}/api/health every 10 min.`);
+    } else {
+      console.warn("[Keep-Alive] RENDER_EXTERNAL_URL env var not set. Self-ping disabled.");
+    }
   });
 }
 

@@ -162,7 +162,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           shape: BoxShape.circle,
                         ),
                         child: Image.asset(
-                          'assets/icon/betebranalogo.png',
+                          'assets/icon/betebranalogo2_upscaled.png',
                           fit: BoxFit.cover,
                         ),
                       ),

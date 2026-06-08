@@ -98,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                             shape: BoxShape.circle,
                           ),
                           child: Image.asset(
-                            'assets/icon/betebranalogo.png',
+                            'assets/icon/betebranalogo2_upscaled.png',
                             fit: BoxFit.cover,
                           ),
                         ),
