@@ -279,251 +279,266 @@ class HomeTabState extends State<HomeTab> {
                 final viewportHeight = constraints.maxHeight;
                 final viewportWidth = constraints.maxWidth;
 
-                return SingleChildScrollView(
-                  child: Stack(
-                    children: [
-                      // 1. Animated Background (Stretches exactly 55% of the viewport)
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: viewportHeight * 0.55,
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 600),
-                          transitionBuilder: (Widget child, Animation<double> animation) {
-                            return FadeTransition(opacity: animation, child: child);
-                          },
-                          child: currentCoverUrl != null
-                              ? Container(
-                                  key: ValueKey<String>(currentCoverUrl),
-                                  decoration: BoxDecoration(
-                                    image: DecorationImage(
-                                      image: CachedNetworkImageProvider(currentCoverUrl),
-                                      fit: BoxFit.cover,
-                                      colorFilter: ColorFilter.mode(
-                                        Colors.black.withOpacity(0.3),
-                                        BlendMode.darken,
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    // Premium pull-to-refresh: reload ads + library data
+                    _adKey.currentState?.refresh();
+                    PaintingBinding.instance.imageCache.clear();
+                    PaintingBinding.instance.imageCache.clearLiveImages();
+                    context.read<LibraryBloc>().add(const LibraryRefreshed());
+                    await Future.delayed(const Duration(milliseconds: 800));
+                  },
+                  color: const Color(0xFFFF7A3B),       // brand orange indicator
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  strokeWidth: 2.5,
+                  displacement: 60,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Stack(
+                      children: [
+                        // 1. Animated Background (Stretches exactly 55% of the viewport)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: viewportHeight * 0.55,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 600),
+                            transitionBuilder: (Widget child, Animation<double> animation) {
+                              return FadeTransition(opacity: animation, child: child);
+                            },
+                            child: currentCoverUrl != null
+                                ? Container(
+                                    key: ValueKey<String>(currentCoverUrl),
+                                    decoration: BoxDecoration(
+                                      image: DecorationImage(
+                                        image: CachedNetworkImageProvider(currentCoverUrl),
+                                        fit: BoxFit.cover,
+                                        colorFilter: ColorFilter.mode(
+                                          Colors.black.withOpacity(0.3),
+                                          BlendMode.darken,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    key: const ValueKey('placeholder'),
+                                    color: Colors.grey.shade800,
+                                  ),
+                          ),
+                        ),
+
+                        // 2. White Bottom Section (Covers the rest of the scrollable content)
+                        Positioned(
+                          top: viewportHeight * 0.45,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                            ),
+                          ),
+                        ),
+
+                        // 3. The Content
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // ── MAIN PAGE VIEWPORT ──
+                            // This container perfectly occupies exactly one screen height
+                            Container(
+                              height: viewportHeight,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Header Row (Discover & Search)
+                                  SafeArea(
+                                    bottom: false,
+                                    child: Padding(
+                                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment: CrossAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            context.watch<LanguageBloc>().state.t('Discover'),
+                                            style: const TextStyle(
+                                              fontSize: 26,
+                                              fontWeight: FontWeight.w900,
+                                              color: Colors.white,
+                                              shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                                            ),
+                                          ),
+                                          Row(
+                                            crossAxisAlignment: CrossAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                context.watch<LanguageBloc>().state.isAmharic ? 'ቤተብርሃና' : 'Betebrhana',
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                  shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              IconButton(
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                icon: const Icon(Icons.search, color: Colors.white, size: 24, shadows: [Shadow(color: Colors.black45, blurRadius: 4)]),
+                                                onPressed: () {
+                                                  showSearch(
+                                                    context: context,
+                                                    delegate: _QuickSearchDelegate(books: books),
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                )
-                              : Container(
-                                  key: const ValueKey('placeholder'),
-                                  color: Colors.grey.shade800,
-                                ),
-                        ),
-                      ),
-
-                      // 2. White Bottom Section (Covers the rest of the scrollable content)
-                      Positioned(
-                        top: viewportHeight * 0.45,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).scaffoldBackgroundColor,
-                          ),
-                        ),
-                      ),
-
-                      // 3. The Content
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // ── MAIN PAGE VIEWPORT ──
-                          // This container perfectly occupies exactly one screen height
-                          Container(
-                            height: viewportHeight,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Header Row (Discover & Search)
-                                SafeArea(
-                                  bottom: false,
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                  
+                                  const Spacer(flex: 1),
+                                  
+                                  // Carousel
+                                  SizedBox(
+                                    height: viewportHeight * 0.55, 
+                                    child: PageView.builder(
+                                      controller: _pageController,
+                                      onPageChanged: (index) {
+                                        setState(() {
+                                          _currentIndex = index;
+                                        });
+                                      },
+                                      itemCount: books.length,
+                                      itemBuilder: (context, index) {
+                                        return _buildBookCard(books[index], index, safeIndex, viewportHeight, viewportWidth);
+                                      },
+                                    ),
+                                  ),
+                                  
+                                  const Spacer(flex: 1),
+                                  
+                                  // Book Details (Title, Author)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                                    child: Column(
                                       children: [
                                         Text(
-                                          context.watch<LanguageBloc>().state.t('Discover'),
-                                          style: const TextStyle(
-                                            fontSize: 26,
-                                            fontWeight: FontWeight.w900,
-                                            color: Colors.white,
-                                            shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
+                                          currentBook.title.isEmpty ? 'Untitled' : currentBook.title,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 28,
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                                            letterSpacing: -0.5,
+                                            height: 1.2,
                                           ),
                                         ),
-                                        Row(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              context.watch<LanguageBloc>().state.isAmharic ? 'ቤተብርሃና' : 'Betebrhana',
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                                shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
-                                              ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          currentBook.author.isEmpty ? 'Unknown author' : 'By ${currentBook.author}',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 24),
+                                        
+                                        // Queue Status Badge
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: _getQueueStatusColor(context, currentBook).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Text(
+                                            _queueSubtitleText(currentBook),
+                                            style: TextStyle(
+                                              color: _getQueueStatusColor(context, currentBook),
+                                              fontWeight: FontWeight.bold,
                                             ),
-                                            const SizedBox(width: 4),
-                                            IconButton(
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
-                                              icon: const Icon(Icons.search, color: Colors.white, size: 24, shadows: [Shadow(color: Colors.black45, blurRadius: 4)]),
-                                              onPressed: () {
-                                                showSearch(
-                                                  context: context,
-                                                  delegate: _QuickSearchDelegate(books: books),
-                                                );
-                                              },
-                                            ),
-                                          ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          '${currentBook.availableCopies}/${currentBook.totalCopies} available',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                ),
-                                
-                                const Spacer(flex: 1),
-                                
-                                // Carousel
-                                SizedBox(
-                                  height: viewportHeight * 0.55, 
-                                  child: PageView.builder(
-                                    controller: _pageController,
-                                    onPageChanged: (index) {
-                                      setState(() {
-                                        _currentIndex = index;
-                                      });
-                                    },
-                                    itemCount: books.length,
-                                    itemBuilder: (context, index) {
-                                      return _buildBookCard(books[index], index, safeIndex, viewportHeight, viewportWidth);
-                                    },
-                                  ),
-                                ),
-                                
-                                const Spacer(flex: 1),
-                                
-                                // Book Details (Title, Author)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        currentBook.title.isEmpty ? 'Untitled' : currentBook.title,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                                          letterSpacing: -0.5,
-                                          height: 1.2,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        currentBook.author.isEmpty ? 'Unknown author' : 'By ${currentBook.author}',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 24),
-                                      
-                                      // Queue Status Badge
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: _getQueueStatusColor(context, currentBook).withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          _queueSubtitleText(currentBook),
-                                          style: TextStyle(
-                                            color: _getQueueStatusColor(context, currentBook),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        '${currentBook.availableCopies}/${currentBook.totalCopies} available',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Spacer(flex: 2), // Pushes content up comfortably inside the viewport
-                              ],
-                            ),
-                          ),
-                          
-                          // ── SCROLLABLE FOOTER CONTENT ──
-                          // This starts exactly after scrolling down 1 full page
-
-                          // ── New Arrivals ──
-                          if (arrivals.isNotEmpty) ...[
-                            _SectionHeader(
-                              title: context.watch<LanguageBloc>().state.t('New Arrivals'),
-                              onSeeAll: () => context
-                                  .findAncestorStateOfType<MainLibraryViewState>()
-                                  ?.switchToTab(1),
-                            ),
-                            SizedBox(
-                              height: 260,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                itemCount: arrivals.length,
-                                itemBuilder: (_, i) => _SmallBookCard(
-                                  book: arrivals[i],
-                                  onTap: () => _goDetails(context, arrivals[i]),
-                                ),
+                                  const Spacer(flex: 2), // Pushes content up comfortably inside the viewport
+                                ],
                               ),
                             ),
-                          ],
+                            
+                            // ── SCROLLABLE FOOTER CONTENT ──
+                            // This starts exactly after scrolling down 1 full page
 
-                          // ── Ad slider ──
-                          Padding(
-                            padding: const EdgeInsets.only(top: 20),
-                            child: _AdSlider(key: _adKey),
-                          ),
-
-                          // ── Trending ──
-                          if (trending.isNotEmpty) ...[
-                            _SectionHeader(
-                              title: context.watch<LanguageBloc>().state.t('Trending Now'),
-                              onSeeAll: () => context
-                                  .findAncestorStateOfType<MainLibraryViewState>()
-                                  ?.switchToTab(1),
-                            ),
-                            SizedBox(
-                              height: 260,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                itemCount: trending.length,
-                                itemBuilder: (_, i) => _SmallBookCard(
-                                  book: trending[i],
-                                  onTap: () => _goDetails(context, trending[i]),
+                            // ── New Arrivals ──
+                            if (arrivals.isNotEmpty) ...[
+                              _SectionHeader(
+                                title: context.watch<LanguageBloc>().state.t('New Arrivals'),
+                                onSeeAll: () => context
+                                    .findAncestorStateOfType<MainLibraryViewState>()
+                                    ?.switchToTab(1),
+                              ),
+                              SizedBox(
+                                height: 260,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: arrivals.length,
+                                  itemBuilder: (_, i) => _SmallBookCard(
+                                    book: arrivals[i],
+                                    onTap: () => _goDetails(context, arrivals[i]),
+                                  ),
                                 ),
                               ),
+                            ],
+
+                            // ── Ad slider ──
+                            Padding(
+                              padding: const EdgeInsets.only(top: 20),
+                              child: _AdSlider(key: _adKey),
                             ),
+
+                            // ── Trending ──
+                            if (trending.isNotEmpty) ...[
+                              _SectionHeader(
+                                title: context.watch<LanguageBloc>().state.t('Trending Now'),
+                                onSeeAll: () => context
+                                    .findAncestorStateOfType<MainLibraryViewState>()
+                                    ?.switchToTab(1),
+                              ),
+                              SizedBox(
+                                height: 260,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: trending.length,
+                                  itemBuilder: (_, i) => _SmallBookCard(
+                                    book: trending[i],
+                                    onTap: () => _goDetails(context, trending[i]),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            
+                            const SizedBox(height: 100),
                           ],
-                          
-                          const SizedBox(height: 100),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }

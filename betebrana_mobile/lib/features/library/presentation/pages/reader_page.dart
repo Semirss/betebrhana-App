@@ -827,125 +827,17 @@ class _ReaderPageState extends State<ReaderPage>
   Widget build(BuildContext context) {
     final type = (widget.book.fileType ?? '').toLowerCase();
     final currentTheme = this.theme; // Use the getter
-
-    return Theme(
+return Theme(
       data: currentTheme,
       child: DefaultTabController(
         length: type == 'txt' ? 2 : 1,
         initialIndex: type == 'txt' ? 1 : 0,
         child: Scaffold(
-          bottomNavigationBar: AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            child: !_showUI
-                ? const SizedBox.shrink()
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FutureBuilder<String>(
-                          future: type == 'txt' ? _txtFuture : Future.value(''),
-                          builder: (context, snapshot) {
-                            return ReaderBottomControls(
-                              isBookmarked: _isBookmarked,
-                              isAutoScrolling: _isAutoScrolling,
-                              isOrientationLandscape: _isOrientationLandscape,
-                              onShowChapterList: () {
-                                if (type == 'txt' && snapshot.hasData) {
-                                  _showChapterList(snapshot.data!);
-                                } else {
-                                  // For non-txt files or loading state
-                                  showChapterListSheet(
-                                    context,
-                                    chapters: [],
-                                    onChapterSelected: (_) {},
-                                  );
-                                }
-                              },
-                              onToggleBookmark: _toggleBookmark,
-                              onToggleAutoScroll: _toggleAutoScroll,
-                              onToggleOrientation: _toggleOrientation,
-                              onShowDisplaySettings: _showDisplaySettingsSheet,
-                              chapterKey: _chapterKey,
-                              bookmarkKey: _bookmarkKey,
-                              autoScrollKey: _autoScrollKey,
-                              settingsKey: _settingsKey,
-                            );
-                          }),
-                      if (_sharedAd != null && !_showInterstitial)
-                        GestureDetector(
-                            onTap: () async {
-                              if (_sharedAd!['redirect_link'] != null) {
-                                final url =
-                                    Uri.parse(_sharedAd!['redirect_link']);
-                                if (await canLaunchUrl(url)) {
-                                  await launchUrl(url,
-                                      mode: LaunchMode.externalApplication);
-                                }
-                              }
-                            },
-                            child: _buildBannerAd()),
-                    ],
-                  ),
-          ),
-          body: Column(
+          backgroundColor: currentTheme.scaffoldBackgroundColor,
+          body: Stack(
             children: [
-              AnimatedSize(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                child: !_showUI
-                    ? const SizedBox.shrink()
-                    : ReaderHeader(
-                        title: widget.book.title.isEmpty
-                            ? 'Reader'
-                            : widget.book.title,
-                        pageInfo: 'Page ${_currentPage + 1}',
-                        isSearching: _isSearching,
-                        isLockEnabled: _isLockEnabled,
-                        searchController: _searchController,
-                        searchFocusNode: _searchFocusNode,
-                        searchKey: _searchKey,
-                        lockKey: _lockKey,
-                        pageInfoKey: _pageInfoKey,
-                        onBackPressed: () => Navigator.pop(context),
-                        onToggleSearch: () => setState(() {
-                          _isSearching = !_isSearching;
-                          if (_isSearching) {
-                            _searchFocusNode.requestFocus();
-                          } else {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          }
-                        }),
-                        onClearSearch: () {
-                          _searchController.clear();
-                          _handleSearch();
-                        },
-                        onSearchSubmitted: (_) => _handleSearch(),
-                        onToggleLock: () =>
-                            setState(() => _isLockEnabled = !_isLockEnabled),
-                        onSearchNext: () {},
-                      ),
-              ),
-              if (type == 'txt')
-                Container(
-                  color: currentTheme.scaffoldBackgroundColor,
-                  child: TabBar(
-                    labelColor: const Color(0xFFFF7A3B),
-                    unselectedLabelColor:
-                        currentTheme.colorScheme.onSurface.withOpacity(0.5),
-                    indicatorColor: const Color(0xFFFF7A3B),
-                    indicatorWeight: 3.0,
-                    labelStyle: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
-                    unselectedLabelStyle: const TextStyle(
-                        fontWeight: FontWeight.normal, fontSize: 14),
-                    tabs: const [
-                      Tab(text: 'Scroll'),
-                      Tab(text: 'Paged'),
-                    ],
-                  ),
-                ),
-              Expanded(
+              // ── Full-screen reading area (always fills entire body) ──
+              Positioned.fill(
                 child: Stack(
                   children: [
                     type == 'txt'
@@ -1180,7 +1072,36 @@ class _ReaderPageState extends State<ReaderPage>
                                       ),
                                     ] else ...[
                                       // Countdown finished — show action buttons
+                                      // PRIMARY: Read Book (highlighted)
                                       ElevatedButton(
+                                        onPressed: () => setState(
+                                            () => _showInterstitial = false),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFFF7A3B),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 32, vertical: 16),
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(30)),
+                                          elevation: 4,
+                                          shadowColor: const Color(0xFFFF7A3B).withOpacity(0.5),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Icon(Icons.menu_book_rounded, size: 20),
+                                            SizedBox(width: 10),
+                                            Text('Read Book',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16)),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 14),
+                                      // SECONDARY: Visit Sponsor (subtle)
+                                      TextButton(
                                         onPressed: () async {
                                           if (_sharedAd!['redirect_link'] !=
                                               null) {
@@ -1193,35 +1114,18 @@ class _ReaderPageState extends State<ReaderPage>
                                             }
                                           }
                                         },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.white,
-                                          foregroundColor: Colors.black87,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 24, vertical: 14),
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(30)),
-                                        ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: const [
-                                            Icon(Icons.open_in_new, size: 18),
-                                            SizedBox(width: 8),
+                                            Icon(Icons.open_in_new,
+                                                size: 15, color: Colors.white54),
+                                            SizedBox(width: 6),
                                             Text('Visit Sponsor',
                                                 style: TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold)),
+                                                    color: Colors.white54,
+                                                    fontSize: 13)),
                                           ],
                                         ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      TextButton(
-                                        onPressed: () => setState(
-                                            () => _showInterstitial = false),
-                                        child: const Text('Close and Read Book',
-                                            style: TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 15)),
                                       ),
                                     ],
                                     const SizedBox(height: 24),
@@ -1236,10 +1140,152 @@ class _ReaderPageState extends State<ReaderPage>
                         ),
                       ),
                   ],
-                ), // end Stack
-              ), // end Expanded
-            ],
-          ), // end body Column
+                ), // end inner Stack
+              ), // end Positioned.fill
+
+              // ── Top Header Overlay: slides in/out from top ──
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  ignoring: !_showUI,
+                  child: AnimatedSlide(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeInOutCubic,
+                    offset: _showUI ? Offset.zero : const Offset(0, -1),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      opacity: _showUI ? 1.0 : 0.0,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ReaderHeader(
+                            title: widget.book.title.isEmpty
+                                ? 'Reader'
+                                : widget.book.title,
+                            pageInfo: 'Page ${_currentPage + 1}',
+                            isSearching: _isSearching,
+                            isLockEnabled: _isLockEnabled,
+                            searchController: _searchController,
+                            searchFocusNode: _searchFocusNode,
+                            searchKey: _searchKey,
+                            lockKey: _lockKey,
+                            pageInfoKey: _pageInfoKey,
+                            onBackPressed: () => Navigator.pop(context),
+                            onToggleSearch: () => setState(() {
+                              _isSearching = !_isSearching;
+                              if (_isSearching) {
+                                _searchFocusNode.requestFocus();
+                              } else {
+                                _searchController.clear();
+                                _searchQuery = '';
+                              }
+                            }),
+                            onClearSearch: () {
+                              _searchController.clear();
+                              _handleSearch();
+                            },
+                            onSearchSubmitted: (_) => _handleSearch(),
+                            onToggleLock: () =>
+                                setState(() => _isLockEnabled = !_isLockEnabled),
+                            onSearchNext: () {},
+                          ),
+                          if (type == 'txt')
+                            Container(
+                              color: currentTheme.scaffoldBackgroundColor,
+                              child: TabBar(
+                                labelColor: const Color(0xFFFF7A3B),
+                                unselectedLabelColor:
+                                    currentTheme.colorScheme.onSurface.withOpacity(0.5),
+                                indicatorColor: const Color(0xFFFF7A3B),
+                                indicatorWeight: 3.0,
+                                labelStyle: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 14),
+                                unselectedLabelStyle: const TextStyle(
+                                    fontWeight: FontWeight.normal, fontSize: 14),
+                                tabs: const [
+                                  Tab(text: 'Scroll'),
+                                  Tab(text: 'Paged'),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+
+              // ── Bottom Controls Overlay: slides in/out from bottom ──
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  ignoring: !_showUI,
+                  child: AnimatedSlide(
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeInOutCubic,
+                    offset: _showUI ? Offset.zero : const Offset(0, 1),
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      opacity: _showUI ? 1.0 : 0.0,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FutureBuilder<String>(
+                              future: type == 'txt' ? _txtFuture : Future.value(''),
+                              builder: (context, snapshot) {
+                            return ReaderBottomControls(
+                              isBookmarked: _isBookmarked,
+                              isAutoScrolling: _isAutoScrolling,
+                              isOrientationLandscape: _isOrientationLandscape,
+                              onShowChapterList: () {
+                                if (type == 'txt' && snapshot.hasData) {
+                                  _showChapterList(snapshot.data!);
+                                } else {
+                                  showChapterListSheet(
+                                    context,
+                                    chapters: [],
+                                    onChapterSelected: (_) {},
+                                  );
+                                }
+                              },
+                              onToggleBookmark: _toggleBookmark,
+                              onToggleAutoScroll: _toggleAutoScroll,
+                              onToggleOrientation: _toggleOrientation,
+                              onShowDisplaySettings: _showDisplaySettingsSheet,
+                              chapterKey: _chapterKey,
+                              bookmarkKey: _bookmarkKey,
+                              autoScrollKey: _autoScrollKey,
+                              settingsKey: _settingsKey,
+                            );
+                          }),
+                          if (_sharedAd != null && !_showInterstitial)
+                            GestureDetector(
+                                onTap: () async {
+                                  if (_sharedAd!['redirect_link'] != null) {
+                                    final url =
+                                        Uri.parse(_sharedAd!['redirect_link']);
+                                    if (await canLaunchUrl(url)) {
+                                      await launchUrl(url,
+                                          mode: LaunchMode.externalApplication);
+                                    }
+                                  }
+                                },
+                                child: _buildBannerAd()),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ], // end body Stack
+          ), // end Stack
         ), // end Scaffold
       ), // end DefaultTabController
     ); // end Theme
@@ -1411,62 +1457,61 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
 
     final pages = <String>[];
     final text = widget.text;
-    final textSpan = TextSpan(text: text, style: widget.textStyle);
-    final textPainter = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
-
-    int start = 0;
-    int end = text.length;
-
-    // Safety margin to prevent edge clipping
-    // Reduce height by one line height roughly to ensure the last line isn't cut off
-    final double estimatedLineHeight = (widget.textStyle.fontSize ?? 16.0) * (widget.textStyle.height ?? 1.5);
-    final double pageHeight = math.max(0, size.height - estimatedLineHeight);
+    final double pageHeight = size.height;
     final double pageWidth = size.width;
+    int start = 0;
+    final int end = text.length;
 
     while (start < end) {
-      // Create a painter for the remaining text
-      // We take a chunk to avoid processing huge strings at once
-      int estimatedChunkSize = 3000; // Heuristic
-      int chunkEnd = math.min(start + estimatedChunkSize, end);
-      String chunk = text.substring(start, chunkEnd);
+      // Take a manageable chunk so we don't layout the entire book at once
+      final int chunkEnd = math.min(start + 4000, end);
+      final String chunk = text.substring(start, chunkEnd);
 
-      textPainter.text = TextSpan(text: chunk, style: widget.textStyle);
-      textPainter.layout(maxWidth: pageWidth);
+      // Get the text scaler to match the actual rendered Text widget perfectly
+      final textScaler = MediaQuery.textScalerOf(context);
 
-      // If the whole chunk fits, great. If not, we need to find where to cut.
-      // But typically, the chunk is bigger than a page.
+      final tp = TextPainter(
+        text: TextSpan(text: chunk, style: widget.textStyle),
+        textDirection: TextDirection.ltr,
+        textScaler: textScaler,
+      )..layout(maxWidth: pageWidth);
 
-      // Get the offset position at the bottom-right corner of the available space
-      // We look for the character index at the very end of the box
-      final textPosition =
-          textPainter.getPositionForOffset(Offset(pageWidth, pageHeight));
+      // Use line metrics to find the last COMPLETE line that fits on the page.
+      // This prevents mid-line visual clipping regardless of font size or
+      // line height.
+      final metrics = tp.computeLineMetrics();
+      double cumHeight = 0.0;
+      int lastFitOffset = 0; // character offset within the chunk
 
-      // The offset is relative to the chunk start
-      int splitIndex = start + textPosition.offset;
+    for (final metric in metrics) {
+  // Subtract 1 pixel from the page height to avoid fractional clipping
+  if (cumHeight + metric.height > pageHeight - 1.0) {
+    final pos = tp.getPositionForOffset(Offset(0, cumHeight + 0.001));
+    lastFitOffset = pos.offset;
+    break;
+  }
+  cumHeight += metric.height;
+  lastFitOffset = tp.getPositionForOffset(Offset(0, cumHeight)).offset;
+}
 
-      // Ensure we make progress
-      if (splitIndex <= start) {
-        // Fallback: just take next 100 chars if layout fails (shouldn't happen)
-        splitIndex = math.min(start + 100, end);
+      // Fallback: If even the first line is too tall for the page, force a split
+      // at the first space to avoid an infinite loop.
+      if (lastFitOffset <= 0) {
+        lastFitOffset = math.min(100, chunk.length);
       }
 
-      // If we haven't reached the end of the book, we need to snap to a word boundary
-      if (splitIndex < end) {
-        // Find the last whitespace before the split point to avoid cutting words
-        int safeSplit = text.lastIndexOf(RegExp(r'\s'), splitIndex);
+      int splitIndex = start + lastFitOffset;
 
-        // If no whitespace found in reasonable distance, just hard cut
-        if (safeSplit > start) {
-          splitIndex = safeSplit;
-        }
+      // Snap to a word boundary to avoid cutting mid-word
+      if (splitIndex < end) {
+        final wbIdx = text.lastIndexOf(RegExp(r'\s'), splitIndex);
+        if (wbIdx > start) splitIndex = wbIdx;
       }
 
       pages.add(text.substring(start, splitIndex).trim());
       start = splitIndex;
 
-      // Skip leading whitespace for the next page
+      // Skip leading whitespace at the start of the next page
       while (start < end && RegExp(r'\s').hasMatch(text[start])) {
         start++;
       }
@@ -1524,18 +1569,26 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
     // We use LayoutBuilder to get the EXACT size available for the text
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Define margins
+        // Margins chosen to ensure text always clears the overlaid header
+        // and bottom-controls bars, giving a premium e-reader feel at any
+        // font size. Since bars are Positioned overlays (not in the layout
+        // flow), constraints.maxHeight is stable — no repagination on bar
+        // show/hide.
         const double horizontalMargin = 24.0;
-        const double verticalMargin = 32.0;
+        const double topMargin = 40.0;     // clears header overlay (~36 dp)
+        const double bottomMargin = 100.0; // clears bottom-controls overlay
+        const double footerHeight = 32.0;  // page-counter line
 
-        // Calculate the actual box size for text
+        // The textAreaSize must exactly match what the Text widget renders.
         final Size textAreaSize = Size(
           constraints.maxWidth - (horizontalMargin * 2),
-          constraints.maxHeight - (verticalMargin * 2) - 40, // -40 for footer
+          constraints.maxHeight - topMargin - bottomMargin - footerHeight,
         );
 
-        // Trigger pagination if needed
-        if (_isPaginating || _lastSize != textAreaSize) {
+        // Paginate when explicitly flagged (text/settings changed) or on first
+        // run. Ignore height changes — they are stable with the Stack layout.
+        if (_isPaginating || _lastSize == null ||
+            (textAreaSize.width - (_lastSize?.width ?? 0)).abs() > 2) {
           _paginate(textAreaSize);
         }
 
@@ -1554,9 +1607,7 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
 
         return Stack(
           children: [
-            // The PageView
             GestureDetector(
-              // Tap left/right logic
               onTapUp: (details) {
                 final width = MediaQuery.of(context).size.width;
                 if (details.localPosition.dx > width * 0.66) {
@@ -1564,7 +1615,6 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
                 } else if (details.localPosition.dx < width * 0.33) {
                   _previousPage();
                 } else {
-                  // Center tap: toggle UI
                   widget.onCenterTap?.call();
                 }
               },
@@ -1576,39 +1626,46 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
                   widget.onPageChanged?.call(index, _pages.length);
                 },
                 physics: const BouncingScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return Container(
-                    color: Colors.transparent, // Capture taps
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: horizontalMargin,
-                      vertical: verticalMargin,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _pages[index],
-                            style: widget.textStyle,
-                          ),
-                        ),
-                        // Mini Footer with progress
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          child: Center(
-                            child: Text(
-                              '${index + 1} / ${_pages.length}',
-                              style: widget.textStyle.copyWith(
-                                  fontSize: 12,
-                                  color:
-                                      widget.textStyle.color?.withOpacity(0.5)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+              itemBuilder: (context, index) {
+  return Container(
+    color: Colors.transparent,
+    padding: const EdgeInsets.only(
+      left: horizontalMargin,
+      right: horizontalMargin,
+      top: topMargin,
+      bottom: bottomMargin,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ⬇️ Changed to a scrollable area
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Text(
+              _pages[index],
+              style: widget.textStyle,
+              // No overflow: TextOverflow.clip needed anymore
+            ),
+          ),
+        ),
+        // Page counter footer (unchanged)
+        SizedBox(
+          height: footerHeight,
+          child: Center(
+            child: Text(
+              '${index + 1} / ${_pages.length}',
+              style: widget.textStyle.copyWith(
+                fontSize: 11,
+                color: widget.textStyle.color?.withOpacity(0.45),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+},
               ),
             ),
           ],

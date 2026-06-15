@@ -80,12 +80,8 @@ class MainLibraryViewState extends State<_MainLibraryView> with WidgetsBindingOb
   }
 
   void _onHomeTapped() {
-    if (_currentIndex == 0) {
-      // Refresh hero-ads and clear caches if tapping Home while already on Home
-      _homeTabKey.currentState?.refresh();
-    } else {
-      setState(() => _currentIndex = 0);
-    }
+    // Simply switch to home tab — pull-to-refresh handles data reloading
+    setState(() => _currentIndex = 0);
   }
 
   // Public method to allow children to switch tabs

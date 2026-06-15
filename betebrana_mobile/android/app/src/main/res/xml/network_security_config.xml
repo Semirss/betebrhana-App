@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration
+    - Disables all cleartext (HTTP) traffic by default (Play Store compliant).
+    - Your backend (betebrhana-app.onrender.com) is already HTTPS, so no exceptions needed.
+    - If you ever add a local dev server, add a debug-overrides block instead.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

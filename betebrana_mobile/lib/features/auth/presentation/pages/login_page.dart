@@ -87,12 +87,12 @@ class _LoginPageState extends State<LoginPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 4),
 
                         // Logo
                         Container(
-                          width: 80,
-                          height: 80,
+                          width: 250,
+                          height: 150,
                           clipBehavior: Clip.antiAlias,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
@@ -102,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
                             fit: BoxFit.cover,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 4),
                         
                         // Title
                         const Text(
@@ -110,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.black87,
-                            fontSize: 26,
+                            fontSize: 36,
                             fontWeight: FontWeight.w900,
                             letterSpacing: -0.5,
                             height: 1.2,

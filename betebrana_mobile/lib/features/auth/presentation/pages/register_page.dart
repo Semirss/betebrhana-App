@@ -132,7 +132,15 @@ class _RegisterPageState extends State<RegisterPage> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            child: BlocBuilder<AuthBloc, AuthState>(
+            child: BlocConsumer<AuthBloc, AuthState>(
+              listener: (context, state) {
+                if (state is AuthRegistrationSuccess) {
+                  _isRegistrationSuccessful = true;
+                  _showSuccessAndNavigateToLogin();
+                } else if (state is AuthFailure) {
+                  _showError(state.message);
+                }
+              },
               builder: (context, state) {
                 final isLoading = state is AuthLoading && !_isRegistrationSuccessful;
                 
@@ -151,12 +159,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       ),
                       
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 4),
                       
                       // Logo
                       Container(
-                        width: 80,
-                        height: 80,
+                        width:250,
+                        height: 150,
                         clipBehavior: Clip.antiAlias,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
@@ -166,7 +174,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           fit: BoxFit.cover,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 4),
                       
                       // Title
                       const Text(
@@ -186,10 +194,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-                          Icon(Icons.library_music_rounded, color: Color(0xFF1E1E1E), size: 14),
+                          // Icon(Icons.library_music_rounded, color: Color(0xFF1E1E1E), size: 14),
                           SizedBox(width: 8),
                           Text(
-                            ' Book Library',
+                            '',
                             style: TextStyle(
                               color: Color(0xFF1E1E1E),
                               fontSize: 11,
@@ -200,7 +208,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ],
                       ),
                       
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 4),
 
                       // --- Error Display ---
                       if (_errorMessage != null)
