@@ -720,9 +720,10 @@ class _ReaderPageState extends State<ReaderPage>
     _autoScrollTimer?.cancel();
     if (!_scrollController.hasClients) return;
 
-    // Tick every 50ms, scroll by speed factor
+    // Small frame-rate ticks keep auto-scroll visually smooth without starting
+    // overlapping scroll animations.
     _autoScrollTimer =
-        Timer.periodic(const Duration(milliseconds: 50), (timer) {
+        Timer.periodic(const Duration(milliseconds: 16), (timer) {
       if (!_scrollController.hasClients ||
           !_isAutoScrolling ||
           _isLockEnabled) {
@@ -732,10 +733,10 @@ class _ReaderPageState extends State<ReaderPage>
       final maxScroll = _scrollController.position.maxScrollExtent;
       final currentScroll = _scrollController.offset;
       final delta =
-          _settings.autoScrollSpeed * 2.0; // Adjust multiplier as needed
+          _settings.autoScrollSpeed * 0.75; // About the same speed, smoother.
 
       if (currentScroll < maxScroll) {
-        _scrollController.jumpTo(currentScroll + delta);
+        _scrollController.jumpTo(math.min(maxScroll, currentScroll + delta));
       } else {
         setState(() => _isAutoScrolling = false);
         timer.cancel();
@@ -827,7 +828,7 @@ class _ReaderPageState extends State<ReaderPage>
   Widget build(BuildContext context) {
     final type = (widget.book.fileType ?? '').toLowerCase();
     final currentTheme = this.theme; // Use the getter
-return Theme(
+    return Theme(
       data: currentTheme,
       child: DefaultTabController(
         length: type == 'txt' ? 2 : 1,
@@ -906,6 +907,7 @@ return Theme(
                                           fontSize: _settings.textSize,
                                           height: _settings.lineHeight,
                                           color: theme.colorScheme.onSurface,
+                                          fontFamily: _settings.typeface,
                                         ) ??
                                         TextStyle(
                                             fontSize: _settings.textSize,
@@ -931,7 +933,8 @@ return Theme(
                                             }
                                             if (_showUI) {
                                               _showUI = false;
-                                              if (_isSearching) _isSearching = false;
+                                              if (_isSearching)
+                                                _isSearching = false;
                                             }
                                           });
                                         }
@@ -993,149 +996,165 @@ return Theme(
                               ),
                               // Overlay Content
                               Positioned.fill(
-                                  child: SafeArea(
-                                child: Center(
-                                  child: SingleChildScrollView(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                    if (_sharedAd!['logo_path'] != null)
-                                      Container(
-                                        width: 90,
-                                        height: 90,
-                                        margin:
-                                            const EdgeInsets.only(bottom: 20),
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(16),
-                                          boxShadow: const [
-                                            BoxShadow(
-                                                color: Colors.black45,
-                                                blurRadius: 12)
-                                          ],
-                                        ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: CachedNetworkImage(
-                                          imageUrl: _getImageUrl(
-                                              _sharedAd!['logo_path']),
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    if (_sharedAd!['u_text'] != null)
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 28, vertical: 12),
-                                        child: Text(
-                                          _sharedAd!['u_text'],
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                              height: 1.4),
-                                        ),
-                                      ),
-                                    const SizedBox(height: 32),
-                                    // --- Countdown or action buttons ---
-                                    if (_adCountdown > 0) ...[
-                                      // Show countdown ring while waiting
-                                      SizedBox(
-                                        width: 64,
-                                        height: 64,
-                                        child: Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            CircularProgressIndicator(
-                                              value: _adCountdown / 5.0,
-                                              strokeWidth: 4,
-                                              color: Colors.white,
-                                              backgroundColor: Colors.white24,
+                                child: SafeArea(
+                                  child: Center(
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (_sharedAd!['logo_path'] != null)
+                                            Container(
+                                              width: 90,
+                                              height: 90,
+                                              margin: const EdgeInsets.only(
+                                                  bottom: 20),
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                boxShadow: const [
+                                                  BoxShadow(
+                                                      color: Colors.black45,
+                                                      blurRadius: 12)
+                                                ],
+                                              ),
+                                              clipBehavior: Clip.antiAlias,
+                                              child: CachedNetworkImage(
+                                                imageUrl: _getImageUrl(
+                                                    _sharedAd!['logo_path']),
+                                                fit: BoxFit.cover,
+                                              ),
                                             ),
-                                            Text(
-                                              '$_adCountdown',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.bold,
+                                          if (_sharedAd!['u_text'] != null)
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 28,
+                                                      vertical: 12),
+                                              child: Text(
+                                                _sharedAd!['u_text'],
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 22,
+                                                    fontWeight: FontWeight.bold,
+                                                    height: 1.4),
+                                              ),
+                                            ),
+                                          const SizedBox(height: 32),
+                                          // --- Countdown or action buttons ---
+                                          if (_adCountdown > 0) ...[
+                                            // Show countdown ring while waiting
+                                            SizedBox(
+                                              width: 64,
+                                              height: 64,
+                                              child: Stack(
+                                                alignment: Alignment.center,
+                                                children: [
+                                                  CircularProgressIndicator(
+                                                    value: _adCountdown / 5.0,
+                                                    strokeWidth: 4,
+                                                    color: Colors.white,
+                                                    backgroundColor:
+                                                        Colors.white24,
+                                                  ),
+                                                  Text(
+                                                    '$_adCountdown',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 22,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            const Text(
+                                              'Ad — please wait',
+                                              style: TextStyle(
+                                                  color: Colors.white54,
+                                                  fontSize: 13),
+                                            ),
+                                          ] else ...[
+                                            // Countdown finished — show action buttons
+                                            // PRIMARY: Read Book (highlighted)
+                                            ElevatedButton(
+                                              onPressed: () => setState(() =>
+                                                  _showInterstitial = false),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color(0xFFFF7A3B),
+                                                foregroundColor: Colors.white,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 32,
+                                                        vertical: 16),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            30)),
+                                                elevation: 4,
+                                                shadowColor:
+                                                    const Color(0xFFFF7A3B)
+                                                        .withOpacity(0.5),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: const [
+                                                  Icon(Icons.menu_book_rounded,
+                                                      size: 20),
+                                                  SizedBox(width: 10),
+                                                  Text('Read Book',
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16)),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 14),
+                                            // SECONDARY: Visit Sponsor (subtle)
+                                            TextButton(
+                                              onPressed: () async {
+                                                if (_sharedAd![
+                                                        'redirect_link'] !=
+                                                    null) {
+                                                  final url = Uri.parse(
+                                                      _sharedAd![
+                                                          'redirect_link']);
+                                                  if (await canLaunchUrl(url)) {
+                                                    await launchUrl(url,
+                                                        mode: LaunchMode
+                                                            .externalApplication);
+                                                  }
+                                                }
+                                              },
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: const [
+                                                  Icon(Icons.open_in_new,
+                                                      size: 15,
+                                                      color: Colors.white54),
+                                                  SizedBox(width: 6),
+                                                  Text('Visit Sponsor',
+                                                      style: TextStyle(
+                                                          color: Colors.white54,
+                                                          fontSize: 13)),
+                                                ],
                                               ),
                                             ),
                                           ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      const Text(
-                                        'Ad — please wait',
-                                        style: TextStyle(
-                                            color: Colors.white54,
-                                            fontSize: 13),
-                                      ),
-                                    ] else ...[
-                                      // Countdown finished — show action buttons
-                                      // PRIMARY: Read Book (highlighted)
-                                      ElevatedButton(
-                                        onPressed: () => setState(
-                                            () => _showInterstitial = false),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFFFF7A3B),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 32, vertical: 16),
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(30)),
-                                          elevation: 4,
-                                          shadowColor: const Color(0xFFFF7A3B).withOpacity(0.5),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: const [
-                                            Icon(Icons.menu_book_rounded, size: 20),
-                                            SizedBox(width: 10),
-                                            Text('Read Book',
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16)),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 14),
-                                      // SECONDARY: Visit Sponsor (subtle)
-                                      TextButton(
-                                        onPressed: () async {
-                                          if (_sharedAd!['redirect_link'] !=
-                                              null) {
-                                            final url = Uri.parse(
-                                                _sharedAd!['redirect_link']);
-                                            if (await canLaunchUrl(url)) {
-                                              await launchUrl(url,
-                                                  mode: LaunchMode
-                                                      .externalApplication);
-                                            }
-                                          }
-                                        },
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: const [
-                                            Icon(Icons.open_in_new,
-                                                size: 15, color: Colors.white54),
-                                            SizedBox(width: 6),
-                                            Text('Visit Sponsor',
-                                                style: TextStyle(
-                                                    color: Colors.white54,
-                                                    fontSize: 13)),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 24),
-                                  ],
-                                  ), // Column
-                                ), // SingleChildScrollView
-                              ), // Center
-                            ), // SafeArea
-                          ), // Positioned.fill
-                        ], // Stack children
+                                          const SizedBox(height: 24),
+                                        ],
+                                      ), // Column
+                                    ), // SingleChildScrollView
+                                  ), // Center
+                                ), // SafeArea
+                              ), // Positioned.fill
+                            ], // Stack children
                           ),
                         ),
                       ),
@@ -1188,8 +1207,8 @@ return Theme(
                               _handleSearch();
                             },
                             onSearchSubmitted: (_) => _handleSearch(),
-                            onToggleLock: () =>
-                                setState(() => _isLockEnabled = !_isLockEnabled),
+                            onToggleLock: () => setState(
+                                () => _isLockEnabled = !_isLockEnabled),
                             onSearchNext: () {},
                           ),
                           if (type == 'txt')
@@ -1197,14 +1216,16 @@ return Theme(
                               color: currentTheme.scaffoldBackgroundColor,
                               child: TabBar(
                                 labelColor: const Color(0xFFFF7A3B),
-                                unselectedLabelColor:
-                                    currentTheme.colorScheme.onSurface.withOpacity(0.5),
+                                unselectedLabelColor: currentTheme
+                                    .colorScheme.onSurface
+                                    .withOpacity(0.5),
                                 indicatorColor: const Color(0xFFFF7A3B),
                                 indicatorWeight: 3.0,
                                 labelStyle: const TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 14),
                                 unselectedLabelStyle: const TextStyle(
-                                    fontWeight: FontWeight.normal, fontSize: 14),
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 14),
                                 tabs: const [
                                   Tab(text: 'Scroll'),
                                   Tab(text: 'Paged'),
@@ -1217,7 +1238,6 @@ return Theme(
                   ),
                 ),
               ),
-
 
               // ── Bottom Controls Overlay: slides in/out from bottom ──
               Positioned(
@@ -1238,33 +1258,36 @@ return Theme(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           FutureBuilder<String>(
-                              future: type == 'txt' ? _txtFuture : Future.value(''),
+                              future:
+                                  type == 'txt' ? _txtFuture : Future.value(''),
                               builder: (context, snapshot) {
-                            return ReaderBottomControls(
-                              isBookmarked: _isBookmarked,
-                              isAutoScrolling: _isAutoScrolling,
-                              isOrientationLandscape: _isOrientationLandscape,
-                              onShowChapterList: () {
-                                if (type == 'txt' && snapshot.hasData) {
-                                  _showChapterList(snapshot.data!);
-                                } else {
-                                  showChapterListSheet(
-                                    context,
-                                    chapters: [],
-                                    onChapterSelected: (_) {},
-                                  );
-                                }
-                              },
-                              onToggleBookmark: _toggleBookmark,
-                              onToggleAutoScroll: _toggleAutoScroll,
-                              onToggleOrientation: _toggleOrientation,
-                              onShowDisplaySettings: _showDisplaySettingsSheet,
-                              chapterKey: _chapterKey,
-                              bookmarkKey: _bookmarkKey,
-                              autoScrollKey: _autoScrollKey,
-                              settingsKey: _settingsKey,
-                            );
-                          }),
+                                return ReaderBottomControls(
+                                  isBookmarked: _isBookmarked,
+                                  isAutoScrolling: _isAutoScrolling,
+                                  isOrientationLandscape:
+                                      _isOrientationLandscape,
+                                  onShowChapterList: () {
+                                    if (type == 'txt' && snapshot.hasData) {
+                                      _showChapterList(snapshot.data!);
+                                    } else {
+                                      showChapterListSheet(
+                                        context,
+                                        chapters: [],
+                                        onChapterSelected: (_) {},
+                                      );
+                                    }
+                                  },
+                                  onToggleBookmark: _toggleBookmark,
+                                  onToggleAutoScroll: _toggleAutoScroll,
+                                  onToggleOrientation: _toggleOrientation,
+                                  onShowDisplaySettings:
+                                      _showDisplaySettingsSheet,
+                                  chapterKey: _chapterKey,
+                                  bookmarkKey: _bookmarkKey,
+                                  autoScrollKey: _autoScrollKey,
+                                  settingsKey: _settingsKey,
+                                );
+                              }),
                           if (_sharedAd != null && !_showInterstitial)
                             GestureDetector(
                                 onTap: () async {
@@ -1367,9 +1390,18 @@ class _TxtScrollViewState extends State<_TxtScrollView> {
       onTap: widget.onCenterTap,
       child: Scrollbar(
         controller: widget.scrollController,
+        interactive: true,
         child: SingleChildScrollView(
           controller: widget.scrollController,
-          padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 80),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            MediaQuery.of(context).padding.bottom + 128,
+          ),
           child: Text(
             widget.text,
             textAlign: getTextAlign(),
@@ -1417,7 +1449,9 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
   bool _isPaginating = true;
   int _currentPage = 0;
   Size? _lastSize;
+  double? _lastTextScale;
   bool _hasSetInitialPage = false;
+  int _paginationRun = 0;
 
   @override
   void initState() {
@@ -1432,83 +1466,167 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
     if (oldWidget.settings.textSize != widget.settings.textSize ||
         oldWidget.settings.lineHeight != widget.settings.lineHeight ||
         oldWidget.settings.typeface != widget.settings.typeface ||
+        oldWidget.settings.alignment != widget.settings.alignment ||
         oldWidget.textStyle != widget.textStyle ||
         oldWidget.text != widget.text) {
       _isPaginating = true; // Trigger layout builder to recalculate
     }
   }
 
-  /// The magic happens here: Calculates pages based on ACTUAL layout dimensions
-  Future<void> _paginate(Size size) async {
+  TextAlign _textAlign() {
+    switch (widget.settings.alignment) {
+      case ReaderAlignment.center:
+        return TextAlign.center;
+      case ReaderAlignment.justified:
+        return TextAlign.justify;
+      default:
+        return TextAlign.left;
+    }
+  }
+
+  TextPainter _layoutText(
+    String text,
+    double pageWidth,
+    TextScaler textScaler,
+  ) {
+    return TextPainter(
+      text: TextSpan(text: text, style: widget.textStyle),
+      textAlign: _textAlign(),
+      textDirection: TextDirection.ltr,
+      textScaler: textScaler,
+    )..layout(maxWidth: pageWidth);
+  }
+
+  bool _fitsPage(
+    String text,
+    double pageWidth,
+    double pageHeight,
+    TextScaler textScaler,
+  ) {
+    if (text.isEmpty) return true;
+    final painter = _layoutText(text, pageWidth, textScaler);
+    return painter.height <= pageHeight;
+  }
+
+  int _previousWordBoundary(String text, int start, int offset) {
+    for (int i = math.min(offset, text.length) - 1; i > start; i--) {
+      if (RegExp(r'\s').hasMatch(text[i])) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  int _findPageEnd({
+    required String text,
+    required int start,
+    required int end,
+    required double pageWidth,
+    required double pageHeight,
+    required TextScaler textScaler,
+  }) {
+    final remaining = end - start;
+    if (remaining <= 0) return end;
+
+    bool fitsOffset(int offset) {
+      final candidate = text.substring(start, start + offset).trimRight();
+      return _fitsPage(candidate, pageWidth, pageHeight, textScaler);
+    }
+
+    int upper = math.min(remaining, 1024);
+    while (upper < remaining && fitsOffset(upper)) {
+      final nextUpper = math.min(remaining, upper * 2);
+      if (nextUpper == upper) break;
+      upper = nextUpper;
+    }
+
+    int low = 1;
+    int high = upper;
+    int best = 0;
+    while (low <= high) {
+      final mid = (low + high) >> 1;
+      if (fitsOffset(mid)) {
+        best = mid;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    if (best <= 0) {
+      return math.min(start + 1, end);
+    }
+
+    int splitIndex = start + best;
+    if (splitIndex < end) {
+      final wordBoundary = _previousWordBoundary(text, start, splitIndex);
+      if (wordBoundary > start) {
+        final wordCandidate = text.substring(start, wordBoundary).trimRight();
+        if (_fitsPage(wordCandidate, pageWidth, pageHeight, textScaler)) {
+          splitIndex = wordBoundary;
+        }
+      }
+    }
+
+    while (splitIndex > start + 1 &&
+        !_fitsPage(
+          text.substring(start, splitIndex).trimRight(),
+          pageWidth,
+          pageHeight,
+          textScaler,
+        )) {
+      final wordBoundary = _previousWordBoundary(text, start, splitIndex - 1);
+      splitIndex = wordBoundary > start ? wordBoundary : splitIndex - 1;
+    }
+
+    return math.min(math.max(splitIndex, start + 1), end);
+  }
+
+  /// Calculates pages against the same text box used by the render tree.
+  Future<void> _paginate(Size size, TextScaler textScaler) async {
+    if (size.width <= 0 || size.height <= 0) return;
+
+    final run = ++_paginationRun;
+    final textScale =
+        textScaler.scale(widget.textStyle.fontSize ?? widget.settings.textSize);
+
     // If size hasn't changed materially, don't re-calculate
     if (_lastSize != null &&
         (size.width - _lastSize!.width).abs() < 1 &&
         (size.height - _lastSize!.height).abs() < 1 &&
+        _lastTextScale == textScale &&
         !_isPaginating) {
       return;
     }
 
     _lastSize = size;
+    _lastTextScale = textScale;
 
     // Defer to next frame to allow UI to show loading state
     await Future.delayed(const Duration(milliseconds: 50));
 
-    if (!mounted) return;
+    if (!mounted || run != _paginationRun) return;
 
     final pages = <String>[];
     final text = widget.text;
-    final double pageHeight = size.height;
+    // Keep a small safety margin because RenderParagraph can round line boxes
+    // differently on some devices. The rendered text area remains full-size.
+    final double pageHeight = math.max(1.0, size.height - 2.0);
     final double pageWidth = size.width;
     int start = 0;
     final int end = text.length;
 
     while (start < end) {
-      // Take a manageable chunk so we don't layout the entire book at once
-      final int chunkEnd = math.min(start + 4000, end);
-      final String chunk = text.substring(start, chunkEnd);
-
-      // Get the text scaler to match the actual rendered Text widget perfectly
-      final textScaler = MediaQuery.textScalerOf(context);
-
-      final tp = TextPainter(
-        text: TextSpan(text: chunk, style: widget.textStyle),
-        textDirection: TextDirection.ltr,
+      final splitIndex = _findPageEnd(
+        text: text,
+        start: start,
+        end: end,
+        pageWidth: pageWidth,
+        pageHeight: pageHeight,
         textScaler: textScaler,
-      )..layout(maxWidth: pageWidth);
+      );
 
-      // Use line metrics to find the last COMPLETE line that fits on the page.
-      // This prevents mid-line visual clipping regardless of font size or
-      // line height.
-      final metrics = tp.computeLineMetrics();
-      double cumHeight = 0.0;
-      int lastFitOffset = 0; // character offset within the chunk
-
-    for (final metric in metrics) {
-  // Subtract 1 pixel from the page height to avoid fractional clipping
-  if (cumHeight + metric.height > pageHeight - 1.0) {
-    final pos = tp.getPositionForOffset(Offset(0, cumHeight + 0.001));
-    lastFitOffset = pos.offset;
-    break;
-  }
-  cumHeight += metric.height;
-  lastFitOffset = tp.getPositionForOffset(Offset(0, cumHeight)).offset;
-}
-
-      // Fallback: If even the first line is too tall for the page, force a split
-      // at the first space to avoid an infinite loop.
-      if (lastFitOffset <= 0) {
-        lastFitOffset = math.min(100, chunk.length);
-      }
-
-      int splitIndex = start + lastFitOffset;
-
-      // Snap to a word boundary to avoid cutting mid-word
-      if (splitIndex < end) {
-        final wbIdx = text.lastIndexOf(RegExp(r'\s'), splitIndex);
-        if (wbIdx > start) splitIndex = wbIdx;
-      }
-
-      pages.add(text.substring(start, splitIndex).trim());
+      pages.add(text.substring(start, splitIndex).trimRight());
       start = splitIndex;
 
       // Skip leading whitespace at the start of the next page
@@ -1517,7 +1635,7 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
       }
     }
 
-    if (mounted) {
+    if (mounted && run == _paginationRun) {
       setState(() {
         _pages = pages;
         _isPaginating = false;
@@ -1569,27 +1687,36 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
     // We use LayoutBuilder to get the EXACT size available for the text
     return LayoutBuilder(
       builder: (context, constraints) {
+        final textScaler = MediaQuery.textScalerOf(context);
+        final textScale = textScaler
+            .scale(widget.textStyle.fontSize ?? widget.settings.textSize);
         // Margins chosen to ensure text always clears the overlaid header
         // and bottom-controls bars, giving a premium e-reader feel at any
         // font size. Since bars are Positioned overlays (not in the layout
         // flow), constraints.maxHeight is stable — no repagination on bar
         // show/hide.
         const double horizontalMargin = 24.0;
-        const double topMargin = 40.0;     // clears header overlay (~36 dp)
-        const double bottomMargin = 100.0; // clears bottom-controls overlay
-        const double footerHeight = 32.0;  // page-counter line
+        const double topMargin = 40.0; // clears header overlay (~36 dp)
+        const double bottomMargin = 50.0; // clears bottom-controls overlay
+        const double footerHeight = 32.0; // page-counter line
 
         // The textAreaSize must exactly match what the Text widget renders.
         final Size textAreaSize = Size(
-          constraints.maxWidth - (horizontalMargin * 2),
-          constraints.maxHeight - topMargin - bottomMargin - footerHeight,
+          math.max(1.0, constraints.maxWidth - (horizontalMargin * 2)),
+          math.max(
+            1.0,
+            constraints.maxHeight - topMargin - bottomMargin - footerHeight,
+          ),
         );
 
         // Paginate when explicitly flagged (text/settings changed) or on first
         // run. Ignore height changes — they are stable with the Stack layout.
-        if (_isPaginating || _lastSize == null ||
-            (textAreaSize.width - (_lastSize?.width ?? 0)).abs() > 2) {
-          _paginate(textAreaSize);
+        if (_isPaginating ||
+            _lastSize == null ||
+            (textAreaSize.width - (_lastSize?.width ?? 0)).abs() > 1 ||
+            (textAreaSize.height - (_lastSize?.height ?? 0)).abs() > 1 ||
+            _lastTextScale != textScale) {
+          _paginate(textAreaSize, textScaler);
         }
 
         if (_isPaginating) {
@@ -1626,46 +1753,44 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
                   widget.onPageChanged?.call(index, _pages.length);
                 },
                 physics: const BouncingScrollPhysics(),
-              itemBuilder: (context, index) {
-  return Container(
-    color: Colors.transparent,
-    padding: const EdgeInsets.only(
-      left: horizontalMargin,
-      right: horizontalMargin,
-      top: topMargin,
-      bottom: bottomMargin,
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // ⬇️ Changed to a scrollable area
-        Expanded(
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            child: Text(
-              _pages[index],
-              style: widget.textStyle,
-              // No overflow: TextOverflow.clip needed anymore
-            ),
-          ),
-        ),
-        // Page counter footer (unchanged)
-        SizedBox(
-          height: footerHeight,
-          child: Center(
-            child: Text(
-              '${index + 1} / ${_pages.length}',
-              style: widget.textStyle.copyWith(
-                fontSize: 11,
-                color: widget.textStyle.color?.withOpacity(0.45),
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-},
+                itemBuilder: (context, index) {
+                  return Container(
+                    color: Colors.transparent,
+                    padding: const EdgeInsets.only(
+                      left: horizontalMargin,
+                      right: horizontalMargin,
+                      top: topMargin,
+                      bottom: bottomMargin,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          height: textAreaSize.height,
+                          child: Text(
+                            _pages[index],
+                            textAlign: _textAlign(),
+                            style: widget.textStyle,
+                            overflow: TextOverflow.visible,
+                          ),
+                        ),
+                        SizedBox(
+                          height: footerHeight,
+                          child: Center(
+                            child: Text(
+                              '${index + 1} / ${_pages.length}',
+                              style: widget.textStyle.copyWith(
+                                fontSize: 11,
+                                color:
+                                    widget.textStyle.color?.withOpacity(0.45),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ],

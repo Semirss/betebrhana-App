@@ -1,0 +1,9 @@
+{
+  "name": "betebrana-admin",
+  "version": "1.0.0",
+  "description": "Betebrana Admin Panel",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {}
+}

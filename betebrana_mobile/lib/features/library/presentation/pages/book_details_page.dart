@@ -15,6 +15,8 @@ import 'package:betebrana_mobile/features/library/domain/entities/user_queue_ite
 import 'reader_page.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:betebrana_mobile/core/services/language_service.dart';
 
 class BookDetailsPage extends StatefulWidget {
   const BookDetailsPage({super.key, required this.book});
@@ -964,6 +966,7 @@ Future<void> _returnCurrentBook() async {
     final book = widget.book;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final lang = context.watch<LanguageBloc>().state;
     
     // We keep the theme's surface colors but adopt the layout from the design
     final scaffoldBg = isDark ? const Color(0xFF121212) : const Color(0xFFF2F2F2); // Clean premium background
@@ -1143,7 +1146,7 @@ Future<void> _returnCurrentBook() async {
 
                   
                   // Actions
-                  _buildActions(isDark),
+                  _buildActions(isDark, lang),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -1223,7 +1226,7 @@ Future<void> _returnCurrentBook() async {
   }
 
 
-  Widget _buildActions(bool isDark) {
+  Widget _buildActions(bool isDark, LanguageState lang) {
     if (_loadingStatus) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -1234,25 +1237,25 @@ Future<void> _returnCurrentBook() async {
     // Secondary actions:
     if (_activeRental != null) {
       secondaryActions.add(
-        _buildSecondaryButton('Return Book', Icons.undo, Colors.redAccent, (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null, isDark)
+        _buildSecondaryButton(lang.t('Return Book'), Icons.undo, Colors.redAccent, (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null, isDark)
       );
     }
 
     if (_canDownload || _isDownloaded) {
       if (_isDownloaded) {
         secondaryActions.add(
-          _buildSecondaryButton('Remove Offline', Icons.delete_outline, Colors.redAccent, (!_actionInProgress) ? _removeDownloadedBook : null, isDark)
+          _buildSecondaryButton(lang.t('Remove Offline'), Icons.delete_outline, Colors.redAccent, (!_actionInProgress) ? _removeDownloadedBook : null, isDark)
         );
       } else {
         secondaryActions.add(
-          _buildSecondaryButton(_downloading ? 'Downloading...' : 'Download for Offline', _downloading ? Icons.hourglass_bottom : Icons.cloud_download_outlined, isDark ? Colors.white70 : Colors.black87, (!_actionInProgress && !_downloading) ? _downloadCurrentBook : null, isDark)
+          _buildSecondaryButton(_downloading ? lang.t('Downloading...') : lang.t('Download for Offline'), _downloading ? Icons.hourglass_bottom : Icons.cloud_download_outlined, isDark ? Colors.white70 : Colors.black87, (!_actionInProgress && !_downloading) ? _downloadCurrentBook : null, isDark)
         );
       }
     }
 
     // Primary action:
     if (_canRead) {
-      primaryAction = _buildPrimaryButton('Start reading', null, (!_actionInProgress) ? () {
+      primaryAction = _buildPrimaryButton(lang.t('Start reading'), null, (!_actionInProgress) ? () {
         Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReaderPage(
           book: widget.book,
           rentalDueDate: _activeRental?.dueDate,
@@ -1262,17 +1265,17 @@ Future<void> _returnCurrentBook() async {
     } else if (_canRent) {
       final isReserved = widget.book.queueInfo?.hasReservation ?? false;
       primaryAction = _buildPrimaryButton(
-        isReserved ? 'BORROW NOW (Reserved!)' : 'Borrow (21 days)', 
+        isReserved ? lang.t('BORROW NOW (Reserved!)') : lang.t('Borrow (21 days)'), 
         isReserved ? Icons.access_time_filled : null, 
         (!_actionInProgress && !_isOffline) ? _rentCurrentBook : null,
         gradient: isReserved ? [Colors.teal.shade400, Colors.teal.shade700] : const [Color(0xFFFF9A5E), Color(0xFFFF7A3B)],
       );
     } else if (_canJoinQueue) {
-      primaryAction = _buildPrimaryButton('Join Queue', null, (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null, color: Colors.orange.shade400);
+      primaryAction = _buildPrimaryButton(lang.t('Join Queue'), null, (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null, color: Colors.orange.shade400);
     } else if (_canLeaveQueue) {
-      primaryAction = _buildPrimaryButton('Leave Queue', null, (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null, color: Colors.grey.shade800);
+      primaryAction = _buildPrimaryButton(lang.t('Leave Queue'), null, (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null, color: Colors.grey.shade800);
     } else if (_activeRental == null) {
-      primaryAction = _buildPrimaryButton('Not Available', null, null, color: Colors.grey.shade300, textColor: Colors.grey.shade500);
+      primaryAction = _buildPrimaryButton(lang.t('Not Available'), null, null, color: Colors.grey.shade300, textColor: Colors.grey.shade500);
     }
 
     return Column(

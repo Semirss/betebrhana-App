@@ -31,7 +31,7 @@ class AuthTokens {
       // Fallback handled below.
     }
 
-    expiry ??= DateTime.now().add(const Duration(hours: 24));
+    expiry ??= DateTime.now().add(const Duration(days: 30));
 
     return AuthTokens(
       accessToken: accessToken,
