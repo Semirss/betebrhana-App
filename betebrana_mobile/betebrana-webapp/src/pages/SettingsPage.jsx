@@ -12,9 +12,9 @@ export default function SettingsPage() {
 
   if (!user) {
     return (
-      <div className="pt-32 pb-24 px-6 flex flex-col items-center justify-center min-h-[70vh] bg-[#FDFBF7] dark:bg-[#121212] transition-colors">
+      <div className="pt-32 pb-24 px-6 flex flex-col items-center justify-center min-h-[70vh] bg-[#F7F5F5] dark:bg-[#121212] transition-colors">
         <h2 className="text-2xl font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-4">{t('You are not logged in')}</h2>
-        <button onClick={() => navigate('/login')} className="px-8 py-3 bg-[#53389e] text-white rounded-full font-bold shadow-lg">
+        <button onClick={() => navigate('/login')} className="px-8 py-3 bg-[#EC7D22]/85 backdrop-blur-sm text-white rounded-full font-bold shadow-lg">
           {t('Go to Login')}
         </button>
       </div>
@@ -25,14 +25,14 @@ export default function SettingsPage() {
     <button
       id={id}
       onClick={() => setEnabled(v => !v)}
-      className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${enabled ? 'bg-[#53389e]' : 'bg-zinc-200 dark:bg-zinc-700'}`}
+      className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${enabled ? 'bg-[#EC7D22]/85 backdrop-blur-sm' : 'bg-zinc-200 dark:bg-zinc-700'}`}
     >
       <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow transition duration-200 ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
     </button>
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#121212] pt-4 md:pt-36 pb-24 px-6 md:px-16 transition-colors">
+    <div className="min-h-screen bg-[#F7F5F5] dark:bg-[#121212] pt-4 md:pt-36 pb-24 px-6 md:px-16 transition-colors">
       <div className="max-w-[1200px] mx-auto">
 
         {/* Page Header */}
@@ -48,7 +48,7 @@ export default function SettingsPage() {
           <div className="h-fit">
             <div className="bg-white dark:bg-[#1e1e1e] rounded-3xl p-8 shadow-sm border border-zinc-200 dark:border-zinc-800 flex flex-col items-center text-center relative overflow-hidden transition-colors">
               {/* Avatar */}
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#53389e] to-[#9b82ff] flex items-center justify-center text-white text-4xl font-serif border-4 border-white dark:border-[#1e1e1e] shadow-lg ring-4 ring-[#ede9fe] dark:ring-zinc-800 mb-5 z-10 transition-colors">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#EC7D22] to-[#FDBA74] flex items-center justify-center text-white text-4xl font-serif border-4 border-white dark:border-[#1e1e1e] shadow-lg ring-4 ring-[#FFF7ED] dark:ring-zinc-800 mb-5 z-10 transition-colors">
                 {user.name?.charAt(0).toUpperCase() || 'U'}
               </div>
               <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-1 z-10">{user.name}</h2>
@@ -66,7 +66,7 @@ export default function SettingsPage() {
               </button>
 
               {/* Decoration */}
-              <div className="absolute -right-10 -top-10 w-40 h-40 bg-[#53389e]/5 dark:bg-[#53389e]/20 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-[#EC7D22]/5 dark:bg-[#EC7D22]/20 rounded-full blur-2xl pointer-events-none" />
             </div>
           </div>
 
@@ -123,7 +123,7 @@ export default function SettingsPage() {
                     id="select-language"
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 font-bold text-sm px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-[#53389e] focus:outline-none cursor-pointer flex-shrink-0 transition-colors"
+                    className="bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 font-bold text-sm px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-[#EC7D22] focus:outline-none cursor-pointer flex-shrink-0 transition-colors"
                   >
                     <option value="en">English (US)</option>
                     <option value="am">አማርኛ (Amharic)</option>

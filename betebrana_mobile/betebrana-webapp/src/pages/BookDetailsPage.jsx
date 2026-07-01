@@ -75,17 +75,17 @@ export default function BookDetailsPage() {
     } finally { setActionLoading(false); }
   };
 
-  if (loading) return <div className="min-h-screen pt-32 text-center text-zinc-500 dark:text-zinc-400 bg-[#FDFBF7] dark:bg-[#121212]">{t('Loading Book…')}</div>;
-  if (!book) return <div className="min-h-screen pt-32 text-center text-zinc-500 dark:text-zinc-400 bg-[#FDFBF7] dark:bg-[#121212]">{t('Book not found.')}</div>;
+  if (loading) return <div className="min-h-screen pt-32 text-center text-zinc-500 dark:text-zinc-400 bg-[#F7F5F5] dark:bg-[#121212]">{t('Loading Book…')}</div>;
+  if (!book) return <div className="min-h-screen pt-32 text-center text-zinc-500 dark:text-zinc-400 bg-[#F7F5F5] dark:bg-[#121212]">{t('Book not found.')}</div>;
 
   const primaryAction = book.userHasRental ? (
     <button onClick={() => navigate(`/read/${book.id}`)}
-      className="flex-1 py-4 bg-[#20d9c0] dark:bg-teal-600 hover:bg-[#17b8a6] dark:hover:bg-teal-500 text-white font-bold rounded-full shadow-lg shadow-teal-400/30 transition-all text-[15px]">
+      className="flex-1 py-4 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] hover:bg-[#D66D1B]/90 dark:hover:bg-[#C25D0A] text-white font-bold rounded-full shadow-lg shadow-[#EC7D22]/30 transition-all text-[15px]">
       {t('Read Now')}
     </button>
   ) : book.queueInfo?.effectiveAvailable ? (
     <button onClick={handleRent} disabled={actionLoading}
-      className="flex-1 py-4 bg-[#20d9c0] dark:bg-teal-600 hover:bg-[#17b8a6] dark:hover:bg-teal-500 text-white font-bold rounded-full shadow-lg shadow-teal-400/30 transition-all text-[15px]">
+      className="flex-1 py-4 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] hover:bg-[#D66D1B]/90 dark:hover:bg-[#C25D0A] text-white font-bold rounded-full shadow-lg shadow-[#EC7D22]/30 transition-all text-[15px]">
       {actionLoading ? t('Please wait…') : t('Rent (Reserved)')}
     </button>
   ) : book.queueInfo?.userInQueue ? (
@@ -95,7 +95,7 @@ export default function BookDetailsPage() {
     </button>
   ) : book.available_copies > 0 ? (
     <button onClick={handleRent} disabled={actionLoading}
-      className="flex-1 py-4 bg-[#20d9c0] dark:bg-teal-600 hover:bg-[#17b8a6] dark:hover:bg-teal-500 text-white font-bold rounded-full shadow-lg shadow-teal-400/30 transition-all text-[15px]">
+      className="flex-1 py-4 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] hover:bg-[#D66D1B]/90 dark:hover:bg-[#C25D0A] text-white font-bold rounded-full shadow-lg shadow-[#EC7D22]/30 transition-all text-[15px]">
       {actionLoading ? t('Please wait…') : t('Borrow Book')}
     </button>
   ) : (
@@ -107,10 +107,10 @@ export default function BookDetailsPage() {
 
   return (
     /* Outer container */
-    <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#121212] transition-colors">
+    <div className="min-h-screen bg-[#F7F5F5] dark:bg-[#121212] transition-colors">
 
       {/* Gradient hero band spanning full width but containing the grid */}
-      <div className="w-full bg-gradient-to-b from-[#e8f0fe] via-[#f0eafd] to-[#FDFBF7] dark:from-[#2e1d52] dark:via-[#1e1e2f] dark:to-[#121212] pt-24 md:pt-32 pb-12 md:pb-20 transition-colors">
+      <div className="w-full bg-gradient-to-b from-[#e8f0fe] via-[#f0eafd] to-[#F7F5F5] dark:from-[#431407] dark:via-[#1e1e2f] dark:to-[#121212] pt-24 md:pt-32 pb-12 md:pb-20 transition-colors">
         <div className="max-w-5xl mx-auto px-6">
 
           {/* Top bar */}
@@ -134,7 +134,7 @@ export default function BookDetailsPage() {
               <div className="relative w-[190px] sm:w-[220px] md:w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/60 dark:border-zinc-700">
                 <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover" />
                 {isDownloaded && (
-                  <div className="absolute top-3 left-3 bg-[#53389e] text-white p-1.5 rounded-lg shadow-md">
+                  <div className="absolute top-3 left-3 bg-[#EC7D22]/85 backdrop-blur-sm text-white p-1.5 rounded-lg shadow-md">
                     <Bookmark size={14} fill="currentColor" />
                   </div>
                 )}
@@ -190,8 +190,8 @@ export default function BookDetailsPage() {
                   disabled={isDownloading}
                   className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
                     isDownloaded
-                      ? 'bg-[#53389e] border-[#53389e] text-white'
-                      : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:border-[#53389e] dark:hover:border-[#a78bfa] hover:text-[#53389e] dark:hover:text-[#a78bfa]'
+                      ? 'bg-[#EC7D22]/85 backdrop-blur-sm border-[#EC7D22] text-white'
+                      : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:border-[#EC7D22] dark:hover:border-[#FB923C] hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C]'
                   }`}
                 >
                   {isDownloading
@@ -223,7 +223,7 @@ export default function BookDetailsPage() {
           <div className="mt-8">
             <div className="flex justify-between items-end mb-6">
               <h2 className="text-xl md:text-2xl font-serif font-bold text-zinc-900 dark:text-zinc-100">{t('You Might Also Like')}</h2>
-              <Link to="/search" className="flex items-center gap-1.5 text-sm font-bold text-[#53389e] dark:text-[#a78bfa] hover:underline">
+              <Link to="/search" className="flex items-center gap-1.5 text-sm font-bold text-[#EC7D22]/90 dark:text-[#FB923C] hover:underline">
                 {t('View all')} <ArrowRight size={14} />
               </Link>
             </div>
@@ -233,7 +233,7 @@ export default function BookDetailsPage() {
                   <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-md border border-zinc-100 dark:border-zinc-800 mb-3 bg-zinc-100 dark:bg-zinc-800 relative transition-colors">
                     <img src={rec.cover_image || PH} onError={onErr} alt={rec.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-full py-1.5 bg-[#20d9c0] dark:bg-teal-600 text-white text-[9px] uppercase tracking-wider font-bold rounded-lg flex items-center justify-center">
+                      <div className="w-full py-1.5 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] text-white text-[9px] uppercase tracking-wider font-bold rounded-lg flex items-center justify-center">
                         {t('Borrow')}
                       </div>
                     </div>

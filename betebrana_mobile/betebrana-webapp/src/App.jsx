@@ -21,27 +21,27 @@ function TopNav() {
   if (pathname.startsWith('/read/')) return null;
 
   return (
-    <header className="topnav hidden md:flex items-center justify-between px-16 py-4 fixed top-0 w-full z-[100] bg-[#FDFBF7]/80 dark:bg-[#121212]/80 backdrop-blur-lg border-b border-zinc-200/50 dark:border-zinc-800/50 shadow-sm transition-all">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-        <div className="w-8 h-8 rounded-lg bg-[#53389e] flex items-center justify-center text-white shadow-md">
-          <BookMarked size={18} />
+    <header className="topnav hidden md:flex items-center justify-between px-16 py-4 fixed top-0 w-full z-[100] bg-[#F7F5F5]/80 dark:bg-[#121212]/80 backdrop-blur-lg border-b border-zinc-200/50 dark:border-zinc-800/50 shadow-sm transition-all">
+      <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+        <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800">
+          <img src="/logo.png" alt="BeteBrana Logo" className="w-full h-full object-cover" />
         </div>
         <span className="font-bold text-xl text-zinc-900 dark:text-zinc-100 tracking-tight">BeteBrana</span>
       </div>
 
       <nav className="flex items-center gap-10">
-        <NavLink to="/" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#53389e] dark:text-[#a78bfa]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('Home')}</NavLink>
-        <NavLink to="/search" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#53389e] dark:text-[#a78bfa]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('Discover')}</NavLink>
-        <NavLink to="/library" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#53389e] dark:text-[#a78bfa]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('My Library')}</NavLink>
+        <NavLink to="/" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#EC7D22]/90 dark:text-[#FB923C]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('Home')}</NavLink>
+        <NavLink to="/search" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#EC7D22]/90 dark:text-[#FB923C]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('Discover')}</NavLink>
+        <NavLink to="/library" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#EC7D22]/90 dark:text-[#FB923C]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('My Library')}</NavLink>
       </nav>
 
       <div>
         {user ? (
-          <button onClick={() => navigate('/profile')} className="px-6 py-2.5 bg-[#bbf7d0] dark:bg-emerald-900 hover:bg-[#86efac] dark:hover:bg-emerald-800 text-[#166534] dark:text-emerald-100 rounded-full text-sm font-bold transition-all border border-[#4ade80] dark:border-emerald-700">
+          <button onClick={() => navigate('/profile')} className="px-6 py-2.5 bg-[#EC7D22]/85 backdrop-blur-sm hover:bg-[#D66D1B]/90 text-white rounded-full text-sm font-bold transition-all shadow-md">
             {t('My Account')}
           </button>
         ) : (
-          <button onClick={() => navigate('/login')} className="px-6 py-2.5 bg-[#bbf7d0] dark:bg-emerald-900 hover:bg-[#86efac] dark:hover:bg-emerald-800 text-[#166534] dark:text-emerald-100 rounded-full text-sm font-bold transition-all border border-[#4ade80] dark:border-emerald-700">
+          <button onClick={() => navigate('/login')} className="px-6 py-2.5 bg-[#EC7D22]/85 backdrop-blur-sm hover:bg-[#D66D1B]/90 text-white rounded-full text-sm font-bold transition-all shadow-md">
             {t('Sign In')}
           </button>
         )}
@@ -62,7 +62,7 @@ function BottomNav() {
         { to: '/library', icon: BookOpen, label: 'Library'  },
         { to: '/profile', icon: User,     label: 'Profile'  },
       ].map(({ to, icon: Icon, label }) => (
-        <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav-item${isActive ? ' active dark:text-[#a78bfa]' : ' dark:text-zinc-400'} flex flex-col items-center p-2`}>
+        <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav-item${isActive ? ' active dark:text-[#FB923C]' : ' dark:text-zinc-400'} flex flex-col items-center p-2`}>
           <Icon size={22} />
           <span className="nav-label text-xs mt-1 font-medium">{t(label)}</span>
         </NavLink>
@@ -73,7 +73,7 @@ function BottomNav() {
 
 function AppLayout() {
   return (
-    <div className="app-root bg-[#FDFBF7] dark:bg-[#121212] min-h-screen transition-colors duration-200">
+    <div className="app-root bg-[#F7F5F5] dark:bg-[#121212] min-h-screen transition-colors duration-200">
       <TopNav />
       <main className="main-content">
         <Routes>

@@ -104,7 +104,7 @@ export default function ReaderPage() {
           onClick={() => setShowSettings(!showSettings)} 
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
             showSettings 
-              ? 'bg-[#53389e] text-white'
+              ? 'bg-[#EC7D22]/85 backdrop-blur-sm text-white'
               : theme === 'dark' ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200' 
               : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
           }`}

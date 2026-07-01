@@ -8,7 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 const PH = 'https://placehold.co/300x450/ede9fe/53389e?text=📖';
 
 const SAMPLE_BOOKS = [
-  { title: 'ሐሙስ', color: '#ede9fe' },
+  { title: 'ሐሙስ', color: '#FFF7ED' },
   { title: 'ቶቢያ', color: '#bbf7d0' },
   { title: 'ፍቅር እስከ መቃብር', color: '#fef9c3' },
   { title: 'አዲስ አበባ', color: '#fee2e2' },
@@ -57,22 +57,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex">
+    <div className="min-h-screen bg-[#F7F5F5] flex">
       
       {/* LEFT PANEL — Branding */}
-      <div className="hidden lg:flex lg:w-[45%] bg-[#53389e] flex-col justify-between p-14 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-[45%] bg-white border-r border-zinc-200 flex-col justify-between p-14 relative overflow-hidden">
         
         {/* Logo */}
-        <div className="flex items-center gap-3 z-10 relative">
+        <div className="flex items-center gap-3 mb-20 z-10 relative">
           
         </div>
 
         {/* Center Content */}
         <div className="relative z-10">
-          <h2 className="text-5xl font-serif font-bold text-white leading-tight mb-6">
+          <h2 className="text-5xl font-serif font-bold text-zinc-900 leading-tight mb-6">
             {t('Your digital library awaits.')}
           </h2>
-          <p className="text-purple-200 text-lg leading-relaxed mb-12">
+          <p className="text-zinc-600 text-lg leading-relaxed mb-12">
             {t('Discover thousands of books. Borrow, read, and explore at your own pace. Anytime, anywhere.')}
           </p>
 
@@ -81,23 +81,23 @@ export default function LoginPage() {
           {/* Stats */}
           <div className="flex gap-8 mt-10">
             <div>
-              <div className="text-3xl font-bold text-white">13+</div>
-              <div className="text-purple-300 text-sm mt-1">{t('Books Available')}</div>
+              <div className="text-3xl font-bold text-[#EC7D22]/90">13+</div>
+              <div className="text-zinc-500 text-sm mt-1">{t('Books Available')}</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-white">1K+</div>
-              <div className="text-purple-300 text-sm mt-1">{t('Active Readers')}</div>
+              <div className="text-3xl font-bold text-[#EC7D22]/90">1K+</div>
+              <div className="text-zinc-500 text-sm mt-1">{t('Active Readers')}</div>
             </div>
           </div>
         </div>
 
-        <Link to="/" className="text-purple-300 hover:text-white text-sm font-medium transition-colors z-10 relative">
-          {t('← Back to Home')}
+        <Link to="/" className="text-zinc-500 hover:text-zinc-900 text-sm font-medium transition-colors z-10 relative">
+        
         </Link>
 
         {/* Large background decoration circles */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-white/5 rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 -left-32 w-80 h-80 bg-white/5 rounded-full pointer-events-none" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#EC7D22]/5 rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 -left-32 w-80 h-80 bg-[#EC7D22]/5 rounded-full pointer-events-none" />
       </div>
 
       {/* RIGHT PANEL — Form */}
@@ -105,11 +105,11 @@ export default function LoginPage() {
         <div className="w-full max-w-[440px]">
           
           {/* Mobile Logo */}
-          <div className="flex items-center gap-2 mb-10 lg:hidden">
-            <div className="w-9 h-9 bg-[#53389e] rounded-xl flex items-center justify-center text-white">
-              <BookMarked size={18} />
+          <div className="flex items-center gap-3 mb-10 lg:hidden">
+            <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm border border-zinc-200">
+              <img src="/logo.png" alt="BeteBrana Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="font-bold text-xl text-zinc-900 tracking-tight">BeteBrana</span>
+            <span className="font-bold text-2xl text-zinc-900 tracking-tight">BeteBrana</span>
           </div>
 
           <div className="mb-8">
@@ -163,7 +163,7 @@ export default function LoginPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-4 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#53389e]/30 focus:border-[#53389e] transition-all shadow-sm"
+                  className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-4 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#EC7D22]/30 focus:border-[#EC7D22] transition-all shadow-sm"
                 />
               </div>
             )}
@@ -179,7 +179,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-4 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#53389e]/30 focus:border-[#53389e] transition-all shadow-sm"
+                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-4 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#EC7D22]/30 focus:border-[#EC7D22] transition-all shadow-sm"
               />
             </div>
 
@@ -194,7 +194,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-12 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#53389e]/30 focus:border-[#53389e] transition-all shadow-sm"
+                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-12 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#EC7D22]/30 focus:border-[#EC7D22] transition-all shadow-sm"
               />
               <button
                 type="button"
@@ -209,7 +209,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 mt-2 bg-[#53389e] hover:bg-[#432c81] text-white font-bold rounded-2xl shadow-lg shadow-purple-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
+              className="w-full py-4 mt-2 bg-gradient-to-r from-[#FF9A5E]/90 to-[#FF7A3B]/90 backdrop-blur-sm hover:opacity-90 text-white font-bold rounded-2xl shadow-lg shadow-[#FF7A3B]/30 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
             >
               {loading ? t('Please wait…') : (tab === 'login' ? t('Sign In') : t('Create Account'))}
               {!loading && <ArrowRight size={18} />}
@@ -222,7 +222,7 @@ export default function LoginPage() {
             {tab === 'login' ? t("Don't have an account? ") : t('Already have an account? ')}
             <button
               onClick={() => { setTab(tab === 'login' ? 'register' : 'login'); setError(''); setSuccess(''); }}
-              className="text-[#53389e] font-bold hover:underline"
+              className="text-[#EC7D22]/90 font-bold hover:underline"
             >
               {tab === 'login' ? t('Register') : t('Sign In')}
             </button>

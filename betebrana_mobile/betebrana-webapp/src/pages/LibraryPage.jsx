@@ -78,7 +78,7 @@ export default function LibraryPage() {
   const displayBooks = getDisplayBooks();
 
   return (
-    <div className="pt-4 md:pt-32 pb-24 px-6 md:px-8 max-w-[1200px] mx-auto relative min-h-screen bg-[#FDFBF7] dark:bg-[#121212] transition-colors">
+    <div className="pt-4 md:pt-32 pb-24 px-6 md:px-8 max-w-[1200px] mx-auto relative min-h-screen bg-[#F7F5F5] dark:bg-[#121212] transition-colors">
       <h1 className="text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-8">{t('My Library')}</h1>
 
       {/* Tabs */}
@@ -88,12 +88,12 @@ export default function LibraryPage() {
             key={key}
             onClick={() => setTab(key)}
             className={`pb-3 text-sm font-bold transition-colors relative ${
-              tab === key ? 'text-[#53389e] dark:text-[#a78bfa]' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+              tab === key ? 'text-[#EC7D22]/90 dark:text-[#FB923C]' : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
             }`}
           >
             {label}
             {tab === key && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#53389e] dark:bg-[#a78bfa] rounded-t-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#FB923C] rounded-t-full" />
             )}
           </button>
         ))}
@@ -125,7 +125,7 @@ export default function LibraryPage() {
                 />
                 {/* Hover overlay */}
                 <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
-                  <div className="w-full py-2 bg-[#53389e] text-white text-[10px] uppercase tracking-wider font-bold rounded-lg flex items-center justify-center">
+                  <div className="w-full py-2 bg-[#EC7D22]/85 backdrop-blur-sm text-white text-[10px] uppercase tracking-wider font-bold rounded-lg flex items-center justify-center">
                     {t('Open')}
                   </div>
                 </div>
@@ -136,7 +136,7 @@ export default function LibraryPage() {
                 book.status === 'Active Rental'
                   ? 'bg-[#bbf7d0] dark:bg-emerald-900/30 text-[#166534] dark:text-emerald-400'
                   : book.status === 'Ready to Borrow'
-                  ? 'bg-[#ede9fe] dark:bg-purple-900/30 text-[#53389e] dark:text-purple-400'
+                  ? 'bg-[#FFF7ED] dark:bg-orange-900/30 text-[#EC7D22]/90 dark:text-orange-400'
                   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
               }`}>
                 {book.status}
