@@ -86,18 +86,10 @@ export default function HomePage() {
         {/* ── MOBILE: Browse by Category ── */}
         <div className="mb-8">
           <h3 className="font-serif font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-4">{t('Browse by Category')}</h3>
-          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar mb-5">
-            {TABS.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCatTab(cat)}
-                className={`flex-shrink-0 px-5 py-2 rounded-full text-xs font-bold border transition-all ${
-                  activeCatTab === cat
-                    ? 'bg-[#EC7D22]/85 backdrop-blur-sm border-[#EC7D22] text-white'
-                    : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300'
-                }`}
-              >
-                {cat}
+          <div className="flex items-center gap-4 mb-8 overflow-x-auto pb-4 scrollbar-hide">
+            {TABS.map(tab => (
+              <button key={tab} onClick={() => setActiveCatTab(tab)} className={`px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${activeCatTab === tab ? 'bg-[#EC7D22]/85 backdrop-blur-sm text-white border-transparent shadow-md' : 'bg-transparent text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-[#EC7D22]/50 hover:text-[#EC7D22]'}`}>
+                {t(tab)}
               </button>
             ))}
           </div>
@@ -120,10 +112,10 @@ export default function HomePage() {
         {/* ── MOBILE: Footer ── */}
         <div className="border-t border-zinc-200 dark:border-zinc-800 pt-6 pb-4 mt-4">
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-[#EC7D22]/85 backdrop-blur-sm flex items-center justify-center">
-              <Play size={12} fill="white" color="white" />
+            <div className="w-8 h-8 rounded-full overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800">
+              <img src="/logo.png" alt="BeteBrana Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="font-bold text-base text-zinc-900 dark:text-zinc-100 tracking-tight">BeteBrana</span>
+            <span className="font-bold text-base text-zinc-900 dark:text-zinc-100 tracking-tight">{t('BeteBrana')}</span>
           </div>
           <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed mb-4">{t('Your digital library. Borrow, discover, and read anytime.')}</p>
           <div className="flex flex-wrap gap-4 text-xs text-zinc-400 dark:text-zinc-500">
@@ -282,7 +274,7 @@ export default function HomePage() {
                       : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-[#EC7D22] dark:hover:border-[#FB923C] hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C]"
                   }`}
                 >
-                  {cat}
+                  {t(cat)}
                 </button>
               ))}
             </div>
@@ -314,10 +306,10 @@ export default function HomePage() {
           <div className="max-w-[1200px] mx-auto px-8 grid grid-cols-4 gap-12 mb-16">
             <div className="col-span-1">
               <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-[#EC7D22]/85 backdrop-blur-sm flex items-center justify-center text-white">
-                  <Play size={18} />
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                  <img src="/logo.png" alt="BeteBrana Logo" className="w-full h-full object-cover" />
                 </div>
-                <span className="font-bold text-xl text-zinc-900 dark:text-zinc-100 tracking-tight">BeteBrana</span>
+                <span className="font-bold text-xl text-zinc-900 dark:text-zinc-100 tracking-tight">{t('BeteBrana')}</span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-[250px]">
                 {t('Providing accessible reading materials and curated collections for learners and enthusiasts.')}

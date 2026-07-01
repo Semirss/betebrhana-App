@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const translations = {
   en: {
     // Nav & General
+    "BeteBrana": "BeteBrana",
     "Home": "Home",
     "Discover": "Discover",
     "My Library": "My Library",
@@ -39,6 +40,12 @@ const translations = {
     "Curated for you": "Curated for you",
     "Popular Books This Week": "Popular Books This Week",
     "Explore More ": "Explore More ",
+    "Explore All": "Explore All",
+    "Fiction": "Fiction",
+    "Science & Math": "Science & Math",
+    "History": "History",
+    "Art & Design": "Art & Design",
+    "Philosophy": "Philosophy",
     "Available": "Available",
     "Borrowed": "Borrowed",
     "View Details": "View Details",
@@ -115,6 +122,7 @@ const translations = {
   },
   am: {
     // Nav & General
+    "BeteBrana": "ቤተ-ብራና",
     "Home": "ዋና ገጽ",
     "Discover": "አስስ",
     "My Library": "የእኔ ቤተ-መጽሐፍት",
@@ -148,6 +156,17 @@ const translations = {
     "Browse Collection": "ስብስብን ያስሱ",
     "Titles": "ርዕሶች",
     "Readers": "አንባቢዎች",
+    "Curated for you": "ለእርስዎ የተዘጋጀ",
+    "Popular Books This Week": "የዚህ ሳምንት ታዋቂ መጽሐፍት",
+    "Explore More ": "ተጨማሪ ያስሱ ",
+    "Explore All": "ሁሉንም አስስ",
+    "Fiction": "ልብ ወለድ",
+    "Science & Math": "ሳይንስ እና ሂሳብ",
+    "History": "ታሪክ",
+    "Art & Design": "ስነጥበብ እና ንድፍ",
+    "Philosophy": "ፍልስፍና",
+    "Available": "ይገኛል",
+    "Borrowed": "ተበድሯል",
     "Curated for you": "ለእርስዎ የተመረጡ",
     "Popular Books This Week": "በዚህ ሳምንት ታዋቂ መጽሐፍት",
     "Explore More ": "ተጨማሪ ያስሱ ",

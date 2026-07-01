@@ -26,7 +26,7 @@ function TopNav() {
         <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800">
           <img src="/logo.png" alt="BeteBrana Logo" className="w-full h-full object-cover" />
         </div>
-        <span className="font-bold text-xl text-zinc-900 dark:text-zinc-100 tracking-tight">BeteBrana</span>
+        <span className="font-bold text-xl text-zinc-900 dark:text-zinc-100 tracking-tight">{t('BeteBrana')}</span>
       </div>
 
       <nav className="flex items-center gap-10">

@@ -106,10 +106,10 @@ export default function LoginPage() {
           
           {/* Mobile Logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="w-12 h-12 rounded-full overflow-hidden shadow-sm border border-zinc-200">
+            <div className="w-12 h-12 rounded-full overflow-hidden border border-zinc-200 shadow-sm">
               <img src="/logo.png" alt="BeteBrana Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="font-bold text-2xl text-zinc-900 tracking-tight">BeteBrana</span>
+            <span className="font-bold text-2xl text-zinc-900 tracking-tight">{t('BeteBrana')}</span>
           </div>
 
           <div className="mb-8">
