@@ -49,7 +49,8 @@ class AuthRepository {
           throw Exception('Invalid email or password. Please try again.');
         } else if (error.toString().toLowerCase().contains('locked') ||
             error.toString().toLowerCase().contains('suspended')) {
-          throw Exception('Account is temporarily locked. Please try again later.');
+          throw Exception(
+              'Account is temporarily locked. Please try again later.');
         } else if (error.toString().toLowerCase().contains('verify')) {
           throw Exception('Please verify your email before logging in.');
         }
@@ -86,24 +87,24 @@ class AuthRepository {
 
       final refreshToken = data['refreshToken'] as String?;
       final userJson = (data['user'] as Map<String, dynamic>?) ?? {};
-      
+
       // Validate user data
       if (userJson.isEmpty || userJson['id'] == null) {
         throw Exception('Invalid user data received from server');
       }
 
       final user = AuthUser.fromJson(userJson);
-   
+
       final tokens = AuthTokens.fromRaw(
         accessToken: token,
         refreshToken: refreshToken,
       );
 
       await _persistSession(tokens: tokens, user: user);
-      
+
       // Set current user ID for downloaded books management
       await setCurrentUserId(user.id);
-      
+
       // Clear previous user's downloads
       await _downloadService.clearDownloadsForPreviousUser();
 
@@ -113,15 +114,17 @@ class AuthRepository {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
-        throw Exception('Connection timeout. Please check your internet connection and try again.');
+        throw Exception(
+            'Connection timeout. Please check your internet connection and try again.');
       } else if (e.type == DioExceptionType.connectionError ||
-                e.type == DioExceptionType.unknown) {
-        throw Exception('No internet connection. Please check your network settings.');
+          e.type == DioExceptionType.unknown) {
+        throw Exception(
+            'No internet connection. Please check your network settings.');
       } else if (e.type == DioExceptionType.badResponse) {
         // This should already be handled above, but as a fallback
-        final error = e.response?.data?['error'] ?? 
-                     e.response?.data?['message'] ?? 
-                     'Login failed. Please try again.';
+        final error = e.response?.data?['error'] ??
+            e.response?.data?['message'] ??
+            'Login failed. Please try again.';
         throw Exception(error.toString());
       }
       throw Exception('Login failed: ${e.message ?? "Unknown error"}');
@@ -138,82 +141,88 @@ class AuthRepository {
       throw Exception('Login failed: ${e.toString().split(':').last.trim()}');
     }
   }
-Future<void> register({
-  required String name,
-  required String email,
-  required String password,
-}) async {
-  try {
-    // COMPLETELY clear any existing session
-    await _secureStorage.clearAll();
-    await _clearCurrentUserId();
-    await _downloadService.clearDownloadsForPreviousUser();
-    
-    final response = await _dio.post(
-      '/auth/register',
-      data: {
-        'name': name,
-        'email': email,
-        'password': password,
-      },
-      options: Options(
-        validateStatus: (status) => true,
-      ),
-    );
 
-    final data = response.data as Map<String, dynamic>;
+  Future<void> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // COMPLETELY clear any existing session
+      await _secureStorage.clearAll();
+      await _clearCurrentUserId();
+      await _downloadService.clearDownloadsForPreviousUser();
 
-    // Check for specific error status codes
-    if (response.statusCode == 400 || response.statusCode == 409) {
-      final error = data['error'] ?? data['message'] ?? 'Registration failed';
-      if (error.toString().toLowerCase().contains('already exists') ||
-          error.toString().toLowerCase().contains('duplicate')) {
-        throw Exception('Email already registered. Please use a different email or login.');
-      } else if (error.toString().toLowerCase().contains('weak') ||
-                error.toString().toLowerCase().contains('password')) {
-        throw Exception('Password is too weak. Please use a stronger password.');
-      } else if (error.toString().toLowerCase().contains('invalid email')) {
-        throw Exception('Please enter a valid email address.');
+      final response = await _dio.post(
+        '/auth/register',
+        data: {
+          'name': name,
+          'email': email,
+          'password': password,
+        },
+        options: Options(
+          validateStatus: (status) => true,
+        ),
+      );
+
+      final data = response.data as Map<String, dynamic>;
+
+      // Check for specific error status codes
+      if (response.statusCode == 400 || response.statusCode == 409) {
+        final error = data['error'] ?? data['message'] ?? 'Registration failed';
+        if (error.toString().toLowerCase().contains('already exists') ||
+            error.toString().toLowerCase().contains('duplicate')) {
+          throw Exception(
+              'Email already registered. Please use a different email or login.');
+        } else if (error.toString().toLowerCase().contains('weak') ||
+            error.toString().toLowerCase().contains('password')) {
+          throw Exception(
+              'Password is too weak. Please use a stronger password.');
+        } else if (error.toString().toLowerCase().contains('invalid email')) {
+          throw Exception('Please enter a valid email address.');
+        }
+        throw Exception(error.toString());
       }
-      throw Exception(error.toString());
-    }
 
-    if (response.statusCode == 422) {
-      throw Exception('Invalid registration data. Please check your information.');
-    }
+      if (response.statusCode == 422) {
+        throw Exception(
+            'Invalid registration data. Please check your information.');
+      }
 
-    if (response.statusCode! >= 500) {
-      throw Exception('Server error. Please try again later.');
-    }
+      if (response.statusCode! >= 500) {
+        throw Exception('Server error. Please try again later.');
+      }
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      final error = data['error'] ?? data['message'] ?? 'Registration failed';
-      throw Exception(error.toString());
-    }
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        final error = data['error'] ?? data['message'] ?? 'Registration failed';
+        throw Exception(error.toString());
+      }
 
-    if (data['success'] == false) {
-      final error = data['error'] ?? data['message'] ?? 'Registration failed';
-      throw Exception(error.toString());
-    }
+      if (data['success'] == false) {
+        final error = data['error'] ?? data['message'] ?? 'Registration failed';
+        throw Exception(error.toString());
+      }
 
-    // IMPORTANT: DO NOT set any user ID or session after registration
-    // Registration should NOT log the user in
-    print('Registration successful for: $email');
-  }
-     on DioException catch (e) {
+      // IMPORTANT: DO NOT set any user ID or session after registration
+      // Registration should NOT log the user in
+      print('Registration successful for: $email');
+    } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout) {
-        throw Exception('Connection timeout. Please check your internet connection.');
+        throw Exception(
+            'Connection timeout. Please check your internet connection.');
       } else if (e.type == DioExceptionType.connectionError ||
-                e.type == DioExceptionType.unknown) {
-        throw Exception('No internet connection. Please check your network settings.');
+          e.type == DioExceptionType.unknown) {
+        throw Exception(
+            'No internet connection. Please check your network settings.');
       }
       throw Exception('Registration failed: ${e.message ?? "Unknown error"}');
     } on FormatException catch (_) {
       throw Exception('Invalid server response. Please try again later.');
     } catch (e) {
-      throw Exception('Registration failed: ${e.toString().split(':').last.trim()}');
+      throw Exception(
+          'Registration failed: ${e.toString().split(':').last.trim()}');
     }
   }
 
@@ -242,13 +251,12 @@ Future<void> register({
     try {
       // Clear secure storage
       await _secureStorage.clearAll();
-      
+
       // Clear current user ID
       await _clearCurrentUserId();
-      
+
       // Clear user-specific downloads
       await _downloadService.clearDownloadsForPreviousUser();
-      
     } catch (e) {
       print('Error during logout: $e');
       await _secureStorage.clearAll();
@@ -280,30 +288,31 @@ Future<void> register({
     }
   }
 
-Future<AuthUser?> getCurrentUser() async {
-  try {
-    final hasSession = await hasValidSession();
-    if (!hasSession) return null;
-    final userMap = await _secureStorage.getUser();
-    final id = userMap['id'];
-    final email = userMap['email'];
-    final name = userMap['name'];
-    if (id == null || email == null || name == null) return null;
-    
-    // IMPORTANT: Only return user, don't set ID here
-    // This prevents automatic login after registration
-    return AuthUser(id: id, email: email, name: name);
-  } catch (e) {
-    print('Error getting current user: $e');
-    return null;
+  Future<AuthUser?> getCurrentUser() async {
+    try {
+      final hasSession = await hasValidSession();
+      if (!hasSession) return null;
+      final userMap = await _secureStorage.getUser();
+      final id = userMap['id'];
+      final email = userMap['email'];
+      final name = userMap['name'];
+      if (id == null || email == null || name == null) return null;
+
+      // IMPORTANT: Only return user, don't set ID here
+      // This prevents automatic login after registration
+      return AuthUser(id: id, email: email, name: name);
+    } catch (e) {
+      print('Error getting current user: $e');
+      return null;
+    }
   }
-}
 
   // Helper method to set current user ID in SharedPreferences (public for AuthBloc session restore)
   Future<void> setCurrentUserId(String userId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('current_user_id', userId);
+      await prefs.setString('last_user_id', userId);
       print('Set current user ID: $userId');
     } catch (e) {
       print('Error setting current user ID: $e');

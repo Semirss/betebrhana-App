@@ -6,7 +6,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../presentation/bloc/authentication_bloc.dart';
 import '../../presentation/bloc/authentication_event.dart';
 import '../../presentation/bloc/authentication_state.dart';
-import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -47,23 +46,6 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // void _setupAuthListener() {
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     final authBloc = context.read<AuthBloc>();
-  //     authBloc.stream.listen((state) {
-  //       if (state is AuthFailure) {
-  //         _showError(state.message);
-  //         _isRegistrationSuccessful = false;
-  //       } else if (state is AuthRegistrationSuccess) {
-  //         // Registration successful - navigate to login
-  //         _clearError();
-  //         _isRegistrationSuccessful = true;
-  //         _showSuccessAndNavigateToLogin();
-  //       }
-  //       // Don't handle AuthAuthenticated here - registration shouldn't authenticate
-  //     });
-  //   });
-  // }
 
   void _showError(String message) {
     if (mounted) {
@@ -73,26 +55,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  void _showSuccessAndNavigateToLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Registration successful! Please login.',
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-
-    // Navigate to login page after a short delay
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
-        );
-      }
-    });
-  }
 
   void _clearError() {
     if (mounted) {
@@ -120,9 +82,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _navigateToLogin() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-    );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -136,8 +98,12 @@ class _RegisterPageState extends State<RegisterPage> {
             child: BlocConsumer<AuthBloc, AuthState>(
               listener: (context, state) {
                 if (state is AuthRegistrationSuccess) {
-                  _isRegistrationSuccessful = true;
-                  _showSuccessAndNavigateToLogin();
+                  if (mounted) {
+                    setState(() {
+                      _isRegistrationSuccessful = true;
+                      _errorMessage = null;
+                    });
+                  }
                 } else if (state is AuthFailure) {
                   _showError(state.message);
                 }

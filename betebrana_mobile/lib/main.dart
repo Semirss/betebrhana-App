@@ -70,6 +70,22 @@ class _AppWrapper extends StatefulWidget {
 }
 
 class _AppWrapperState extends State<_AppWrapper> {
+  void _handleRegistrationSuccess() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Registration successful! Please login.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -84,13 +100,7 @@ class _AppWrapperState extends State<_AppWrapper> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthRegistrationSuccess) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registration successful! Please login.'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          _handleRegistrationSuccess();
         }
         if (state is AuthAuthenticated) {
           Navigator.of(context).popUntil((route) => route.isFirst);

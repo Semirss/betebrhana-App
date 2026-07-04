@@ -74,24 +74,24 @@ class DownloadedBookMetadata {
 class BookDownloadService {
   final EncryptionService _encryptionService = EncryptionService();
   final RentalRepository _rentalRepository;
-  
+
   static const _prefsKeyDownloadedBooks = 'downloaded_books_v2';
   static const _prefsKeyCurrentUserId = 'current_user_id';
   static const _prefsKeyLastUserId = 'last_user_id';
-  
+
   BookDownloadService() : _rentalRepository = RentalRepository();
 
   Future<String?> _getCurrentUserId() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(_prefsKeyCurrentUserId);
-      
+
       if (userId == null) {
         print('No current user ID found in SharedPreferences');
       } else {
         print('Retrieved current user ID: $userId');
       }
-      
+
       return userId;
     } catch (e) {
       print('Error getting current user ID: $e');
@@ -103,6 +103,7 @@ class BookDownloadService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_prefsKeyCurrentUserId, userId);
+      await prefs.setString(_prefsKeyLastUserId, userId);
       print('Set current user ID: $userId');
     } catch (e) {
       print('Error setting current user ID: $e');
@@ -116,6 +117,46 @@ class BookDownloadService {
       await downloadsDir.create(recursive: true);
     }
     return downloadsDir.path;
+  }
+
+  Future<String?> _getLastUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_prefsKeyLastUserId);
+    } catch (e) {
+      print('Error getting last user ID: $e');
+      return null;
+    }
+  }
+
+  Future<String?> _resolveUserIdForLocalDownloads() async {
+    final currentUserId = await _getCurrentUserId();
+    if (currentUserId != null) return currentUserId;
+
+    final entries = await _loadEntries();
+    if (entries.isEmpty) {
+      print('No downloaded book metadata available for offline fallback');
+      return null;
+    }
+
+    final lastUserId = await _getLastUserId();
+    if (lastUserId != null &&
+        entries.any((entry) => entry.userId == lastUserId)) {
+      print('Using last user ID for offline downloaded books: $lastUserId');
+      return lastUserId;
+    }
+
+    final downloadedUserIds = entries.map((entry) => entry.userId).toSet();
+    if (downloadedUserIds.length == 1) {
+      final onlyUserId = downloadedUserIds.first;
+      print(
+          'Using only downloaded-books user ID for offline fallback: $onlyUserId');
+      return onlyUserId;
+    }
+
+    print(
+        'No current user ID and multiple downloaded users found; not showing another user\'s downloads');
+    return null;
   }
 
   Future<List<DownloadedBookMetadata>> _loadEntries() async {
@@ -133,7 +174,7 @@ class BookDownloadService {
           result.add(DownloadedBookMetadata.fromJson(item));
         }
       }
-      
+
       print('Loaded ${result.length} downloaded book entries');
       return result;
     } catch (e) {
@@ -153,22 +194,22 @@ class BookDownloadService {
     }
   }
 
-Future<void> clearDownloadsForPreviousUser() async {
-  // Do NOT clear anything when user changes
-  print('Downloads persist across user sessions - nothing cleared');
-}
+  Future<void> clearDownloadsForPreviousUser() async {
+    // Do NOT clear anything when user changes
+    print('Downloads persist across user sessions - nothing cleared');
+  }
 
-Future<void> _clearDownloadsForUser(String userId) async {
-  // Do NOT clear anything - keep both files and metadata
-  print('Downloads preserved for user $userId - nothing cleared');
-}
+  Future<void> _clearDownloadsForUser(String userId) async {
+    // Do NOT clear anything - keep both files and metadata
+    print('Downloads preserved for user $userId - nothing cleared');
+  }
 
   Future<String> getDownloadDirectory() async {
     return await _getDownloadsDirectory();
   }
 
   Future<String?> getBookFilePath(int bookId) async {
-    final userId = await _getCurrentUserId();
+    final userId = await _resolveUserIdForLocalDownloads();
     if (userId == null) {
       print('No user ID, cannot get book file path');
       return null;
@@ -184,28 +225,30 @@ Future<void> _clearDownloadsForUser(String userId) async {
     return metadata.path;
   }
 
-  Future<DownloadedBookMetadata?> _getBookMetadata(String bookId, String userId) async {
+  Future<DownloadedBookMetadata?> _getBookMetadata(
+      String bookId, String userId) async {
     try {
       final entries = await _loadEntries();
-      
+
       for (final entry in entries) {
         if (entry.bookId == bookId && entry.userId == userId) {
           // Check if file exists and is not expired
           final file = File(entry.path);
           final fileExists = await file.exists();
-          
-          print('Found metadata for book $bookId, user $userId: exists=$fileExists, expired=${entry.isExpired}');
-          
+
+          print(
+              'Found metadata for book $bookId, user $userId: exists=$fileExists, expired=${entry.isExpired}');
+
           if (entry.isExpired || !fileExists) {
             print('Deleting invalid entry for book $bookId, user $userId');
             await _deleteBookEntry(bookId, userId);
             return null;
           }
-          
+
           return entry;
         }
       }
-      
+
       print('No metadata found for book $bookId, user $userId');
       return null;
     } catch (e) {
@@ -233,7 +276,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
       // Download content
       final contentBytes = await _downloadBookContent(book.id);
       print('Downloaded content length: ${contentBytes.length} bytes');
-      
+
       // Encrypt and save
       await _saveEncryptedContent(
         bookId: book.id,
@@ -253,7 +296,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
   Future<Uint8List> _downloadBookContent(String bookId) async {
     final downloadUrl = '/books/$bookId/read';
     print('Downloading binary from proxy: $downloadUrl');
-    
+
     final dio = DioClient.instance.dio;
     final response = await dio.get<List<int>>(
       downloadUrl,
@@ -269,7 +312,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
 
     final contentBytes = Uint8List.fromList(response.data!);
     print('Download successful, content length: ${contentBytes.length} bytes');
-    
+
     return contentBytes;
   }
 
@@ -282,7 +325,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
   }) async {
     // Get storage directory
     final dirPath = await _getDownloadsDirectory();
-    
+
     // Create filename with user ID to separate per-user files
     final sanitizedBookId = bookId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
     final filename = 'book_${sanitizedBookId}_$userId.enc';
@@ -294,13 +337,13 @@ Future<void> _clearDownloadsForUser(String userId) async {
     try {
       // Encrypt content
       print('Plain bytes length: ${contentBytes.length}');
-      
+
       final encrypted = await _encryptionService.encryptBytes(contentBytes);
       print('Encrypted bytes length: ${encrypted.length}');
-      
+
       // Save encrypted file
       await file.writeAsBytes(encrypted, flush: true);
-      
+
       // Verify file was saved
       final savedFile = File(filePath);
       final fileSize = await savedFile.length();
@@ -322,8 +365,9 @@ Future<void> _clearDownloadsForUser(String userId) async {
 
       // Save entry to preferences
       final entries = await _loadEntries();
-      final withoutCurrent = entries.where((e) => 
-        !(e.bookId == bookId && e.userId == userId)).toList();
+      final withoutCurrent = entries
+          .where((e) => !(e.bookId == bookId && e.userId == userId))
+          .toList();
       withoutCurrent.add(entry);
       await _saveEntries(withoutCurrent);
 
@@ -336,7 +380,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
 
   Future<String?> getDecryptedBookContent(int bookId) async {
     try {
-      final userId = await _getCurrentUserId();
+      final userId = await _resolveUserIdForLocalDownloads();
       if (userId == null) {
         print('No user ID, cannot decrypt book');
         return null;
@@ -366,13 +410,15 @@ Future<void> _clearDownloadsForUser(String userId) async {
       try {
         final decrypted = await _encryptionService.decryptBytes(encrypted);
         print('Decryption successful, got ${decrypted.length} decrypted bytes');
-        
+
         try {
           final content = utf8.decode(decrypted);
-          print('Decoded to string, length: ${content.length} characters (TXT format)');
+          print(
+              'Decoded to string, length: ${content.length} characters (TXT format)');
           return content;
         } catch (e) {
-          print('Failed to decode as UTF-8 string. This is expected for PDF and EPUB binary files.');
+          print(
+              'Failed to decode as UTF-8 string. This is expected for PDF and EPUB binary files.');
           return null; // Caller should use getDecryptedBookFilePath for binary
         }
       } catch (e) {
@@ -381,16 +427,19 @@ Future<void> _clearDownloadsForUser(String userId) async {
         print('1. Corrupted encrypted file');
         print('2. Wrong encryption key (different device/session)');
         print('3. Invalid file format');
-        
+
         // Log the raw bytes for debugging
-        final hexPreview = encrypted.take(50).map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ');
+        final hexPreview = encrypted
+            .take(50)
+            .map((b) => b.toRadixString(16).padLeft(2, '0'))
+            .join(' ');
         print('First 50 bytes (hex): $hexPreview');
-        
-        // DO NOT delete the file — the error may be a temporary key mismatch
+
+        // DO NOT delete the file â€” the error may be a temporary key mismatch
         // (e.g. during debug hot-restarts). Deleting would permanently destroy
         // the user's downloaded book. Just return null and let the caller show
         // a friendly error message.
-        print('Decryption failed — keeping file intact for potential retry.');
+        print('Decryption failed â€” keeping file intact for potential retry.');
         return null;
       }
     } catch (e) {
@@ -399,9 +448,10 @@ Future<void> _clearDownloadsForUser(String userId) async {
     }
   }
 
-  Future<String?> getDecryptedBookFilePath(int bookId, String fileExtension) async {
+  Future<String?> getDecryptedBookFilePath(
+      int bookId, String fileExtension) async {
     try {
-      final userId = await _getCurrentUserId();
+      final userId = await _resolveUserIdForLocalDownloads();
       if (userId == null) {
         print('No user ID, cannot decrypt book copy');
         return null;
@@ -414,15 +464,16 @@ Future<void> _clearDownloadsForUser(String userId) async {
       if (!await file.exists()) return null;
 
       final encrypted = await file.readAsBytes();
-      
+
       try {
         final decrypted = await _encryptionService.decryptBytes(encrypted);
-        
+
         final tempDir = await getTemporaryDirectory();
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final tempFile = File('${tempDir.path}/temp_book_${bookId}_$timestamp.$fileExtension');
+        final tempFile = File(
+            '${tempDir.path}/temp_book_${bookId}_$timestamp.$fileExtension');
         await tempFile.writeAsBytes(decrypted, flush: true);
-        
+
         print('Created temporary decrypted file at: ${tempFile.path}');
         return tempFile.path;
       } catch (e) {
@@ -436,12 +487,12 @@ Future<void> _clearDownloadsForUser(String userId) async {
   }
 
   Future<void> deleteBook(int bookId) async {
-    final userId = await _getCurrentUserId();
+    final userId = await _resolveUserIdForLocalDownloads();
     if (userId == null) {
       print('No user ID, cannot delete book');
       return;
     }
-    
+
     print('Deleting book $bookId for user $userId');
     await _deleteBookEntry(bookId.toString(), userId);
   }
@@ -451,7 +502,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
       final entries = await _loadEntries();
       final remaining = <DownloadedBookMetadata>[];
       bool found = false;
-      
+
       for (final entry in entries) {
         if (entry.bookId == bookId && entry.userId == userId) {
           found = true;
@@ -469,7 +520,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
           remaining.add(entry);
         }
       }
-      
+
       if (found) {
         await _saveEntries(remaining);
         print('Deleted metadata for book $bookId, user $userId');
@@ -482,21 +533,21 @@ Future<void> _clearDownloadsForUser(String userId) async {
   }
 
   Future<List<Book>> getDownloadedBooks() async {
-    final userId = await _getCurrentUserId();
+    final userId = await _resolveUserIdForLocalDownloads();
     if (userId == null) {
       print('No user ID, returning empty downloaded books list');
       return [];
     }
 
     print('Getting downloaded books for user $userId');
-    
+
     final entries = await _loadEntries();
     final userEntries = entries.where((e) => e.userId == userId).toList();
-    
+
     print('Found ${userEntries.length} entries for user $userId');
-    
+
     final books = <Book>[];
-    
+
     for (final entry in userEntries) {
       if (entry.isExpired) {
         print('Book ${entry.bookId} is expired, deleting');
@@ -507,7 +558,8 @@ Future<void> _clearDownloadsForUser(String userId) async {
       // Verify file exists
       final file = File(entry.path);
       if (!await file.exists()) {
-        print('File does not exist for book ${entry.bookId}, deleting metadata');
+        print(
+            'File does not exist for book ${entry.bookId}, deleting metadata');
         await _deleteBookEntry(entry.bookId, entry.userId);
         continue;
       }
@@ -529,7 +581,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
         isDownloaded: true,
         localFilePath: entry.path,
       ));
-      
+
       print('Added book to list: ${entry.title}');
     }
 
@@ -538,12 +590,12 @@ Future<void> _clearDownloadsForUser(String userId) async {
   }
 
   Future<bool> isBookDownloaded(int bookId) async {
-    final userId = await _getCurrentUserId();
+    final userId = await _resolveUserIdForLocalDownloads();
     if (userId == null) {
       print('No user ID, book is not downloaded');
       return false;
     }
-    
+
     final metadata = await _getBookMetadata(bookId.toString(), userId);
     final isDownloaded = metadata != null;
     print('Book $bookId is downloaded: $isDownloaded');
@@ -554,7 +606,7 @@ Future<void> _clearDownloadsForUser(String userId) async {
     print('Cleaning up expired books');
     final entries = await _loadEntries();
     final now = DateTime.now().toUtc();
-    
+
     for (final entry in entries) {
       if (entry.expiresAt.isBefore(now)) {
         print('Deleting expired book: ${entry.title}');
@@ -567,7 +619,8 @@ Future<void> _clearDownloadsForUser(String userId) async {
     print('Getting book content for $bookId');
     final content = await getDecryptedBookContent(bookId);
     if (content == null) {
-      throw Exception('Book content not found or expired. Please re-download the book.');
+      throw Exception(
+          'Book content not found or expired. Please re-download the book.');
     }
     return content;
   }
@@ -578,14 +631,14 @@ Future<void> _clearDownloadsForUser(String userId) async {
       if (bookId == null) {
         throw Exception('Invalid book ID');
       }
-      
+
       print('Getting local content for book: ${book.title} (ID: $bookId)');
-      
+
       final isDownloaded = await isBookDownloaded(bookId);
       if (!isDownloaded) {
         throw Exception('Book not downloaded. Please download it first.');
       }
-      
+
       final content = await getBookContent(bookId);
       print('Successfully retrieved local content, length: ${content.length}');
       return content;
@@ -594,42 +647,44 @@ Future<void> _clearDownloadsForUser(String userId) async {
       rethrow;
     }
   }
-Future<void> syncWithServerAndCleanup() async {
-  try {
-    final userId = await _getCurrentUserId();
-    if (userId == null) return;
 
-    print('Syncing downloaded books for user $userId');
-    
-    final downloadedBooks = await getDownloadedBooks();
-    if (downloadedBooks.isEmpty) return;
+  Future<void> syncWithServerAndCleanup() async {
+    try {
+      final userId = await _getCurrentUserId();
+      if (userId == null) return;
 
-    final activeRentals = await _rentalRepository.getUserRentals();
+      print('Syncing downloaded books for user $userId');
 
-    // Safety guard: if the server returned an empty rental list (network issue
-    // or first-login race condition), do NOT wipe all downloads. We only clean
-    // up when we have confirmed rental data.
-    if (activeRentals.isEmpty) {
-      print('Rental list is empty — skipping sync cleanup to avoid false removals');
-      return;
-    }
+      final downloadedBooks = await getDownloadedBooks();
+      if (downloadedBooks.isEmpty) return;
 
-    for (final book in downloadedBooks) {
-      final bookId = int.tryParse(book.id);
-      if (bookId == null) continue;
+      final activeRentals = await _rentalRepository.getUserRentals();
 
-      final isStillRented = activeRentals.any((rental) => 
-          rental.bookId == bookId && rental.isActive);
-
-      if (!isStillRented) {
-        print('Book $bookId no longer rented, removing download...');
-        await deleteBook(bookId);
+      // Safety guard: if the server returned an empty rental list (network issue
+      // or first-login race condition), do NOT wipe all downloads. We only clean
+      // up when we have confirmed rental data.
+      if (activeRentals.isEmpty) {
+        print(
+            'Rental list is empty â€” skipping sync cleanup to avoid false removals');
+        return;
       }
+
+      for (final book in downloadedBooks) {
+        final bookId = int.tryParse(book.id);
+        if (bookId == null) continue;
+
+        final isStillRented = activeRentals
+            .any((rental) => rental.bookId == bookId && rental.isActive);
+
+        if (!isStillRented) {
+          print('Book $bookId no longer rented, removing download...');
+          await deleteBook(bookId);
+        }
+      }
+    } catch (e) {
+      print('Error syncing downloads: $e');
     }
-  } catch (e) {
-    print('Error syncing downloads: $e');
   }
-}
 
   Future<void> removeDownloadIfExists(int bookId) async {
     final isDownloaded = await isBookDownloaded(bookId);
@@ -641,35 +696,35 @@ Future<void> syncWithServerAndCleanup() async {
     }
   }
 
-Future<void> updateUserSession(String? userId) async {
-  if (userId != null) {
-    await _setCurrentUserId(userId);
-    print('Updated user session to: $userId');
-  } else {
-    // Clear current user ID on logout — downloads metadata is preserved
-    // so they reappear when the same user logs back in.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_prefsKeyCurrentUserId);
-    print('Cleared user session (logout) - downloads preserved');
+  Future<void> updateUserSession(String? userId) async {
+    if (userId != null) {
+      await _setCurrentUserId(userId);
+      print('Updated user session to: $userId');
+    } else {
+      // Clear current user ID on logout â€” downloads metadata is preserved
+      // so they reappear when the same user logs back in.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_prefsKeyCurrentUserId);
+      print('Cleared user session (logout) - downloads preserved');
+    }
   }
-}
 
   // Debug method to list all encrypted files
   Future<void> debugListEncryptedFiles() async {
     try {
       final dirPath = await _getDownloadsDirectory();
       final directory = Directory(dirPath);
-      
+
       if (!await directory.exists()) {
         print('Directory does not exist: $dirPath');
         return;
       }
-      
+
       final files = await directory.list().toList();
       print('=== ENCRYPTED FILES DIRECTORY ===');
       print('Path: $dirPath');
       print('Files found: ${files.length}');
-      
+
       for (final file in files) {
         if (file is File) {
           final stat = await file.stat();

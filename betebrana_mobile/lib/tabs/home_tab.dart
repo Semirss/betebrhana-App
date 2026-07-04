@@ -193,8 +193,8 @@ class HomeTabState extends State<HomeTab> {
               boxShadow: const [
                 BoxShadow(
                   color: Colors.black38,
-                  blurRadius: 15,
-                  offset: Offset(0, 10),
+                  blurRadius: 2,
+                  offset: Offset(5,5),
                 ),
               ],
             ),
@@ -405,7 +405,7 @@ class HomeTabState extends State<HomeTab> {
                                   
                                   // Carousel
                                   SizedBox(
-                                    height: viewportHeight * 0.55, 
+                                    height: viewportHeight * 0.45, 
                                     child: PageView.builder(
                                       controller: _pageController,
                                       onPageChanged: (index) {
@@ -438,7 +438,7 @@ class HomeTabState extends State<HomeTab> {
                                             height: 1.2,
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 4),
                                         Text(
                                           currentBook.author.isEmpty ? 'Unknown author' : 'By ${currentBook.author}',
                                           textAlign: TextAlign.center,

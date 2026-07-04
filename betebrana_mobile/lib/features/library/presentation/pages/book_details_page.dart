@@ -30,7 +30,7 @@ class BookDetailsPage extends StatefulWidget {
 class _BookDetailsPageState extends State<BookDetailsPage> {
   late final RentalRepository _rentalRepository;
   late final QueueRepository _queueRepository;
-  late final BookDownloadService _downloadService; 
+  late final BookDownloadService _downloadService;
   late final Connectivity _connectivity;
   bool _isOffline = false;
   Timer? _countdownTimer;
@@ -39,8 +39,8 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
   UserQueueItem? _queueItem;
   bool _loadingStatus = true;
   bool _actionInProgress = false;
-  bool _isDownloaded = false; 
-  bool _downloading = false; 
+  bool _isDownloaded = false;
+  bool _downloading = false;
 
   // Scroll controller for parallax effect
   final ScrollController _scrollController = ScrollController();
@@ -60,15 +60,15 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     _queueRepository = QueueRepository();
     _downloadService = BookDownloadService();
     _connectivity = Connectivity();
-    
+
     // Select a sponsor once
     if (widget.book.isSponsored && widget.book.sponsors.isNotEmpty) {
-       final randomIndex = math.Random().nextInt(widget.book.sponsors.length);
-       _selectedSponsorName = widget.book.sponsors[randomIndex];
-       // Assuming sponsorIds matches the order of sponsors
-       if (widget.book.sponsorIds.length > randomIndex) {
-           _selectedSponsorId = widget.book.sponsorIds[randomIndex];
-       }
+      final randomIndex = math.Random().nextInt(widget.book.sponsors.length);
+      _selectedSponsorName = widget.book.sponsors[randomIndex];
+      // Assuming sponsorIds matches the order of sponsors
+      if (widget.book.sponsorIds.length > randomIndex) {
+        _selectedSponsorId = widget.book.sponsorIds[randomIndex];
+      }
     }
 
     // Listen to scroll position for parallax effect
@@ -77,14 +77,14 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
         _scrollOffset = _scrollController.offset;
       });
     });
-    
-    _checkConnectivity(); 
+
+    _checkConnectivity();
     _loadStatus();
     _loadBookmark();
     _checkIfDownloaded();
     _startCountdownTimer();
     _downloadService.syncWithServerAndCleanup();
-    
+
     // Listen for connectivity changes
     _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
       _updateConnectivityStatus(result);
@@ -98,26 +98,26 @@ class _BookDetailsPageState extends State<BookDetailsPage> {
     super.dispose();
   }
 
-Future<void> _checkConnectivity() async {
-  try {
-    final connectivityResult = await _connectivity.checkConnectivity();
-    _updateConnectivityStatus(connectivityResult);
-  } catch (e) {
+  Future<void> _checkConnectivity() async {
+    try {
+      final connectivityResult = await _connectivity.checkConnectivity();
+      _updateConnectivityStatus(connectivityResult);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isOffline = true;
+        });
+      }
+    }
+  }
+
+  void _updateConnectivityStatus(ConnectivityResult result) {
     if (mounted) {
       setState(() {
-        _isOffline = true;
+        _isOffline = result == ConnectivityResult.none;
       });
     }
   }
-}
-
-void _updateConnectivityStatus(ConnectivityResult result) {
-  if (mounted) {
-    setState(() {
-      _isOffline = result == ConnectivityResult.none;
-    });
-  }
-}
 
   Future<void> _loadBookmark() async {
     final prefs = await SharedPreferences.getInstance();
@@ -138,7 +138,8 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(newState ? 'Added to bookmarks' : 'Removed from bookmarks'),
+          content:
+              Text(newState ? 'Added to bookmarks' : 'Removed from bookmarks'),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -148,7 +149,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
   Future<void> _checkIfDownloaded() async {
     final bookId = int.tryParse(widget.book.id);
     if (bookId == null) return;
-    
+
     try {
       final downloaded = await _downloadService.isBookDownloaded(bookId);
       if (mounted) {
@@ -225,17 +226,18 @@ void _updateConnectivityStatus(ConnectivityResult result) {
   bool get _canRent {
     if (!widget.book.isSponsored) return false;
     if (_activeRental != null) return false;
-    
+
     final info = widget.book.queueInfo;
     if (info != null) {
       // User can rent if:
       // 1. They have an active reservation (status = 'available'), OR
       // 2. Book is available and no one is in queue, OR
       // 3. Book is available and user is first in queue
-      return info.hasReservation || 
-             (widget.book.isAvailable && (info.totalInQueue == 0 || info.userPosition == 1));
+      return info.hasReservation ||
+          (widget.book.isAvailable &&
+              (info.totalInQueue == 0 || info.userPosition == 1));
     }
-    
+
     // Fallback: book is available
     return widget.book.isAvailable;
   }
@@ -244,7 +246,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
 
   bool get _canJoinQueue {
     if (_activeRental != null || _queueItem != null) return false;
-    
+
     final info = widget.book.queueInfo;
     if (info != null) {
       // User can join queue if:
@@ -252,14 +254,15 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       // 2. Book is available but there are people in queue
       return !widget.book.isAvailable || info.totalInQueue > 0;
     }
-    
+
     return !widget.book.isAvailable;
   }
 
   bool get _canLeaveQueue => _queueItem != null;
 
   bool get _canRead {
-    final hasFile = widget.book.filePath != null && widget.book.filePath!.isNotEmpty;
+    final hasFile =
+        widget.book.filePath != null && widget.book.filePath!.isNotEmpty;
     return hasFile && _activeRental != null;
   }
 
@@ -289,26 +292,28 @@ void _updateConnectivityStatus(ConnectivityResult result) {
         widget.book,
         _activeRental!.dueDate,
       );
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isDownloaded = true;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('"${widget.book.title}" downloaded for offline reading'),
+          content:
+              Text('"${widget.book.title}" downloaded for offline reading'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to download the book.')),
+          content: Text(ErrorHelper.getFriendlyMessage(
+              e, 'Failed to download the book.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -330,7 +335,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       builder: (context) {
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
-        
+
         return AlertDialog(
           backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
           title: Text(
@@ -372,13 +377,13 @@ void _updateConnectivityStatus(ConnectivityResult result) {
 
     try {
       await _downloadService.deleteBook(bookId);
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isDownloaded = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('"${widget.book.title}" removed from downloads'),
@@ -387,10 +392,11 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to remove the downloaded book.')),
+          content: Text(ErrorHelper.getFriendlyMessage(
+              e, 'Failed to remove the downloaded book.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -415,13 +421,13 @@ void _updateConnectivityStatus(ConnectivityResult result) {
 
     if (!_canRent) {
       if (!widget.book.isSponsored) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('This book is not sponsored and cannot be borrowed.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This book is not sponsored and cannot be borrowed.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -440,7 +446,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
     try {
       final result = await _rentalRepository.rentBook(bookId);
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.message),
@@ -453,16 +459,17 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       setState(() {
         _actionInProgress = false;
       });
-      
+
       // Handle queue suggestion for unavailable books
-      if (e.toString().contains('not available') || 
+      if (e.toString().contains('not available') ||
           e.toString().contains('unavailable') ||
           e.toString().contains('reserved')) {
         _showQueueSuggestionDialog();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to borrow the book.')),
+            content: Text(ErrorHelper.getFriendlyMessage(
+                e, 'Failed to borrow the book.')),
             backgroundColor: Colors.red,
           ),
         );
@@ -473,7 +480,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
   void _showQueueSuggestionDialog() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -505,55 +512,55 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       ),
     );
   }
-Future<void> _returnCurrentBook() async {
-  final rental = _activeRental;
-  final bookId = int.tryParse(widget.book.id);
-  if (rental == null || bookId == null) return;
 
-  setState(() {
-    _actionInProgress = true;
-  });
+  Future<void> _returnCurrentBook() async {
+    final rental = _activeRental;
+    final bookId = int.tryParse(widget.book.id);
+    if (rental == null || bookId == null) return;
 
-  try {
-    await _rentalRepository.returnBook(rentalId: rental.id, bookId: bookId);
-    
-    // Remove downloaded book if it exists
-    await _downloadService.removeDownloadIfExists(bookId);
-    
-    if (!mounted) return;
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Book returned successfully. Download removed if existed.'),
-        backgroundColor: Colors.green,
-      ),
-    );
-    
-    // IMPORTANT: Force immediate refresh
-    // 1. Refresh local status immediately
-    await _loadStatus(); 
-    await _checkIfDownloaded();
-    
-    
-    
-    // 3. If we're in Profile tab context, also trigger a rebuild
-    if (mounted) {
-      setState(() {});
-    }
-    
-  } catch (e) {
-    if (!mounted) return;
     setState(() {
-      _actionInProgress = false;
+      _actionInProgress = true;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to return the book.')),
-        backgroundColor: Colors.red,
-      ),
-    );
+
+    try {
+      await _rentalRepository.returnBook(rentalId: rental.id, bookId: bookId);
+
+      // Remove downloaded book if it exists
+      await _downloadService.removeDownloadIfExists(bookId);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Book returned successfully. Download removed if existed.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // IMPORTANT: Force immediate refresh
+      // 1. Refresh local status immediately
+      await _loadStatus();
+      await _checkIfDownloaded();
+
+      // 3. If we're in Profile tab context, also trigger a rebuild
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _actionInProgress = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              ErrorHelper.getFriendlyMessage(e, 'Failed to return the book.')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-}
 
   Future<void> _joinQueueForCurrentBook() async {
     final bookId = int.tryParse(widget.book.id);
@@ -576,7 +583,7 @@ Future<void> _returnCurrentBook() async {
     try {
       final result = await _queueRepository.joinQueue(bookId);
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.message),
@@ -591,7 +598,8 @@ Future<void> _returnCurrentBook() async {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to join the queue.')),
+          content: Text(
+              ErrorHelper.getFriendlyMessage(e, 'Failed to join the queue.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -609,7 +617,7 @@ Future<void> _returnCurrentBook() async {
     try {
       await _queueRepository.removeFromQueue(item.id);
       if (!mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Removed from queue'),
@@ -624,7 +632,8 @@ Future<void> _returnCurrentBook() async {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ErrorHelper.getFriendlyMessage(e, 'Failed to leave the queue.')),
+          content: Text(
+              ErrorHelper.getFriendlyMessage(e, 'Failed to leave the queue.')),
           backgroundColor: Colors.red,
         ),
       );
@@ -635,17 +644,18 @@ Future<void> _returnCurrentBook() async {
     if (_loadingStatus) return 'Loading your rental status...';
     final rental = _activeRental;
     if (rental == null) return 'Not currently borrowed';
-    
+
     final due = rental.dueDate.toLocal();
     final now = DateTime.now();
     final difference = due.difference(now);
-    
+
     if (difference.isNegative) {
       return 'OVERDUE by ${difference.inDays.abs()} days!';
     } else if (difference.inDays <= 3) {
       return 'Due in ${difference.inDays} days - Return soon!';
     } else {
-      final dateString = '${due.year}-${due.month.toString().padLeft(2, '0')}-${due.day.toString().padLeft(2, '0')}';
+      final dateString =
+          '${due.year}-${due.month.toString().padLeft(2, '0')}-${due.day.toString().padLeft(2, '0')}';
       return 'borrowed until $dateString (${difference.inDays} days left)';
     }
   }
@@ -653,11 +663,11 @@ Future<void> _returnCurrentBook() async {
   Color _rentalStatusColor() {
     final rental = _activeRental;
     if (rental == null) return Colors.grey;
-    
+
     final due = rental.dueDate.toLocal();
     final now = DateTime.now();
     final difference = due.difference(now);
-    
+
     if (difference.isNegative) {
       return Colors.red;
     } else if (difference.inDays <= 3) {
@@ -679,7 +689,7 @@ Future<void> _returnCurrentBook() async {
     if (info != null && info.hasReservation) {
       final expiresAt = info.expiresAt?.toLocal();
       final now = DateTime.now();
-      
+
       if (expiresAt != null) {
         final difference = expiresAt.difference(now);
         if (difference.isNegative) {
@@ -687,7 +697,7 @@ Future<void> _returnCurrentBook() async {
         } else {
           final hours = difference.inHours;
           final minutes = difference.inMinutes.remainder(60);
-          
+
           if (hours > 24) {
             final days = hours ~/ 24;
             final remainingHours = hours % 24;
@@ -706,7 +716,7 @@ Future<void> _returnCurrentBook() async {
     if (item != null) {
       final position = info?.userPosition;
       final totalInQueue = info?.totalInQueue ?? 0;
-      
+
       if (position != null && position > 0) {
         if (position == 1) {
           return 'You are first in queue! Waiting for availability...';
@@ -727,15 +737,15 @@ Future<void> _returnCurrentBook() async {
 
   Color _queueStatusColor() {
     final info = widget.book.queueInfo;
-    
+
     if (info?.hasReservation ?? false) {
       return Colors.green;
     }
-    
+
     if (_queueItem != null) {
       return Color(0xFF78A090);
     }
-    
+
     return Colors.grey;
   }
 
@@ -766,9 +776,9 @@ Future<void> _returnCurrentBook() async {
         ),
       );
     }
-    
+
     final info = widget.book.queueInfo;
-    
+
     // User has active rental - show borrowed status
     if (_activeRental != null) {
       return Container(
@@ -795,7 +805,7 @@ Future<void> _returnCurrentBook() async {
         ),
       );
     }
-    
+
     // User has active reservation
     if (info?.hasReservation ?? false) {
       return Container(
@@ -822,7 +832,7 @@ Future<void> _returnCurrentBook() async {
         ),
       );
     }
-    
+
     // Book is generally available
     if (widget.book.isAvailable) {
       return Container(
@@ -849,7 +859,7 @@ Future<void> _returnCurrentBook() async {
         ),
       );
     }
-    
+
     // User is first in queue and book is available
     if (info?.userPosition == 1 && widget.book.isAvailable) {
       return Container(
@@ -876,7 +886,7 @@ Future<void> _returnCurrentBook() async {
         ),
       );
     }
-    
+
     // Book is unavailable - show join queue
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -901,7 +911,6 @@ Future<void> _returnCurrentBook() async {
         ],
       ),
     );
-
   }
 
   Widget _buildSponsorBadge() {
@@ -915,45 +924,41 @@ Future<void> _returnCurrentBook() async {
         ),
         child: const Text(
           'NOT SPONSORED',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+          style: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
         ),
       );
     }
-    
+
     final sponsor = _selectedSponsorName ?? "Anonymous";
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-            const Icon(Icons.star, color: Colors.blue, size: 12),
-            const SizedBox(width:4),
-            Text(
-                'Sponsored by: $sponsor',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
-            ),
-        ]
-      )
-    );
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.star, color: Colors.blue, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            'Sponsored by: $sponsor',
+            style: const TextStyle(
+                fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
+          ),
+        ]));
   }
 
   Widget _buildKeyInfoBadges() {
     final book = widget.book;
     final badges = <Widget>[];
-    
+
     // Availability badge
     // Availability badge
     badges.add(_buildAvailabilityBadge());
     badges.add(_buildSponsorBadge());
-           
-  
-    
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -967,9 +972,13 @@ Future<void> _returnCurrentBook() async {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final lang = context.watch<LanguageBloc>().state;
-    
+
     // We keep the theme's surface colors but adopt the layout from the design
-    final scaffoldBg = isDark ? const Color(0xFF121212) : const Color(0xFFF2F2F2); // Clean premium background
+    final scaffoldBg =
+        isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final headerGradientColors = isDark
+        ? const [Color(0xFF13251F), Color(0xFF101A16)]
+        : const [Color(0xFFEEF5F2), Color(0xFFD7E7E0)];
 
     return Scaffold(
       backgroundColor: scaffoldBg,
@@ -990,9 +999,7 @@ Future<void> _returnCurrentBook() async {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: isDark 
-                          ? [const Color(0xFF3E2723), const Color(0xFF1E1E1E)] 
-                          : [const Color(0xFFFAF2EB), const Color(0xFFE8D6C4)],
+                      colors: headerGradientColors,
                     ),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(40),
@@ -1000,7 +1007,7 @@ Future<void> _returnCurrentBook() async {
                     ),
                   ),
                 ),
-                
+
                 // Top Bar
                 Positioned(
                   top: MediaQuery.of(context).padding.top + 8,
@@ -1009,31 +1016,33 @@ Future<void> _returnCurrentBook() async {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildTopButton(Icons.arrow_back, () => Navigator.pop(context), isDark),
-                      Row(
-                        children: [
-                          if (_loadingStatus || _downloading || _actionInProgress)
-                            const Padding(
-                              padding: EdgeInsets.only(right: 16.0),
-                              child: SizedBox(
-                                width: 20, height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
+                      _buildTopButton(Icons.arrow_back,
+                          () => Navigator.pop(context), isDark),
+                      Row(children: [
+                        if (_loadingStatus || _downloading || _actionInProgress)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 16.0),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                          _buildTopButton(
-                            _isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                            _toggleBookmark,
-                            isDark
                           ),
-                        ]
-                      ),
+                        _buildTopButton(
+                            _isBookmarked
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
+                            _toggleBookmark,
+                            isDark),
+                      ]),
                     ],
                   ),
                 ),
-                
+
                 // Cover Image
                 Padding(
-                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 80),
+                  padding: EdgeInsets.only(
+                      top: MediaQuery.of(context).padding.top + 80),
                   child: Hero(
                     tag: 'book_cover_${book.id}',
                     child: Container(
@@ -1058,14 +1067,14 @@ Future<void> _returnCurrentBook() async {
                 ),
               ],
             ),
-            
+
             // Content below the cover
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 children: [
                   const SizedBox(height: 24),
-                  
+
                   // Title
                   Text(
                     book.title.isEmpty ? 'Untitled' : book.title,
@@ -1078,38 +1087,49 @@ Future<void> _returnCurrentBook() async {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // Author
                   Text(
                     book.author.isEmpty ? 'Unknown author' : book.author,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium!.copyWith(
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                      color:
+                          isDark ? Colors.grey.shade400 : Colors.grey.shade500,
                       fontWeight: FontWeight.w500,
                       fontSize: 15,
                     ),
                   ),
-                  
+
                   // Star Rating Placeholder
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('4.9', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade400 : const Color(0xFF2C4856))),
+                      Text('4.9',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : const Color(0xFF2C4856))),
                       const SizedBox(width: 4),
-                      const Icon(Icons.star, color: Color(0xFF78A090), size: 16),
-                      const Icon(Icons.star, color: Color(0xFF78A090), size: 16),
-                      const Icon(Icons.star, color: Color(0xFF78A090), size: 16),
-                      const Icon(Icons.star, color: Color(0xFF78A090), size: 16),
-                      const Icon(Icons.star_half, color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star,
+                          color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star,
+                          color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star,
+                          color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star,
+                          color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star_half,
+                          color: Color(0xFF78A090), size: 16),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // Metadata Row
                   _buildMetadataBox(isDark),
                   const SizedBox(height: 32),
-                  
+
                   // Description
                   if ((book.description ?? '').isNotEmpty) ...[
                     Column(
@@ -1118,9 +1138,13 @@ Future<void> _returnCurrentBook() async {
                           book.description!,
                           textAlign: TextAlign.center,
                           maxLines: _isDescriptionExpanded ? null : 2,
-                          overflow: _isDescriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                          overflow: _isDescriptionExpanded
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium!.copyWith(
-                            color: isDark ? Colors.grey.shade300 : const Color(0xFF4A6B7C),
+                            color: isDark
+                                ? Colors.grey.shade300
+                                : const Color(0xFF4A6B7C),
                             height: 1.5,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -1128,9 +1152,13 @@ Future<void> _returnCurrentBook() async {
                         ),
                         if (book.description!.length > 80)
                           TextButton(
-                            onPressed: () => setState(() => _isDescriptionExpanded = !_isDescriptionExpanded),
+                            onPressed: () => setState(() =>
+                                _isDescriptionExpanded =
+                                    !_isDescriptionExpanded),
                             child: Text(
-                              _isDescriptionExpanded ? 'Read less' : 'Read more',
+                              _isDescriptionExpanded
+                                  ? 'Read less'
+                                  : 'Read more',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: const Color(0xFF78A090),
@@ -1142,9 +1170,7 @@ Future<void> _returnCurrentBook() async {
                     ),
                     const SizedBox(height: 32),
                   ],
-                  
 
-                  
                   // Actions
                   _buildActions(isDark, lang),
                   const SizedBox(height: 40),
@@ -1175,8 +1201,9 @@ Future<void> _returnCurrentBook() async {
 
     String statusStr = 'Available';
     String detailLabel = 'Copies';
-    String detailValue = '${widget.book.availableCopies}/${widget.book.totalCopies}';
-    
+    String detailValue =
+        '${widget.book.availableCopies}/${widget.book.totalCopies}';
+
     if (_activeRental != null) {
       statusStr = 'Borrowed';
       detailLabel = 'Until';
@@ -1191,7 +1218,9 @@ Future<void> _returnCurrentBook() async {
       detailValue = '0/${widget.book.totalCopies}';
     }
 
-    String sponsorStr = widget.book.isSponsored ? (_selectedSponsorName ?? 'Anonymous') : 'None';
+    String sponsorStr = widget.book.isSponsored
+        ? (_selectedSponsorName ?? 'Anonymous')
+        : 'None';
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1217,65 +1246,113 @@ Future<void> _returnCurrentBook() async {
     return Expanded(
       child: Column(
         children: [
-          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey.shade500, fontWeight: FontWeight.w500)),
+          Text(title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
+                  fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
-          Text(value, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF2C4856))),
+          Text(value,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF2C4856))),
         ],
       ),
     );
   }
 
-
   Widget _buildActions(bool isDark, LanguageState lang) {
     if (_loadingStatus) {
       return const Center(child: CircularProgressIndicator());
     }
-    
+
     List<Widget> secondaryActions = [];
     Widget? primaryAction;
 
     // Secondary actions:
     if (_activeRental != null) {
-      secondaryActions.add(
-        _buildSecondaryButton(lang.t('Return Book'), Icons.undo, Colors.redAccent, (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null, isDark)
-      );
+      secondaryActions.add(_buildSecondaryButton(
+          lang.t('Return Book'),
+          Icons.undo,
+          Colors.redAccent,
+          (!_actionInProgress && !_isOffline) ? _returnCurrentBook : null,
+          isDark));
     }
 
     if (_canDownload || _isDownloaded) {
       if (_isDownloaded) {
-        secondaryActions.add(
-          _buildSecondaryButton(lang.t('Remove Offline'), Icons.delete_outline, Colors.redAccent, (!_actionInProgress) ? _removeDownloadedBook : null, isDark)
-        );
+        secondaryActions.add(_buildSecondaryButton(
+            lang.t('Remove Offline'),
+            Icons.delete_outline,
+            Colors.redAccent,
+            (!_actionInProgress) ? _removeDownloadedBook : null,
+            isDark));
       } else {
-        secondaryActions.add(
-          _buildSecondaryButton(_downloading ? lang.t('Downloading...') : lang.t('Download for Offline'), _downloading ? Icons.hourglass_bottom : Icons.cloud_download_outlined, isDark ? Colors.white70 : Colors.black87, (!_actionInProgress && !_downloading) ? _downloadCurrentBook : null, isDark)
-        );
+        secondaryActions.add(_buildSecondaryButton(
+            _downloading
+                ? lang.t('Downloading...')
+                : lang.t('Download for Offline'),
+            _downloading
+                ? Icons.hourglass_bottom
+                : Icons.cloud_download_outlined,
+            isDark ? Colors.white70 : Colors.black87,
+            (!_actionInProgress && !_downloading) ? _downloadCurrentBook : null,
+            isDark));
       }
     }
 
     // Primary action:
     if (_canRead) {
-      primaryAction = _buildPrimaryButton(lang.t('Start reading'), null, (!_actionInProgress) ? () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReaderPage(
-          book: widget.book,
-          rentalDueDate: _activeRental?.dueDate,
-          sponsorId: _selectedSponsorId,
-        )));
-      } : null, gradient: const [Color(0xFFA7C7B8), Color(0xFF78A090)]); // Exactly like the image
+      primaryAction = _buildPrimaryButton(
+          lang.t('Start reading'),
+          null,
+          (!_actionInProgress)
+              ? () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ReaderPage(
+                            book: widget.book,
+                            rentalDueDate: _activeRental?.dueDate,
+                            sponsorId: _selectedSponsorId,
+                          )));
+                }
+              : null,
+          gradient: const [
+            Color(0xFFA7C7B8),
+            Color(0xFF78A090)
+          ]); // Exactly like the image
     } else if (_canRent) {
       final isReserved = widget.book.queueInfo?.hasReservation ?? false;
       primaryAction = _buildPrimaryButton(
-        isReserved ? lang.t('BORROW NOW (Reserved!)') : lang.t('Borrow (21 days)'), 
-        isReserved ? Icons.access_time_filled : null, 
+        isReserved
+            ? lang.t('BORROW NOW (Reserved!)')
+            : lang.t('Borrow (21 days)'),
+        isReserved ? Icons.access_time_filled : null,
         (!_actionInProgress && !_isOffline) ? _rentCurrentBook : null,
-        gradient: isReserved ? [Colors.teal.shade400, Colors.teal.shade700] : const [Color(0xFFA7C7B8), Color(0xFF78A090)],
+        gradient: isReserved
+            ? [Colors.teal.shade400, Colors.teal.shade700]
+            : const [Color(0xFFA7C7B8), Color(0xFF78A090)],
       );
     } else if (_canJoinQueue) {
-      primaryAction = _buildPrimaryButton(lang.t('Join Queue'), null, (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null, color: Color(0xFF78A090));
+      primaryAction = _buildPrimaryButton(lang.t('Join Queue'), null,
+          (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null,
+          color: Color(0xFF78A090));
     } else if (_canLeaveQueue) {
-      primaryAction = _buildPrimaryButton(lang.t('Leave Queue'), null, (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null, color: Colors.grey.shade800);
+      primaryAction = _buildPrimaryButton(
+          lang.t('Leave Queue'),
+          null,
+          (!_actionInProgress && !_isOffline)
+              ? _leaveQueueForCurrentBook
+              : null,
+          color: Colors.grey.shade800);
     } else if (_activeRental == null) {
-      primaryAction = _buildPrimaryButton(lang.t('Not Available'), null, null, color: Colors.grey.shade300, textColor: Colors.grey.shade500);
+      primaryAction = _buildPrimaryButton(lang.t('Not Available'), null, null,
+          color: Colors.grey.shade300, textColor: Colors.grey.shade500);
     }
 
     return Column(
@@ -1288,9 +1365,8 @@ Future<void> _returnCurrentBook() async {
               return Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(
-                    right: idx == 0 && secondaryActions.length > 1 ? 6.0 : 0,
-                    left: idx == 1 && secondaryActions.length > 1 ? 6.0 : 0
-                  ),
+                      right: idx == 0 && secondaryActions.length > 1 ? 6.0 : 0,
+                      left: idx == 1 && secondaryActions.length > 1 ? 6.0 : 0),
                   child: btn,
                 ),
               );
@@ -1303,7 +1379,8 @@ Future<void> _returnCurrentBook() async {
     );
   }
 
-  Widget _buildSecondaryButton(String label, IconData icon, Color color, VoidCallback? onPressed, bool isDark) {
+  Widget _buildSecondaryButton(String label, IconData icon, Color color,
+      VoidCallback? onPressed, bool isDark) {
     return OutlinedButton.icon(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
@@ -1313,23 +1390,31 @@ Future<void> _returnCurrentBook() async {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       icon: Icon(icon, size: 18),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12), overflow: TextOverflow.ellipsis, maxLines: 1),
+      label: Text(label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1),
     );
   }
 
-  Widget _buildPrimaryButton(String label, IconData? icon, VoidCallback? onPressed, {List<Color>? gradient, Color? color, Color textColor = Colors.white}) {
+  Widget _buildPrimaryButton(
+      String label, IconData? icon, VoidCallback? onPressed,
+      {List<Color>? gradient, Color? color, Color textColor = Colors.white}) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: gradient != null ? LinearGradient(colors: gradient) : null,
         color: gradient == null ? (color ?? Colors.blue) : null,
-        boxShadow: onPressed != null ? [
-          BoxShadow(
-            color: (gradient?.last ?? color ?? Colors.blue).withOpacity(0.4),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ] : null,
+        boxShadow: onPressed != null
+            ? [
+                BoxShadow(
+                  color:
+                      (gradient?.last ?? color ?? Colors.blue).withOpacity(0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
       child: ElevatedButton(
         onPressed: onPressed,
@@ -1338,7 +1423,8 @@ Future<void> _returnCurrentBook() async {
           foregroundColor: textColor,
           shadowColor: Colors.transparent,
           minimumSize: const Size.fromHeight(56),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1347,7 +1433,11 @@ Future<void> _returnCurrentBook() async {
               Icon(icon),
               const SizedBox(width: 8),
             ],
-            Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5)),
           ],
         ),
       ),

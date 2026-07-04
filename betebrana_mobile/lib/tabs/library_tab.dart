@@ -23,9 +23,11 @@ class LibraryTab extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+        backgroundColor:
+            isDark ? AppColors.darkBackground : AppColors.lightBackground,
         appBar: AppBar(
-          title: Text(lang.t('My Library'), style: const TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(lang.t('My Library'),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
           bottom: TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor: Colors.grey,
@@ -39,32 +41,89 @@ class LibraryTab extends StatelessWidget {
         ),
         body: BlocBuilder<LibraryBloc, LibraryState>(
           builder: (context, state) {
-            if (state is LibraryLoading) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(lang.t('Loading your library…')),
-                  ],
-                ),
+            Widget rentalsTab;
+            Widget wishlistTab;
+
+            if (state is LibraryLoaded) {
+              final rentals =
+                  state.books.where((b) => b.userHasRental).toList();
+              final wishlist = state.books
+                  .where((b) => b.queueInfo?.userInQueue == true)
+                  .toList();
+              rentalsTab = _buildList(context, rentals,
+                  lang.t('You have no active rentals right now.'));
+              wishlistTab = _buildList(
+                  context, wishlist, lang.t('Your wishlist is empty.'));
+            } else if (state is LibraryLoading || state is LibraryInitial) {
+              rentalsTab = _buildStatusMessage(
+                context,
+                icon: Icons.sync,
+                message: lang.t('Loading your library...'),
+                showSpinner: true,
               );
+              wishlistTab = _buildStatusMessage(
+                context,
+                icon: Icons.sync,
+                message: lang.t('Loading your library...'),
+                showSpinner: true,
+              );
+            } else if (state is LibraryError) {
+              rentalsTab = _buildStatusMessage(
+                context,
+                icon: Icons.wifi_off,
+                message: lang.t(
+                    'Unable to load online rentals. Downloads are still available offline.'),
+              );
+              wishlistTab = _buildStatusMessage(
+                context,
+                icon: Icons.wifi_off,
+                message: lang.t(
+                    'Unable to load online wishlist. Downloads are still available offline.'),
+              );
+            } else {
+              rentalsTab = const SizedBox();
+              wishlistTab = const SizedBox();
             }
-
-            if (state is! LibraryLoaded) return const SizedBox();
-
-            final rentals = state.books.where((b) => b.userHasRental).toList();
-            final wishlist = state.books.where((b) => b.queueInfo?.userInQueue == true).toList();
 
             return TabBarView(
               children: [
-                _buildList(context, rentals, lang.t('You have no active rentals right now.')),
-                _buildList(context, wishlist, lang.t('Your wishlist is empty.')),
+                rentalsTab,
+                wishlistTab,
                 const _DownloadsTabView(),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusMessage(
+    BuildContext context, {
+    required IconData icon,
+    required String message,
+    bool showSpinner = false,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (showSpinner)
+              const CircularProgressIndicator()
+            else
+              Icon(icon,
+                  size: 56,
+                  color: isDark ? Colors.grey[600] : Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
         ),
       ),
     );
@@ -81,7 +140,8 @@ class LibraryTab extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.library_books_outlined, size: 64, color: Colors.grey[400]),
+              Icon(Icons.library_books_outlined,
+                  size: 64, color: Colors.grey[400]),
               const SizedBox(height: 16),
               Text(
                 emptyMsg,
@@ -97,7 +157,8 @@ class LibraryTab extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       itemCount: books.length,
-      separatorBuilder: (_, __) => Divider(color: isDark ? Colors.grey[850] : Colors.grey[200], height: 32),
+      separatorBuilder: (_, __) => Divider(
+          color: isDark ? Colors.grey[850] : Colors.grey[200], height: 32),
       itemBuilder: (context, index) {
         final b = books[index];
         return InkWell(
@@ -122,7 +183,9 @@ class LibraryTab extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: BookCoverImage(path: b.coverImagePath, borderRadius: 4), // authentic sharp corners
+                child: BookCoverImage(
+                    path: b.coverImagePath,
+                    borderRadius: 4), // authentic sharp corners
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -135,7 +198,7 @@ class LibraryTab extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 17, 
+                        fontSize: 17,
                         fontWeight: FontWeight.w600,
                         letterSpacing: -0.3,
                       ),
@@ -151,7 +214,8 @@ class LibraryTab extends StatelessWidget {
                     const SizedBox(height: 12),
                     if (b.userHasRental)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.green),
                           borderRadius: BorderRadius.circular(4),
@@ -168,7 +232,8 @@ class LibraryTab extends StatelessWidget {
                       )
                     else if (b.queueInfo?.userInQueue == true)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           border: Border.all(color: AppColors.primary),
                           borderRadius: BorderRadius.circular(4),
@@ -221,7 +286,8 @@ class _DownloadsTabViewState extends State<_DownloadsTabView> {
   void _openReaderPage(Book book) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ReaderPage(book: book, rentalDueDate: null)),
+      MaterialPageRoute(
+          builder: (_) => ReaderPage(book: book, rentalDueDate: null)),
     );
   }
 
@@ -246,7 +312,8 @@ class _DownloadsTabViewState extends State<_DownloadsTabView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.download_outlined, size: 64, color: Colors.grey[400]),
+                Icon(Icons.download_outlined,
+                    size: 64, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
                   lang.t('No downloaded books.'),
@@ -260,7 +327,8 @@ class _DownloadsTabViewState extends State<_DownloadsTabView> {
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           itemCount: books.length,
-          separatorBuilder: (_, __) => Divider(color: isDark ? Colors.grey[850] : Colors.grey[200], height: 32),
+          separatorBuilder: (_, __) => Divider(
+              color: isDark ? Colors.grey[850] : Colors.grey[200], height: 32),
           itemBuilder: (context, index) {
             final b = books[index];
             return InkWell(
@@ -280,7 +348,8 @@ class _DownloadsTabViewState extends State<_DownloadsTabView> {
                         ),
                       ],
                     ),
-                    child: BookCoverImage(path: b.coverImagePath, borderRadius: 4),
+                    child:
+                        BookCoverImage(path: b.coverImagePath, borderRadius: 4),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -293,7 +362,7 @@ class _DownloadsTabViewState extends State<_DownloadsTabView> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 17, 
+                            fontSize: 17,
                             fontWeight: FontWeight.w600,
                             letterSpacing: -0.3,
                           ),
@@ -314,9 +383,12 @@ class _DownloadsTabViewState extends State<_DownloadsTabView> {
                               icon: const Icon(Icons.play_arrow, size: 16),
                               label: Text(lang.t('Read')),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: isDark ? Colors.white : Colors.black,
-                                foregroundColor: isDark ? Colors.black : Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                backgroundColor:
+                                    isDark ? Colors.white : Colors.black,
+                                foregroundColor:
+                                    isDark ? Colors.black : Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 0),
                                 minimumSize: const Size(0, 32),
                               ),
                             ),
@@ -329,10 +401,13 @@ class _DownloadsTabViewState extends State<_DownloadsTabView> {
                                   _refreshBooks();
                                 }
                               },
-                              icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                              label: Text(lang.t('Remove'), style: const TextStyle(color: Colors.red)),
+                              icon: const Icon(Icons.delete_outline,
+                                  size: 16, color: Colors.red),
+                              label: Text(lang.t('Remove'),
+                                  style: const TextStyle(color: Colors.red)),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 0),
                                 minimumSize: const Size(0, 32),
                                 side: const BorderSide(color: Colors.red),
                               ),
