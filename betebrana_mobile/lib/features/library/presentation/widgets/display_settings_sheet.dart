@@ -123,7 +123,7 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
     final dividerColor = isDark ? Colors.white24 : Colors.black12;
-    final accentColor = const Color(0xFFFF7A3B); // App accent
+    final accentColor = const Color(0xFF78A090); // App accent
 
     final bool disableForm = widget.isLocked || _settings.usePublisherDefaults;
 

@@ -274,7 +274,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('You need to rent this book first to download it'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Color(0xFF78A090),
         ),
       );
       return;
@@ -427,7 +427,7 @@ void _updateConnectivityStatus(ConnectivityResult result) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Cannot borrow this book at the moment'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Color(0xFF78A090),
         ),
       );
       return;
@@ -563,7 +563,7 @@ Future<void> _returnCurrentBook() async {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Cannot join queue for this book'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Color(0xFF78A090),
         ),
       );
       return;
@@ -661,7 +661,7 @@ Future<void> _returnCurrentBook() async {
     if (difference.isNegative) {
       return Colors.red;
     } else if (difference.inDays <= 3) {
-      return Colors.orange;
+      return Color(0xFF78A090);
     } else {
       return Colors.green;
     }
@@ -733,7 +733,7 @@ Future<void> _returnCurrentBook() async {
     }
     
     if (_queueItem != null) {
-      return Colors.orange;
+      return Color(0xFF78A090);
     }
     
     return Colors.grey;
@@ -855,21 +855,21 @@ Future<void> _returnCurrentBook() async {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
+          color: Color(0xFF78A090).withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange),
+          border: Border.all(color: Color(0xFF78A090)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.schedule, size: 14, color: Colors.orange),
+            Icon(Icons.schedule, size: 14, color: Color(0xFF78A090)),
             const SizedBox(width: 4),
             Text(
               'JOIN QUEUE',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.orange,
+                color: Color(0xFF78A090),
               ),
             ),
           ],
@@ -881,21 +881,21 @@ Future<void> _returnCurrentBook() async {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Color(0xFF78A090).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange),
+        border: Border.all(color: Color(0xFF78A090)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.schedule, size: 14, color: Colors.orange),
+          Icon(Icons.schedule, size: 14, color: Color(0xFF78A090)),
           const SizedBox(width: 4),
           Text(
             'JOIN QUEUE',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: Colors.orange,
+              color: Color(0xFF78A090),
             ),
           ),
         ],
@@ -1097,11 +1097,11 @@ Future<void> _returnCurrentBook() async {
                     children: [
                       Text('4.9', style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.grey.shade400 : const Color(0xFF2C4856))),
                       const SizedBox(width: 4),
-                      const Icon(Icons.star, color: Colors.orange, size: 16),
-                      const Icon(Icons.star, color: Colors.orange, size: 16),
-                      const Icon(Icons.star, color: Colors.orange, size: 16),
-                      const Icon(Icons.star, color: Colors.orange, size: 16),
-                      const Icon(Icons.star_half, color: Colors.orange, size: 16),
+                      const Icon(Icons.star, color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star, color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star, color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star, color: Color(0xFF78A090), size: 16),
+                      const Icon(Icons.star_half, color: Color(0xFF78A090), size: 16),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -1133,7 +1133,7 @@ Future<void> _returnCurrentBook() async {
                               _isDescriptionExpanded ? 'Read less' : 'Read more',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: const Color(0xFFFF7A3B),
+                                color: const Color(0xFF78A090),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1261,17 +1261,17 @@ Future<void> _returnCurrentBook() async {
           rentalDueDate: _activeRental?.dueDate,
           sponsorId: _selectedSponsorId,
         )));
-      } : null, gradient: const [Color(0xFFFF9A5E), Color(0xFFFF7A3B)]); // Exactly like the image
+      } : null, gradient: const [Color(0xFFA7C7B8), Color(0xFF78A090)]); // Exactly like the image
     } else if (_canRent) {
       final isReserved = widget.book.queueInfo?.hasReservation ?? false;
       primaryAction = _buildPrimaryButton(
         isReserved ? lang.t('BORROW NOW (Reserved!)') : lang.t('Borrow (21 days)'), 
         isReserved ? Icons.access_time_filled : null, 
         (!_actionInProgress && !_isOffline) ? _rentCurrentBook : null,
-        gradient: isReserved ? [Colors.teal.shade400, Colors.teal.shade700] : const [Color(0xFFFF9A5E), Color(0xFFFF7A3B)],
+        gradient: isReserved ? [Colors.teal.shade400, Colors.teal.shade700] : const [Color(0xFFA7C7B8), Color(0xFF78A090)],
       );
     } else if (_canJoinQueue) {
-      primaryAction = _buildPrimaryButton(lang.t('Join Queue'), null, (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null, color: Colors.orange.shade400);
+      primaryAction = _buildPrimaryButton(lang.t('Join Queue'), null, (!_actionInProgress && !_isOffline) ? _joinQueueForCurrentBook : null, color: Color(0xFF78A090));
     } else if (_canLeaveQueue) {
       primaryAction = _buildPrimaryButton(lang.t('Leave Queue'), null, (!_actionInProgress && !_isOffline) ? _leaveQueueForCurrentBook : null, color: Colors.grey.shade800);
     } else if (_activeRental == null) {

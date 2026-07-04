@@ -21,27 +21,24 @@ function TopNav() {
   if (pathname.startsWith('/read/')) return null;
 
   return (
-    <header className="topnav hidden md:flex items-center justify-between px-16 py-4 fixed top-0 w-full z-[100] bg-[#F7F5F5]/80 dark:bg-[#121212]/80 backdrop-blur-lg border-b border-zinc-200/50 dark:border-zinc-800/50 shadow-sm transition-all">
-      <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-        <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800">
-          <img src="/logo.png" alt="BeteBrana Logo" className="w-full h-full object-cover" />
-        </div>
-        <span className="font-bold text-xl text-zinc-900 dark:text-zinc-100 tracking-tight">{t('BeteBrana')}</span>
+    <header className="topnav hidden md:flex items-center justify-between px-16 py-4 fixed top-0 w-full z-[100] bg-[#F3F8F6]/80 dark:bg-[#101A16]/80 backdrop-blur-lg border-b border-zinc-200/50 dark:border-zinc-800/50 shadow-sm transition-all">
+      <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+        <img src="/logo.png" alt="BeteBrana" className="h-16 w-auto max-w-[280px] object-contain" />
       </div>
 
       <nav className="flex items-center gap-10">
-        <NavLink to="/" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#EC7D22]/90 dark:text-[#FB923C]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('Home')}</NavLink>
-        <NavLink to="/search" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#EC7D22]/90 dark:text-[#FB923C]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('Discover')}</NavLink>
-        <NavLink to="/library" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#EC7D22]/90 dark:text-[#FB923C]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('My Library')}</NavLink>
+        <NavLink to="/" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#78A090]/90 dark:text-[#A7C7B8]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('Home')}</NavLink>
+        <NavLink to="/search" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#78A090]/90 dark:text-[#A7C7B8]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('Discover')}</NavLink>
+        <NavLink to="/library" className={({isActive}) => `text-[15px] font-medium transition-colors ${isActive ? 'text-[#78A090]/90 dark:text-[#A7C7B8]' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}>{t('My Library')}</NavLink>
       </nav>
 
       <div>
         {user ? (
-          <button onClick={() => navigate('/profile')} className="px-6 py-2.5 bg-[#EC7D22]/85 backdrop-blur-sm hover:bg-[#D66D1B]/90 text-white rounded-full text-sm font-bold transition-all shadow-md">
+          <button onClick={() => navigate('/profile')} className="px-6 py-2.5 bg-[#78A090]/85 backdrop-blur-sm hover:bg-[#6D9483]/90 text-white rounded-full text-sm font-bold transition-all shadow-md">
             {t('My Account')}
           </button>
         ) : (
-          <button onClick={() => navigate('/login')} className="px-6 py-2.5 bg-[#EC7D22]/85 backdrop-blur-sm hover:bg-[#D66D1B]/90 text-white rounded-full text-sm font-bold transition-all shadow-md">
+          <button onClick={() => navigate('/login')} className="px-6 py-2.5 bg-[#78A090]/85 backdrop-blur-sm hover:bg-[#6D9483]/90 text-white rounded-full text-sm font-bold transition-all shadow-md">
             {t('Sign In')}
           </button>
         )}
@@ -55,14 +52,14 @@ function BottomNav() {
   const { t } = useLanguage();
   if (pathname.startsWith('/read/')) return null;
   return (
-    <nav className="bottom-nav md:hidden z-50 bg-white dark:bg-[#1e1e1e] border-t border-zinc-200 dark:border-zinc-800 transition-colors">
+    <nav className="bottom-nav md:hidden z-50 bg-white dark:bg-[#17231E] border-t border-zinc-200 dark:border-zinc-800 transition-colors">
       {[
         { to: '/',        icon: Home,     label: 'Discover' },
         { to: '/search',  icon: Search,   label: 'Search'   },
         { to: '/library', icon: BookOpen, label: 'Library'  },
         { to: '/profile', icon: User,     label: 'Profile'  },
       ].map(({ to, icon: Icon, label }) => (
-        <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav-item${isActive ? ' active dark:text-[#FB923C]' : ' dark:text-zinc-400'} flex flex-col items-center p-2`}>
+        <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav-item${isActive ? ' active dark:text-[#A7C7B8]' : ' dark:text-zinc-400'} flex flex-col items-center p-2`}>
           <Icon size={22} />
           <span className="nav-label text-xs mt-1 font-medium">{t(label)}</span>
         </NavLink>
@@ -73,7 +70,7 @@ function BottomNav() {
 
 function AppLayout() {
   return (
-    <div className="app-root bg-[#F7F5F5] dark:bg-[#121212] min-h-screen transition-colors duration-200">
+    <div className="app-root bg-[#F3F8F6] dark:bg-[#101A16] min-h-screen transition-colors duration-200">
       <TopNav />
       <main className="main-content">
         <Routes>

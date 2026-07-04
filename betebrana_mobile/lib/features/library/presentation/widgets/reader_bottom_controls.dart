@@ -36,7 +36,7 @@ class ReaderBottomControls extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = theme.scaffoldBackgroundColor;
     final textColor = theme.colorScheme.onSurface;
-    final accentColor = const Color(0xFFFF7A3B);
+    final accentColor = const Color(0xFF78A090);
 
     return Container(
       decoration: BoxDecoration(

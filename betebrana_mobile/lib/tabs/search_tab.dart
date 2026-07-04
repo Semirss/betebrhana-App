@@ -126,7 +126,7 @@ class _SearchTabState extends State<SearchTab> {
                                 value: _sortValue,
                                 icon: Icon(
                                   Icons.keyboard_arrow_down_rounded, 
-                                  color: isDark ? Colors.white70 : AppColors.purple,
+                                  color: isDark ? Colors.white70 : AppColors.secondary,
                                 ),
                                 style: TextStyle(
                                   color: isDark ? Colors.white : Colors.black87,
@@ -145,7 +145,7 @@ class _SearchTabState extends State<SearchTab> {
                                             : v == 'Newest' ? Icons.new_releases_rounded 
                                             : Icons.sort_by_alpha_rounded,
                                             size: 18,
-                                            color: isDark ? Colors.white54 : AppColors.purple.withOpacity(0.7),
+                                            color: isDark ? Colors.white54 : AppColors.secondary.withOpacity(0.7),
                                           ),
                                           const SizedBox(width: 10),
                                           Text(lang.t(v)),

@@ -42,7 +42,7 @@ class ReaderHeader extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
-    final accentColor = const Color(0xFFFF7A3B);
+    final accentColor = const Color(0xFF78A090);
 
     return Container(
       decoration: BoxDecoration(

@@ -67,7 +67,7 @@ export default function ReaderPage() {
 
   // Handle theme classes
   const getThemeClass = () => {
-    if (theme === 'dark') return 'bg-[#121212] text-zinc-300';
+    if (theme === 'dark') return 'bg-[#101A16] text-zinc-300';
     if (theme === 'sepia') return 'bg-[#f4ecd8] text-[#5b4636]';
     return 'bg-white text-zinc-900';
   };
@@ -86,8 +86,8 @@ export default function ReaderPage() {
       
       {/* Top Header — always visible */}
       <div className={`flex-shrink-0 px-6 py-3 flex justify-between items-center z-10 border-b ${
-        theme === 'dark' ? 'border-zinc-800 bg-[#121212]' : 
-        theme === 'sepia' ? 'border-amber-200 bg-[#f4ecd8]' : 
+        theme === 'dark' ? 'border-zinc-800 bg-[#101A16]' : 
+        theme === 'sepia' ? 'border-[#D7E7E0] bg-[#f4ecd8]' : 
         'border-zinc-100 bg-white'
       }`}>
         <button 
@@ -104,7 +104,7 @@ export default function ReaderPage() {
           onClick={() => setShowSettings(!showSettings)} 
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
             showSettings 
-              ? 'bg-[#EC7D22]/85 backdrop-blur-sm text-white'
+              ? 'bg-[#78A090]/85 backdrop-blur-sm text-white'
               : theme === 'dark' ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200' 
               : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
           }`}
@@ -125,7 +125,7 @@ export default function ReaderPage() {
               <span className="text-xs font-bold text-zinc-500 uppercase">Theme</span>
               <div className="flex gap-2">
                 <button onClick={()=>setTheme('light')} className={`p-2 rounded-full bg-white border ${theme==='light'?'border-primary text-primary':'border-zinc-200 text-zinc-400'}`}><Sun size={14}/></button>
-                <button onClick={()=>setTheme('sepia')} className={`p-2 rounded-full bg-[#f4ecd8] border ${theme==='sepia'?'border-primary text-primary':'border-amber-200 text-amber-700'}`}><Monitor size={14}/></button>
+                <button onClick={()=>setTheme('sepia')} className={`p-2 rounded-full bg-[#f4ecd8] border ${theme==='sepia'?'border-primary text-primary':'border-[#D7E7E0] text-[#5F8675]'}`}><Monitor size={14}/></button>
                 <button onClick={()=>setTheme('dark')} className={`p-2 rounded-full bg-zinc-800 border ${theme==='dark'?'border-primary text-primary':'border-zinc-700 text-zinc-400'}`}><Moon size={14}/></button>
               </div>
             </div>

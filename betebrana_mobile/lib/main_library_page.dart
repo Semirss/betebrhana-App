@@ -134,7 +134,7 @@ class MainLibraryViewState extends State<_MainLibraryView> with WidgetsBindingOb
               setState(() => _currentIndex = index);
             }
           },
-          selectedItemColor: AppColors.orange,
+          selectedItemColor: AppColors.primary,
           unselectedItemColor: isDark ? AppColors.darkSubtext : AppColors.lightSubtext,
           type: BottomNavigationBarType.fixed,
           showSelectedLabels: true,

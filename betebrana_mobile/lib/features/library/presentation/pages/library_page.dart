@@ -153,7 +153,7 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
     }
     
     if (info?.userInQueue ?? false) {
-      return Colors.orange;
+      return Color(0xFF78A090);
     }
     
     if (book.isAvailable) {
@@ -266,8 +266,9 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
   }
 
   Widget _buildBookCard(Book book, int index, int currentIndex) {
-    final coverUrl = book.coverImagePath.isNotEmpty 
-        ? AppConfig.resolveUrl(book.coverImagePath)
+    final coverPath = book.coverImagePath;
+    final coverUrl = (coverPath?.isNotEmpty ?? false)
+        ? AppConfig.resolveUrl(coverPath!)
         : null;
 
     return AnimatedBuilder(
@@ -433,8 +434,9 @@ class _LibraryViewState extends State<_LibraryView> with WidgetsBindingObserver 
               // Ensure _currentIndex is within bounds
               final safeIndex = _currentIndex < books.length ? _currentIndex : 0;
               final currentBook = books[safeIndex];
-              final currentCoverUrl = currentBook.coverImagePath.isNotEmpty 
-                  ? AppConfig.resolveUrl(currentBook.coverImagePath)
+              final currentCoverPath = currentBook.coverImagePath;
+              final currentCoverUrl = (currentCoverPath?.isNotEmpty ?? false)
+                  ? AppConfig.resolveUrl(currentCoverPath!)
                   : null;
 
               return Stack(

@@ -35,10 +35,10 @@ class ProfileSettingsTab extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 36,
-                  backgroundColor: AppColors.purple.withOpacity(0.1),
+                  backgroundColor: AppColors.secondary.withOpacity(0.1),
                   child: Text(
                     initial,
-                    style: const TextStyle(fontSize: 28, color: AppColors.purple, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 28, color: AppColors.secondary, fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -90,14 +90,14 @@ class ProfileSettingsTab extends StatelessWidget {
                       return ListTile(
                         leading: Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: AppColors.orange.withOpacity(0.1), shape: BoxShape.circle),
-                          child: const Icon(Icons.dark_mode_outlined, color: AppColors.orange, size: 20),
+                          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.dark_mode_outlined, color: AppColors.primary, size: 20),
                         ),
                         title: Text(langState.t('Dark Theme'), style: const TextStyle(fontWeight: FontWeight.w500)),
                         trailing: Switch.adaptive(
                           value: themeState.isDarkMode,
                           onChanged: (_) => context.read<ThemeBloc>().add(ToggleThemeEvent()),
-                          activeColor: AppColors.orange,
+                          activeColor: AppColors.primary,
                         ),
                       );
                     },
@@ -156,8 +156,8 @@ class ProfileSettingsTab extends StatelessWidget {
                       return ListTile(
                         leading: Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: AppColors.purple.withOpacity(0.1), shape: BoxShape.circle),
-                          child: const Icon(Icons.font_download_outlined, color: AppColors.purple, size: 20),
+                          decoration: BoxDecoration(color: AppColors.secondary.withOpacity(0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.font_download_outlined, color: AppColors.secondary, size: 20),
                         ),
                         title: Text(langState.t('Font Style'), style: const TextStyle(fontWeight: FontWeight.w500)),
                         trailing: Container(
@@ -175,7 +175,7 @@ class ProfileSettingsTab extends StatelessWidget {
                               value: themeState.fontFamily,
                               icon: Icon(
                                 Icons.keyboard_arrow_down_rounded, 
-                                color: isDark ? Colors.white70 : AppColors.purple,
+                                color: isDark ? Colors.white70 : AppColors.secondary,
                                 size: 18,
                               ),
                               style: TextStyle(

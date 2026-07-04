@@ -6,22 +6,22 @@ class AppColors {
   AppColors._();
 
   // Brand
-  static const orange = Color(0xFFEC7D22);
-  static const purple = Color(0xFF53389E);
+  static const primary = Color(0xFF78A090);
+  static const secondary = Color(0xFF385A4B);
 
   // Light theme
-  static const lightBackground = Color(0xFFF7F5F5);
+  static const lightBackground = Color(0xFFF3F8F6);
   static const lightCard = Color(0xFFFFFFFF);
   static const lightText = Color(0xFF18181B);
-  static const lightSubtext = Color(0xFF71717A);
-  static const lightDivider = Color(0xFFE4E4E7);
+  static const lightSubtext = Color(0xFF5F6F69);
+  static const lightDivider = Color(0xFFD7E7E0);
 
   // Dark theme
-  static const darkBackground = Color(0xFF121212);
-  static const darkCard = Color(0xFF1E1E1E);
+  static const darkBackground = Color(0xFF101A16);
+  static const darkCard = Color(0xFF17231E);
   static const darkText = Color(0xFFE2E8F0);
   static const darkSubtext = Color(0xFF9CA3AF);
-  static const darkDivider = Color(0xFF27272A);
+  static const darkDivider = Color(0xFF2F4A40);
 }
 
 class AppTheme {
@@ -45,13 +45,13 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.lightBackground,
-      primaryColor: AppColors.orange,
+      primaryColor: AppColors.primary,
       cardColor: AppColors.lightCard,
       dividerColor: AppColors.lightDivider,
       colorScheme: const ColorScheme.light(
-        primary: AppColors.orange,
+        primary: AppColors.primary,
         onPrimary: Colors.white,
-        secondary: AppColors.purple,
+        secondary: AppColors.secondary,
         onSecondary: Colors.white,
         surface: AppColors.lightCard,
         onSurface: AppColors.lightText,
@@ -70,7 +70,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.lightCard,
-        selectedItemColor: AppColors.orange,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.lightSubtext,
         type: BottomNavigationBarType.fixed,
         showSelectedLabels: true,
@@ -80,11 +80,11 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: MaterialStateProperty.resolveWith(
-          (s) => s.contains(MaterialState.selected) ? AppColors.orange : Colors.grey,
+          (s) => s.contains(MaterialState.selected) ? AppColors.primary : Colors.grey,
         ),
         trackColor: MaterialStateProperty.resolveWith(
           (s) => s.contains(MaterialState.selected)
-              ? AppColors.orange.withOpacity(0.4)
+              ? AppColors.primary.withOpacity(0.4)
               : Colors.grey.shade300,
         ),
       ),
@@ -109,13 +109,13 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.darkBackground,
-      primaryColor: AppColors.orange,
+      primaryColor: AppColors.primary,
       cardColor: AppColors.darkCard,
       dividerColor: AppColors.darkDivider,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.orange,
+        primary: AppColors.primary,
         onPrimary: Colors.white,
-        secondary: AppColors.purple,
+        secondary: AppColors.secondary,
         onSecondary: Colors.white,
         surface: AppColors.darkCard,
         onSurface: AppColors.darkText,
@@ -134,7 +134,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.darkCard,
-        selectedItemColor: AppColors.orange,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.darkSubtext,
         type: BottomNavigationBarType.fixed,
         showSelectedLabels: true,
@@ -144,11 +144,11 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: MaterialStateProperty.resolveWith(
-          (s) => s.contains(MaterialState.selected) ? AppColors.orange : Colors.grey,
+          (s) => s.contains(MaterialState.selected) ? AppColors.primary : Colors.grey,
         ),
         trackColor: MaterialStateProperty.resolveWith(
           (s) => s.contains(MaterialState.selected)
-              ? AppColors.orange.withOpacity(0.4)
+              ? AppColors.primary.withOpacity(0.4)
               : Colors.grey.shade800,
         ),
       ),

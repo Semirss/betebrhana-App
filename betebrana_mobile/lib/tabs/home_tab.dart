@@ -132,19 +132,19 @@ class HomeTabState extends State<HomeTab> {
 
   Color _getQueueStatusColor(BuildContext context, Book book) {
     if (book.userHasRental) {
-      return AppColors.orange; // Borrowed — brand orange
+      return AppColors.primary; // Borrowed — brand accent
     }
     final info = book.queueInfo;
     if (info?.hasReservation ?? false) {
-      return AppColors.orange; // Reserved — brand orange
+      return AppColors.primary; // Reserved — brand accent
     }
     if (info?.userInQueue ?? false) {
-      return AppColors.purple; // In queue — brand purple
+      return AppColors.secondary; // In queue — brand purple
     }
     if (book.isAvailable) {
-      return AppColors.orange; // Available — brand orange
+      return AppColors.primary; // Available — brand accent
     }
-    return AppColors.purple; // Unavailable — muted purple
+    return AppColors.secondary; // Unavailable — muted purple
   }
 
   Widget _buildBookCard(Book book, int index, int currentIndex, double viewportHeight, double viewportWidth) {
@@ -288,7 +288,7 @@ class HomeTabState extends State<HomeTab> {
                     context.read<LibraryBloc>().add(const LibraryRefreshed());
                     await Future.delayed(const Duration(milliseconds: 800));
                   },
-                  color: const Color(0xFFFF7A3B),       // brand orange indicator
+                  color: const Color(0xFF78A090),       // brand accent indicator
                   backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                   strokeWidth: 2.5,
                   displacement: 60,
@@ -616,7 +616,7 @@ class _SectionHeader extends StatelessWidget {
           TextButton(
             onPressed: onSeeAll,
             child: Text(context.watch<LanguageBloc>().state.t('See all'),
-                style: const TextStyle(color: AppColors.orange)),
+                style: const TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -835,7 +835,7 @@ class _AdSliderState extends State<_AdSlider> {
               width: active ? 20 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: active ? AppColors.orange : Colors.grey.withOpacity(0.3),
+                color: active ? AppColors.primary : Colors.grey.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(4),
               ),
             );

@@ -5,7 +5,7 @@ import { hasDownloadedBook, downloadBook } from '../utils/storage';
 import api from '../api';
 import { useLanguage } from '../context/LanguageContext';
 
-const PH = 'https://placehold.co/300x450/ede9fe/53389e?text=No+Cover';
+const PH = 'https://placehold.co/300x450/eaf2ef/78A090?text=No+Cover';
 const onErr = (e) => { e.target.onerror = null; e.target.src = PH; };
 
 export default function BookDetailsPage() {
@@ -75,17 +75,17 @@ export default function BookDetailsPage() {
     } finally { setActionLoading(false); }
   };
 
-  if (loading) return <div className="min-h-screen pt-32 text-center text-zinc-500 dark:text-zinc-400 bg-[#F7F5F5] dark:bg-[#121212]">{t('Loading Book…')}</div>;
-  if (!book) return <div className="min-h-screen pt-32 text-center text-zinc-500 dark:text-zinc-400 bg-[#F7F5F5] dark:bg-[#121212]">{t('Book not found.')}</div>;
+  if (loading) return <div className="min-h-screen pt-32 text-center text-zinc-500 dark:text-zinc-400 bg-[#F3F8F6] dark:bg-[#101A16]">{t('Loading Book…')}</div>;
+  if (!book) return <div className="min-h-screen pt-32 text-center text-zinc-500 dark:text-zinc-400 bg-[#F3F8F6] dark:bg-[#101A16]">{t('Book not found.')}</div>;
 
   const primaryAction = book.userHasRental ? (
     <button onClick={() => navigate(`/read/${book.id}`)}
-      className="flex-1 py-4 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] hover:bg-[#D66D1B]/90 dark:hover:bg-[#C25D0A] text-white font-bold rounded-full shadow-lg shadow-[#EC7D22]/30 transition-all text-[15px]">
+      className="flex-1 py-4 bg-[#78A090]/85 backdrop-blur-sm dark:bg-[#6D9483] hover:bg-[#6D9483]/90 dark:hover:bg-[#5F8675] text-white font-bold rounded-full shadow-lg shadow-[#78A090]/30 transition-all text-[15px]">
       {t('Read Now')}
     </button>
   ) : book.queueInfo?.effectiveAvailable ? (
     <button onClick={handleRent} disabled={actionLoading}
-      className="flex-1 py-4 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] hover:bg-[#D66D1B]/90 dark:hover:bg-[#C25D0A] text-white font-bold rounded-full shadow-lg shadow-[#EC7D22]/30 transition-all text-[15px]">
+      className="flex-1 py-4 bg-[#78A090]/85 backdrop-blur-sm dark:bg-[#6D9483] hover:bg-[#6D9483]/90 dark:hover:bg-[#5F8675] text-white font-bold rounded-full shadow-lg shadow-[#78A090]/30 transition-all text-[15px]">
       {actionLoading ? t('Please wait…') : t('Rent (Reserved)')}
     </button>
   ) : book.queueInfo?.userInQueue ? (
@@ -95,22 +95,22 @@ export default function BookDetailsPage() {
     </button>
   ) : book.available_copies > 0 ? (
     <button onClick={handleRent} disabled={actionLoading}
-      className="flex-1 py-4 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] hover:bg-[#D66D1B]/90 dark:hover:bg-[#C25D0A] text-white font-bold rounded-full shadow-lg shadow-[#EC7D22]/30 transition-all text-[15px]">
+      className="flex-1 py-4 bg-[#78A090]/85 backdrop-blur-sm dark:bg-[#6D9483] hover:bg-[#6D9483]/90 dark:hover:bg-[#5F8675] text-white font-bold rounded-full shadow-lg shadow-[#78A090]/30 transition-all text-[15px]">
       {actionLoading ? t('Please wait…') : t('Borrow Book')}
     </button>
   ) : (
     <button onClick={handleQueue} disabled={actionLoading}
-      className="flex-1 py-4 bg-amber-400 dark:bg-amber-500 hover:bg-amber-500 dark:hover:bg-amber-600 text-white font-bold rounded-full shadow-lg shadow-amber-400/30 transition-all text-[15px]">
+      className="flex-1 py-4 bg-[#78A090] dark:bg-[#78A090] hover:bg-[#6D9483] dark:hover:bg-[#5F8675] text-white font-bold rounded-full shadow-lg shadow-emerald-900/20 transition-all text-[15px]">
       {actionLoading ? t('Please wait…') : t('Join Queue')}
     </button>
   );
 
   return (
     /* Outer container */
-    <div className="min-h-screen bg-[#F7F5F5] dark:bg-[#121212] transition-colors">
+    <div className="min-h-screen bg-[#F3F8F6] dark:bg-[#101A16] transition-colors">
 
       {/* Gradient hero band spanning full width but containing the grid */}
-      <div className="w-full bg-gradient-to-b from-[#e8f0fe] via-[#f0eafd] to-[#F7F5F5] dark:from-[#431407] dark:via-[#1e1e2f] dark:to-[#121212] pt-24 md:pt-32 pb-12 md:pb-20 transition-colors">
+      <div className="w-full bg-gradient-to-b from-[#e8f0fe] via-[#f0eafd] to-[#F3F8F6] dark:from-[#13251F] dark:via-[#1e1e2f] dark:to-[#101A16] pt-24 md:pt-32 pb-12 md:pb-20 transition-colors">
         <div className="max-w-5xl mx-auto px-6">
 
           {/* Top bar */}
@@ -134,7 +134,7 @@ export default function BookDetailsPage() {
               <div className="relative w-[190px] sm:w-[220px] md:w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/60 dark:border-zinc-700">
                 <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover" />
                 {isDownloaded && (
-                  <div className="absolute top-3 left-3 bg-[#EC7D22]/85 backdrop-blur-sm text-white p-1.5 rounded-lg shadow-md">
+                  <div className="absolute top-3 left-3 bg-[#78A090]/85 backdrop-blur-sm text-white p-1.5 rounded-lg shadow-md">
                     <Bookmark size={14} fill="currentColor" />
                   </div>
                 )}
@@ -156,7 +156,7 @@ export default function BookDetailsPage() {
 
               {/* Stars */}
               <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
-                {[1,2,3,4].map(i => <Star key={i} size={18} fill="#f59e0b" color="#f59e0b" />)}
+                {[1,2,3,4].map(i => <Star key={i} size={18} fill="#78A090" color="#78A090" />)}
                 <Star size={18} fill="#d1d5db" color="#d1d5db" className="dark:fill-zinc-700 dark:text-zinc-700" />
                 <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 ml-1">4.8</span>
               </div>
@@ -164,7 +164,7 @@ export default function BookDetailsPage() {
               {/* Available copies badge */}
               <div className="flex justify-center md:justify-start mb-8">
                 <div className="inline-flex items-center gap-1.5 bg-white/80 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-full text-xs font-bold text-zinc-600 dark:text-zinc-300 shadow-sm">
-                  <div className={`w-2 h-2 rounded-full ${book.available_copies > 0 ? 'bg-green-400' : 'bg-orange-400'}`} />
+                  <div className={`w-2 h-2 rounded-full ${book.available_copies > 0 ? 'bg-green-400' : 'bg-[#78A090]'}`} />
                   {book.available_copies > 0 ? `${book.available_copies} ${t('copies available')}` : t('All copies borrowed — join queue')}
                 </div>
               </div>
@@ -190,8 +190,8 @@ export default function BookDetailsPage() {
                   disabled={isDownloading}
                   className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-full border-2 transition-all ${
                     isDownloaded
-                      ? 'bg-[#EC7D22]/85 backdrop-blur-sm border-[#EC7D22] text-white'
-                      : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:border-[#EC7D22] dark:hover:border-[#FB923C] hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C]'
+                      ? 'bg-[#78A090]/85 backdrop-blur-sm border-[#78A090] text-white'
+                      : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:border-[#78A090] dark:hover:border-[#A7C7B8] hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8]'
                   }`}
                 >
                   {isDownloading
@@ -202,7 +202,7 @@ export default function BookDetailsPage() {
               </div>
 
               {/* Synopsis Section */}
-              <div className="bg-white dark:bg-[#1e1e1e] rounded-3xl shadow-lg border border-zinc-100 dark:border-zinc-800 p-6 md:p-8 text-left transition-colors">
+              <div className="bg-white dark:bg-[#17231E] rounded-3xl shadow-lg border border-zinc-100 dark:border-zinc-800 p-6 md:p-8 text-left transition-colors">
                 <h3 className="text-lg font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-4">{t('Synopsis')}</h3>
                 <div className="text-zinc-500 dark:text-zinc-400 leading-relaxed space-y-4 text-[15px]">
                   {book.description
@@ -223,7 +223,7 @@ export default function BookDetailsPage() {
           <div className="mt-8">
             <div className="flex justify-between items-end mb-6">
               <h2 className="text-xl md:text-2xl font-serif font-bold text-zinc-900 dark:text-zinc-100">{t('You Might Also Like')}</h2>
-              <Link to="/search" className="flex items-center gap-1.5 text-sm font-bold text-[#EC7D22]/90 dark:text-[#FB923C] hover:underline">
+              <Link to="/search" className="flex items-center gap-1.5 text-sm font-bold text-[#78A090]/90 dark:text-[#A7C7B8] hover:underline">
                 {t('View all')} <ArrowRight size={14} />
               </Link>
             </div>
@@ -233,7 +233,7 @@ export default function BookDetailsPage() {
                   <div className="aspect-[2/3] rounded-xl overflow-hidden shadow-md border border-zinc-100 dark:border-zinc-800 mb-3 bg-zinc-100 dark:bg-zinc-800 relative transition-colors">
                     <img src={rec.cover_image || PH} onError={onErr} alt={rec.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-full py-1.5 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] text-white text-[9px] uppercase tracking-wider font-bold rounded-lg flex items-center justify-center">
+                      <div className="w-full py-1.5 bg-[#78A090]/85 backdrop-blur-sm dark:bg-[#6D9483] text-white text-[9px] uppercase tracking-wider font-bold rounded-lg flex items-center justify-center">
                         {t('Borrow')}
                       </div>
                     </div>

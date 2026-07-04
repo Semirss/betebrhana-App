@@ -5,10 +5,10 @@ import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
-const PH = 'https://placehold.co/300x450/ede9fe/53389e?text=📖';
+const PH = 'https://placehold.co/300x450/eaf2ef/78A090?text=📖';
 
 const SAMPLE_BOOKS = [
-  { title: 'ሐሙስ', color: '#FFF7ED' },
+  { title: 'ሐሙስ', color: '#EEF5F2' },
   { title: 'ቶቢያ', color: '#bbf7d0' },
   { title: 'ፍቅር እስከ መቃብር', color: '#fef9c3' },
   { title: 'አዲስ አበባ', color: '#fee2e2' },
@@ -57,14 +57,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5F5] flex">
+    <div className="min-h-screen bg-[#F3F8F6] flex">
       
       {/* LEFT PANEL — Branding */}
       <div className="hidden lg:flex lg:w-[45%] bg-white border-r border-zinc-200 flex-col justify-between p-14 relative overflow-hidden">
         
         {/* Logo */}
-        <div className="flex items-center gap-3 mb-20 z-10 relative">
-          
+        <div className="flex items-center mb-20 z-10 relative">
+          {/* <img src="/logo.png" alt="BeteBrana" className="h-24 w-auto max-w-[360px] object-contain" /> */}
         </div>
 
         {/* Center Content */}
@@ -81,11 +81,11 @@ export default function LoginPage() {
           {/* Stats */}
           <div className="flex gap-8 mt-10">
             <div>
-              <div className="text-3xl font-bold text-[#EC7D22]/90">13+</div>
+              <div className="text-3xl font-bold text-[#78A090]/90">13+</div>
               <div className="text-zinc-500 text-sm mt-1">{t('Books Available')}</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#EC7D22]/90">1K+</div>
+              <div className="text-3xl font-bold text-[#78A090]/90">1K+</div>
               <div className="text-zinc-500 text-sm mt-1">{t('Active Readers')}</div>
             </div>
           </div>
@@ -96,8 +96,8 @@ export default function LoginPage() {
         </Link>
 
         {/* Large background decoration circles */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#EC7D22]/5 rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 -left-32 w-80 h-80 bg-[#EC7D22]/5 rounded-full pointer-events-none" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#78A090]/25 rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 -left-32 w-80 h-80 bg-[#78A090]/25 rounded-full pointer-events-none" />
       </div>
 
       {/* RIGHT PANEL — Form */}
@@ -105,11 +105,8 @@ export default function LoginPage() {
         <div className="w-full max-w-[440px]">
           
           {/* Mobile Logo */}
-          <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="w-12 h-12 rounded-full overflow-hidden border border-zinc-200 shadow-sm">
-              <img src="/logo.png" alt="BeteBrana Logo" className="w-full h-full object-cover" />
-            </div>
-            <span className="font-bold text-2xl text-zinc-900 tracking-tight">{t('BeteBrana')}</span>
+          <div className="flex items-center mb-10 lg:hidden">
+            <img src="/logo.png" alt="BeteBrana" className="h-20 w-auto max-w-[320px] object-contain" />
           </div>
 
           <div className="mb-8">
@@ -163,7 +160,7 @@ export default function LoginPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-4 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#EC7D22]/30 focus:border-[#EC7D22] transition-all shadow-sm"
+                  className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-4 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#78A090]/30 focus:border-[#78A090] transition-all shadow-sm"
                 />
               </div>
             )}
@@ -179,7 +176,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-4 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#EC7D22]/30 focus:border-[#EC7D22] transition-all shadow-sm"
+                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-4 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#78A090]/30 focus:border-[#78A090] transition-all shadow-sm"
               />
             </div>
 
@@ -194,7 +191,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-12 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#EC7D22]/30 focus:border-[#EC7D22] transition-all shadow-sm"
+                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 pl-12 pr-12 text-zinc-800 text-[15px] placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#78A090]/30 focus:border-[#78A090] transition-all shadow-sm"
               />
               <button
                 type="button"
@@ -209,7 +206,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 mt-2 bg-gradient-to-r from-[#FF9A5E]/90 to-[#FF7A3B]/90 backdrop-blur-sm hover:opacity-90 text-white font-bold rounded-2xl shadow-lg shadow-[#FF7A3B]/30 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
+              className="w-full py-4 mt-2 bg-gradient-to-r from-[#A7C7B8]/90 to-[#78A090]/90 backdrop-blur-sm hover:opacity-90 text-white font-bold rounded-2xl shadow-lg shadow-[#78A090]/30 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-wait"
             >
               {loading ? t('Please wait…') : (tab === 'login' ? t('Sign In') : t('Create Account'))}
               {!loading && <ArrowRight size={18} />}
@@ -222,7 +219,7 @@ export default function LoginPage() {
             {tab === 'login' ? t("Don't have an account? ") : t('Already have an account? ')}
             <button
               onClick={() => { setTab(tab === 'login' ? 'register' : 'login'); setError(''); setSuccess(''); }}
-              className="text-[#EC7D22]/90 font-bold hover:underline"
+              className="text-[#78A090]/90 font-bold hover:underline"
             >
               {tab === 'login' ? t('Register') : t('Sign In')}
             </button>

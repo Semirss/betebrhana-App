@@ -9,7 +9,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.png', 'logo.png', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'BeteBrana Webapp',
         short_name: 'BeteBrana',

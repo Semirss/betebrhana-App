@@ -43,7 +43,7 @@ export default function SearchPage() {
     : books;
 
   return (
-    <div className="min-h-screen pt-4 md:pt-32 pb-24 px-6 md:px-8 bg-[#F7F5F5] dark:bg-[#121212] transition-colors">
+    <div className="min-h-screen pt-4 md:pt-32 pb-24 px-6 md:px-8 bg-[#F3F8F6] dark:bg-[#101A16] transition-colors">
       <div className="max-w-[1200px] mx-auto">
         <h1 className="text-[2.5rem] font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-8">
           {t('Search')}
@@ -58,7 +58,7 @@ export default function SearchPage() {
             placeholder={t('Titles, authors, or topics...')} 
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full bg-white dark:bg-[#1e1e1e] border border-zinc-200 dark:border-zinc-800 rounded-full py-5 pl-14 pr-6 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#EC7D22] dark:focus:border-[#FB923C] focus:ring-4 focus:ring-[#EC7D22]/10 shadow-lg shadow-zinc-200/50 dark:shadow-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+            className="w-full bg-white dark:bg-[#17231E] border border-zinc-200 dark:border-zinc-800 rounded-full py-5 pl-14 pr-6 text-[15px] font-medium text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-[#78A090] dark:focus:border-[#A7C7B8] focus:ring-4 focus:ring-[#78A090]/10 shadow-lg shadow-zinc-200/50 dark:shadow-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
           />
         </div>
 
@@ -79,7 +79,7 @@ export default function SearchPage() {
               <h3 className="text-xs font-bold tracking-[0.1em] text-[#d8a892] dark:text-[#fcd34d] uppercase mb-6">{t('Trending Books')}</h3>
               <ul className="space-y-4">
                 {TRENDING.map(search => (
-                  <li key={search} onClick={() => setQuery(search)} className="flex items-center gap-3 text-sm font-medium text-zinc-500 dark:text-zinc-400 cursor-pointer hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">
+                  <li key={search} onClick={() => setQuery(search)} className="flex items-center gap-3 text-sm font-medium text-zinc-500 dark:text-zinc-400 cursor-pointer hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">
                     <SearchIcon size={16} className="text-zinc-300 dark:text-zinc-600" />
                     {search}
                   </li>
@@ -94,7 +94,7 @@ export default function SearchPage() {
           <div className="mb-8 flex justify-between items-end border-b border-zinc-100 dark:border-zinc-800 pb-4">
             <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
               {query ? (
-                <>{t('Results for')} <span className="text-[#EC7D22]/90 dark:text-[#FB923C]">"{query}"</span></>
+                <>{t('Results for')} <span className="text-[#78A090]/90 dark:text-[#A7C7B8]">"{query}"</span></>
               ) : (
                 t('Explore Complete Library')
               )}
@@ -108,10 +108,10 @@ export default function SearchPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
               {filteredBooks.map(book => (
                 <div key={book.id} className="group">
-                  <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 dark:border-zinc-800 mb-4 relative bg-white dark:bg-[#1e1e1e] transition-colors">
+                  <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 dark:border-zinc-800 mb-4 relative bg-white dark:bg-[#17231E] transition-colors">
                     <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
-                      <Link to={`/book/${book.id}`} className="w-full py-2 bg-[#EC7D22]/85 backdrop-blur-sm hover:bg-[#D66D1B]/90 text-white text-xs font-bold rounded-xl shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all flex items-center justify-center">
+                      <Link to={`/book/${book.id}`} className="w-full py-2 bg-[#78A090]/85 backdrop-blur-sm hover:bg-[#6D9483]/90 text-white text-xs font-bold rounded-xl shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all flex items-center justify-center">
                         {t('Details')}
                       </Link>
                     </div>
@@ -121,7 +121,7 @@ export default function SearchPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate max-w-[70%]">{book.author}</p>
                     <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
-                      <Star fill="#EC7D22" color="#EC7D22" size={10} /> 4.8
+                      <Star fill="#78A090" color="#78A090" size={10} /> 4.8
                     </div>
                   </div>
                 </div>

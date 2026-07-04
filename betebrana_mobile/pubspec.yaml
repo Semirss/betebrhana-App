@@ -2,7 +2,7 @@ name: betebrana_mobile
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.5+6
+version: 1.0.6+7
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -67,22 +67,28 @@ flutter:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/icon/betebranalogo2_upscaled.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon/betebranalogo2_upscaled.png"
+  image_path_android: "assets/icon/betebrana_with_name_app_icon_padded.png"
+  image_path_ios: "assets/icon/betebrana_with_name_app_icon_padded.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icon/betebrana_with_name_adaptive_foreground.png"
+  android_adaptive_icon_background_color: "#000000"
   remove_alpha_ios: true
 
 flutter_native_splash:
   color: "#FFFFFF"
-  image: "assets/icon/betebranalogo2.png"
+  image: "assets/icon/betebrana_with_name_white_splash_padded_safe.png"
   fullscreen: false
+  android_gravity: center
+  ios_content_mode: center
+  web_image_mode: center
   android_12:
     color: "#FFFFFF"
-    image: "assets/icon/betebranalogo2.png"
+    image: "assets/icon/betebrana_with_name_white_splash_android12_safe.png"
     icon_background_color: "#FFFFFF"
   android: true
   ios: true
-  web: false
+  web: true
 
 dependency_overrides:
   meta: ^1.18.0

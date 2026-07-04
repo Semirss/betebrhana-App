@@ -405,7 +405,7 @@ class _DownloadedBookGridItem extends StatelessWidget {
       badgeColor = Colors.red;
       badgeText = 'EXPIRED';
     } else if (difference.inDays <= 1) {
-      badgeColor = Colors.orange;
+      badgeColor = Color(0xFF78A090);
       badgeText = 'SOON';
     } else if (difference.inDays <= 7) {
       badgeColor = Colors.yellow;
@@ -516,7 +516,7 @@ Widget _buildExpiryInfo(DateTime expiryDate) {
     textColor = Colors.red;
     statusText = 'EXPIRED ${difference.inDays.abs()} days ago';
   } else if (difference.inDays <= 1) {
-    textColor = Colors.orange;
+    textColor = Color(0xFF78A090);
     if (difference.inHours <= 2) {
       statusText = 'Expires in ${difference.inMinutes} minutes';
     } else {

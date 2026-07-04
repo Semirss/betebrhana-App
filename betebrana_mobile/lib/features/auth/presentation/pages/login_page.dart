@@ -22,7 +22,7 @@ class _LoginPageState extends State<LoginPage> {
   // Theme Colors
   static const Color _backgroundColor = AppColors.lightBackground;
   static const Color _surfaceColor = AppColors.lightCard;
-  static const Color _accentColor = AppColors.purple;
+  static const Color _accentColor = AppColors.secondary;
   static const Color _textPrimary = AppColors.lightText;
   static const Color _textSecondary = AppColors.lightSubtext;
 
@@ -65,7 +65,7 @@ class _LoginPageState extends State<LoginPage> {
             _errorMessage = state.message.replaceAll('Exception: ', '');
           });
         } else if (state is AuthAuthenticated) {
-           setState(() {
+          setState(() {
             _errorMessage = null;
           });
           // Navigation is handled by the parent _AppWrapper
@@ -90,53 +90,49 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 4),
 
                         // Logo
-                        Container(
-                          width: 250,
-                          height: 150,
-                          clipBehavior: Clip.antiAlias,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
+                        SizedBox(
+                          width: 340,
+                          height: 340,
                           child: Image.asset(
-                            'assets/icon/betebranalogo2_upscaled.png',
-                            fit: BoxFit.cover,
+                            'assets/icon/betebrana with name white.png',
+                            fit: BoxFit.contain,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        
-                        // Title
-                        const Text(
-                          'Betebrana',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black87,
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // Subtitle Badge
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.library_music_rounded, color: Color(0xFF1E1E1E), size: 14),
-                            SizedBox(width: 8),
-                            Text(
-                              ' Book Library',
-                              style: TextStyle(
-                                color: Color(0xFF1E1E1E),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
                         ),
 
-                        const SizedBox(height: 48),
+                        // Title
+                        // const Text(
+                        //   'Betebrana',
+                        //   textAlign: TextAlign.center,
+                        //   style: TextStyle(
+                        //     color: Colors.black87,
+                        //     fontSize: 36,
+                        //     fontWeight: FontWeight.w900,
+                        //     letterSpacing: -0.5,
+                        //     height: 1.2,
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 16),
+
+                        // Subtitle Badge
+                        // Row(
+                        //   mainAxisSize: MainAxisSize.min,
+                        //   children: const [
+                        //     Icon(Icons.library_music_rounded,
+                        //         color: Color(0xFF1E1E1E), size: 14),
+                        //     SizedBox(width: 8),
+                        //     Text(
+                        //       ' Book Library',
+                        //       style: TextStyle(
+                        //         color: Color(0xFF1E1E1E),
+                        //         fontSize: 11,
+                        //         fontWeight: FontWeight.w800,
+                        //         letterSpacing: 0.5,
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
+
+                        // const SizedBox(height: 2),
 
                         // --- Error Display ---
                         if (_errorMessage != null)
@@ -146,16 +142,19 @@ class _LoginPageState extends State<LoginPage> {
                             decoration: BoxDecoration(
                               color: Colors.red.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.withOpacity(0.3)),
+                              border: Border.all(
+                                  color: Colors.red.withOpacity(0.3)),
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                                Icon(Icons.error_outline,
+                                    color: Colors.red[700], size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: TextStyle(color: Colors.red[800], fontSize: 13),
+                                    style: TextStyle(
+                                        color: Colors.red[800], fontSize: 13),
                                   ),
                                 ),
                               ],
@@ -169,8 +168,10 @@ class _LoginPageState extends State<LoginPage> {
                           icon: Icons.person_outline,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Email is required';
-                            if (!value.contains('@')) return 'Invalid email address';
+                            if (value == null || value.isEmpty)
+                              return 'Email is required';
+                            if (!value.contains('@'))
+                              return 'Invalid email address';
                             return null;
                           },
                         ),
@@ -184,7 +185,8 @@ class _LoginPageState extends State<LoginPage> {
                           icon: Icons.lock_outline,
                           isPassword: true,
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Password is required';
+                            if (value == null || value.isEmpty)
+                              return 'Password is required';
                             if (value.length < 6) return 'Minimum 6 characters';
                             return null;
                           },
@@ -195,7 +197,8 @@ class _LoginPageState extends State<LoginPage> {
                         // --- Login Button ---
                         if (isLoading)
                           const Center(
-                            child: CircularProgressIndicator(color: Color(0xFFFF7A3B)),
+                            child: CircularProgressIndicator(
+                                color: Color(0xFF78A090)),
                           )
                         else
                           Container(
@@ -204,13 +207,14 @@ class _LoginPageState extends State<LoginPage> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(30),
                               gradient: const LinearGradient(
-                                colors: [Color(0xFFFF9A5E), Color(0xFFFF7A3B)],
+                                colors: [Color(0xFFA7C7B8), Color(0xFF78A090)],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFFF7A3B).withOpacity(0.3),
+                                  color:
+                                      const Color(0xFF78A090).withOpacity(0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 6),
                                 ),
@@ -247,7 +251,8 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           child: const Text(
                             'Forgot Password',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w500),
                           ),
                         ),
 
@@ -270,7 +275,7 @@ class _LoginPageState extends State<LoginPage> {
                               child: const Text(
                                 "Signup Now",
                                 style: TextStyle(
-                                  color: Color(0xFFFF7A3B),
+                                  color: Color(0xFF78A090),
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -302,8 +307,9 @@ class _LoginPageState extends State<LoginPage> {
       controller: controller,
       obscureText: isPassword,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w500),
-      cursorColor: const Color(0xFFFF7A3B),
+      style: const TextStyle(
+          color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w500),
+      cursorColor: const Color(0xFF78A090),
       validator: validator,
       onChanged: (_) {
         if (_errorMessage != null) {
@@ -316,9 +322,11 @@ class _LoginPageState extends State<LoginPage> {
         filled: true,
         fillColor: const Color(0xFFF5F6F8),
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.black38, fontSize: 15, fontWeight: FontWeight.w500),
+        hintStyle: const TextStyle(
+            color: Colors.black38, fontSize: 15, fontWeight: FontWeight.w500),
         prefixIcon: Icon(icon, color: Colors.black54, size: 20),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
@@ -329,7 +337,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: Color(0xFFFF7A3B), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF78A090), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),

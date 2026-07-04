@@ -27,9 +27,9 @@ class LibraryTab extends StatelessWidget {
         appBar: AppBar(
           title: Text(lang.t('My Library'), style: const TextStyle(fontWeight: FontWeight.bold)),
           bottom: TabBar(
-            labelColor: AppColors.orange,
+            labelColor: AppColors.primary,
             unselectedLabelColor: Colors.grey,
-            indicatorColor: AppColors.orange,
+            indicatorColor: AppColors.primary,
             tabs: [
               Tab(text: lang.t('My Rentals')),
               Tab(text: lang.t('Wishlist')),
@@ -170,13 +170,13 @@ class LibraryTab extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          border: Border.all(color: AppColors.orange),
+                          border: Border.all(color: AppColors.primary),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           lang.t('In Queue'),
                           style: const TextStyle(
-                            color: AppColors.orange,
+                            color: AppColors.primary,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.5,

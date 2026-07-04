@@ -28,7 +28,7 @@ export default function HomePage() {
   }, []);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen text-zinc-400 text-sm bg-[#F7F5F5] dark:bg-[#121212]">Loading…</div>;
+    return <div className="flex items-center justify-center h-screen text-zinc-400 text-sm bg-[#F3F8F6] dark:bg-[#101A16]">Loading…</div>;
   }
 
   const popular = books.slice(0, 4);
@@ -46,7 +46,7 @@ export default function HomePage() {
   return (
     <>
       {/* ── MOBILE (Unaffected) ── */}
-      <div className="md:hidden mobile-discover pt-12 pb-6 px-4 bg-[#F7F5F5] dark:bg-[#121212] min-h-screen transition-colors">
+      <div className="md:hidden mobile-discover pt-12 pb-6 px-4 bg-[#F3F8F6] dark:bg-[#101A16] min-h-screen transition-colors">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h1 className="text-[22px] font-[800] text-[#18181b] dark:text-zinc-100 m-0">{t('Discover')}</h1>
           <Link to="/search" className="p-2 rounded-full bg-white dark:bg-zinc-800 border border-[#e4e4e7] dark:border-zinc-700 flex">
@@ -62,7 +62,7 @@ export default function HomePage() {
             </div>
             <h4 className="text-xl text-center font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-1">{featuredMobile.title}</h4>
             <p className="text-sm text-center text-zinc-500 dark:text-zinc-400 mb-6">{featuredMobile.author}</p>
-            <Link to={`/book/${featuredMobile.id}`} className="px-8 py-3 rounded-full bg-[#EC7D22]/85 backdrop-blur-sm text-white font-semibold text-sm">
+            <Link to={`/book/${featuredMobile.id}`} className="px-8 py-3 rounded-full bg-[#78A090]/85 backdrop-blur-sm text-white font-semibold text-sm">
               Open Now
             </Link>
           </div>
@@ -88,7 +88,7 @@ export default function HomePage() {
           <h3 className="font-serif font-bold text-lg text-zinc-900 dark:text-zinc-100 mb-4">{t('Browse by Category')}</h3>
           <div className="flex items-center gap-4 mb-8 overflow-x-auto pb-4 scrollbar-hide">
             {TABS.map(tab => (
-              <button key={tab} onClick={() => setActiveCatTab(tab)} className={`px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${activeCatTab === tab ? 'bg-[#EC7D22]/85 backdrop-blur-sm text-white border-transparent shadow-md' : 'bg-transparent text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-[#EC7D22]/50 hover:text-[#EC7D22]'}`}>
+              <button key={tab} onClick={() => setActiveCatTab(tab)} className={`px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${activeCatTab === tab ? 'bg-[#78A090]/85 backdrop-blur-sm text-white border-transparent shadow-md' : 'bg-transparent text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-[#78A090]/50 hover:text-[#78A090]'}`}>
                 {t(tab)}
               </button>
             ))}
@@ -119,9 +119,9 @@ export default function HomePage() {
           </div>
           <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed mb-4">{t('Your digital library. Borrow, discover, and read anytime.')}</p>
           <div className="flex flex-wrap gap-4 text-xs text-zinc-400 dark:text-zinc-500">
-            <Link to="/search" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('Discover')}</Link>
-            <Link to="/library" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('My Library')}</Link>
-            <Link to="/profile" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('Profile')}</Link>
+            <Link to="/search" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('Discover')}</Link>
+            <Link to="/library" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('My Library')}</Link>
+            <Link to="/profile" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('Profile')}</Link>
           </div>
           <p className="text-[10px] text-zinc-300 dark:text-zinc-600 mt-4">© {new Date().getFullYear()} BeteBrana. All rights reserved.</p>
         </div>
@@ -129,7 +129,7 @@ export default function HomePage() {
       </div>
 
       {/* ── DESKTOP (Auca Style) ── */}
-      <div className="hidden md:block pt-32 lg:pt-20 pb-0 bg-[#F7F5F5] dark:bg-[#121212] min-h-screen transition-colors">
+      <div className="hidden md:block pt-32 lg:pt-20 pb-0 bg-[#F3F8F6] dark:bg-[#101A16] min-h-screen transition-colors">
         
         {/* HERO SECTION */}
         <section className="max-w-[1200px] mx-auto px-8 flex items-center justify-between gap-16 mb-40">
@@ -137,7 +137,7 @@ export default function HomePage() {
           {/* Left Text */}
           <div className="max-w-[500px]">
             <h1 className="text-[3.5rem] leading-[1.1] font-bold text-zinc-900 dark:text-zinc-100 mb-6 font-serif">
-              {t('Find the perfect book for ')}<span style={{ color: '#EC7D22', position: 'relative', display: 'inline-block' }}>
+              {t('Find the perfect book for ')}<span style={{ color: '#78A090', position: 'relative', display: 'inline-block' }}>
                 {t('every moment.')}
                 <svg className="absolute w-full h-[8px] left-0 -bottom-1" viewBox="0 0 100 10" preserveAspectRatio="none">
                   <path d="M0,5 Q50,0 100,5" stroke="#bbf7d0" strokeWidth="4" fill="transparent" strokeLinecap="round" />
@@ -148,7 +148,7 @@ export default function HomePage() {
               {t('Borrow books easily, explore curated collections, and enjoy reading anytime, anywhere.')}
             </p>
             <div className="flex items-center gap-4">
-              <Link to="/library" className="px-8 py-4 bg-[#EC7D22]/85 backdrop-blur-sm hover:bg-[#D66D1B]/90 text-white rounded-xl font-bold transition-all shadow-lg shadow-orange-900/20">
+              <Link to="/library" className="px-8 py-4 bg-[#78A090]/85 backdrop-blur-sm hover:bg-[#6D9483]/90 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-900/20">
                 {t('Borrow Now')}
               </Link>
               <Link to="/search" className="px-8 py-4 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl font-bold transition-all border border-zinc-200 dark:border-zinc-700">
@@ -161,7 +161,7 @@ export default function HomePage() {
           <div className="relative flex-1 h-[550px] lg:h-[600px] mt-10 md:mt-0 flex items-center justify-center">
             
             {/* Soft background glow */}
-            <div className="absolute w-[400px] h-[400px] bg-gradient-to-tr from-[#FFF7ED] to-[#ecfdf5] dark:from-[#431407] dark:to-[#1a402d] rounded-full blur-3xl opacity-50 pointer-events-none transition-colors"></div>
+            <div className="absolute w-[400px] h-[400px] bg-gradient-to-tr from-[#EEF5F2] to-[#ecfdf5] dark:from-[#13251F] dark:to-[#1a402d] rounded-full blur-3xl opacity-50 pointer-events-none transition-colors"></div>
             
             {/* The Main Hero Visual */}
             <div className="relative z-10 w-[300px] lg:w-[340px] h-[400px] lg:h-[460px] bg-zinc-100 dark:bg-zinc-800 rounded-3xl overflow-hidden shadow-2xl border border-zinc-200 dark:border-zinc-700" style={{ transform: 'rotate(2deg)' }}>
@@ -174,41 +174,41 @@ export default function HomePage() {
                 <p className="text-xl font-bold text-[#166534] dark:text-[#bbf7d0] mb-0.5">21K+</p>
                 <p className="text-[9px] text-[#166534] dark:text-[#bbf7d0] uppercase tracking-widest font-bold opacity-80">{t('Titles')}</p>
               </div>
-              <div className="bg-[#FFF7ED] dark:bg-[#7C2D12] px-6 py-3 rounded-2xl shadow-lg border border-[#FED7AA] dark:border-[#9A3412] text-center transition-colors">
-                <p className="text-xl font-bold text-[#EC7D22]/90 dark:text-[#FDBA74] mb-0.5">57K+</p>
-                <p className="text-[9px] text-[#EC7D22]/90 dark:text-[#FDBA74] uppercase tracking-widest font-bold opacity-80">{t('Readers')}</p>
+              <div className="bg-[#EEF5F2] dark:bg-[#20362D] px-6 py-3 rounded-2xl shadow-lg border border-[#D7E7E0] dark:border-[#385A4B] text-center transition-colors">
+                <p className="text-xl font-bold text-[#78A090]/90 dark:text-[#D7E7E0] mb-0.5">57K+</p>
+                <p className="text-[9px] text-[#78A090]/90 dark:text-[#D7E7E0] uppercase tracking-widest font-bold opacity-80">{t('Readers')}</p>
               </div>
             </div>
 
             {/* Static Floating Book 1 */}
-            <div className="absolute top-16 lg:top-24 left-0 lg:-left-6 w-[120px] lg:w-[140px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#1e1e1e] z-20 transition-colors" style={{ transform: 'rotate(-12deg)' }}>
+            <div className="absolute top-16 lg:top-24 left-0 lg:-left-6 w-[120px] lg:w-[140px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#17231E] z-20 transition-colors" style={{ transform: 'rotate(-12deg)' }}>
               <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover" alt="Book Cover 1" />
             </div>
 
             {/* Static Floating Book 2 */}
-            <div className="absolute bottom-12 lg:bottom-16 -right-6 w-[140px] lg:w-[160px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#1e1e1e] z-20 transition-colors" style={{ transform: 'rotate(8deg)' }}>
+            <div className="absolute bottom-12 lg:bottom-16 -right-6 w-[140px] lg:w-[160px] aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#17231E] z-20 transition-colors" style={{ transform: 'rotate(8deg)' }}>
               <img src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=300" className="w-full h-full object-cover" alt="Book Cover 2" />
             </div>
 
-             <div className="absolute bottom-40 -right-10 lg:-right-2 w-12 h-12 bg-[#bbf7d0] dark:bg-[#14532d] border-2 border-white dark:border-[#1e1e1e] rounded-full shadow-lg flex items-center justify-center z-30 hidden md:flex transition-colors">
+             <div className="absolute bottom-40 -right-10 lg:-right-2 w-12 h-12 bg-[#bbf7d0] dark:bg-[#14532d] border-2 border-white dark:border-[#17231E] rounded-full shadow-lg flex items-center justify-center z-30 hidden md:flex transition-colors">
                <Play size={18} fill="#166534" className="text-[#166534] dark:text-[#bbf7d0] ml-1" />
              </div>
 
             {/* Audio/Progress Widget */}
-            <div className="absolute bottom-20 -left-12 lg:-left-20 bg-white dark:bg-[#1e1e1e] p-4 lg:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-5 z-30 border border-zinc-100 dark:border-zinc-800 transition-colors">
-              <div className="w-12 h-12 rounded-full bg-[#EC7D22]/85 backdrop-blur-sm flex items-center justify-center text-white shadow-md cursor-pointer hover:bg-[#D66D1B]/90 transition-colors">
+            <div className="absolute bottom-20 -left-12 lg:-left-20 bg-white dark:bg-[#17231E] p-4 lg:p-5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-5 z-30 border border-zinc-100 dark:border-zinc-800 transition-colors">
+              <div className="w-12 h-12 rounded-full bg-[#78A090]/85 backdrop-blur-sm flex items-center justify-center text-white shadow-md cursor-pointer hover:bg-[#6D9483]/90 transition-colors">
                 <Play size={18} fill="white" className="ml-1" />
               </div>
               <div className="flex flex-col gap-2.5">
                 <div className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Chapter Eight</div>
                 <div className="w-32 h-1.5 bg-zinc-100 dark:bg-zinc-700 rounded-full">
-                  <div className="w-1/2 h-full bg-[#EC7D22]/85 backdrop-blur-sm rounded-full relative">
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-[#1e1e1e] border-2 border-[#EC7D22] rounded-full shadow-sm"></div>
+                  <div className="w-1/2 h-full bg-[#78A090]/85 backdrop-blur-sm rounded-full relative">
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-[#17231E] border-2 border-[#78A090] rounded-full shadow-sm"></div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center px-1 mt-1">
                    <div className="w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-600"></div>
-                   <div className="w-3 h-3 rounded-full border border-[#EC7D22] bg-[#EC7D22]/10"></div>
+                   <div className="w-3 h-3 rounded-full border border-[#78A090] bg-[#78A090]/10"></div>
                    <div className="w-3 h-3 rounded-full border border-zinc-300 dark:border-zinc-600"></div>
                 </div>
               </div>
@@ -221,10 +221,10 @@ export default function HomePage() {
         <section className="max-w-[1200px] mx-auto px-8 mb-32">
           <div className="flex justify-between items-end mb-10">
             <div>
-              <p className="text-[#EC7D22]/90 dark:text-[#FB923C] font-bold text-sm tracking-widest uppercase mb-2">{t('Curated for you')}</p>
+              <p className="text-[#78A090]/90 dark:text-[#A7C7B8] font-bold text-sm tracking-widest uppercase mb-2">{t('Curated for you')}</p>
               <h2 className="text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">{t('Popular Books This Week')}</h2>
             </div>
-            <Link to="/search" className="flex items-center gap-2 px-6 py-2.5 bg-[#EC7D22]/85 backdrop-blur-sm dark:bg-[#D66D1B] hover:bg-[#D66D1B]/90 dark:hover:bg-[#C25D0A] text-white rounded-full text-sm font-bold transition-colors shadow-sm">
+            <Link to="/search" className="flex items-center gap-2 px-6 py-2.5 bg-[#78A090]/85 backdrop-blur-sm dark:bg-[#6D9483] hover:bg-[#6D9483]/90 dark:hover:bg-[#5F8675] text-white rounded-full text-sm font-bold transition-colors shadow-sm">
               {t('Explore All')} <ArrowRight size={16} />
             </Link>
           </div>
@@ -232,13 +232,13 @@ export default function HomePage() {
           <div className="grid grid-cols-4 gap-8">
             {popular.map(book => (
               <div key={book.id} className="group">
-                <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 dark:border-zinc-800 mb-5 relative bg-white dark:bg-[#1e1e1e] transition-colors">
+                <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-zinc-100 dark:border-zinc-800 mb-5 relative bg-white dark:bg-[#17231E] transition-colors">
                   <img src={book.cover_image || PH} onError={onErr} alt={book.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  <div className="absolute top-3 right-3 bg-white/90 dark:bg-[#1e1e1e]/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-zinc-800 dark:text-zinc-200 shadow-sm border border-black/5 dark:border-white/5 transition-colors">
+                  <div className="absolute top-3 right-3 bg-white/90 dark:bg-[#17231E]/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-zinc-800 dark:text-zinc-200 shadow-sm border border-black/5 dark:border-white/5 transition-colors">
                     {book.total_copies > 0 ? t('Available') : t('Borrowed')}
                   </div>
                   <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
-                    <Link to={`/book/${book.id}`} className="w-full py-2.5 bg-[#EC7D22]/85 backdrop-blur-sm hover:bg-[#D66D1B]/90 text-white text-xs font-bold rounded-xl shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all flex items-center justify-center">
+                    <Link to={`/book/${book.id}`} className="w-full py-2.5 bg-[#78A090]/85 backdrop-blur-sm hover:bg-[#6D9483]/90 text-white text-xs font-bold rounded-xl shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all flex items-center justify-center">
                       {t('View Details')}
                     </Link>
                   </div>
@@ -247,7 +247,7 @@ export default function HomePage() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate max-w-[70%]">{book.author}</p>
                   <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                    <Star fill="#EC7D22" color="#EC7D22" size={12} /> 4.8
+                    <Star fill="#78A090" color="#78A090" size={12} /> 4.8
                   </div>
                 </div>
               </div>
@@ -256,7 +256,7 @@ export default function HomePage() {
         </section>
 
         {/* BROWSE CATEGORIES SECTION */}
-        <section className="bg-white dark:bg-[#1e1e1e] py-24 transition-colors">
+        <section className="bg-white dark:bg-[#17231E] py-24 transition-colors">
           <div className="max-w-[1200px] mx-auto px-8">
             <div className="flex flex-col items-center text-center mb-10">
               <h2 className="text-3xl font-serif font-bold text-zinc-900 dark:text-zinc-100 mb-4">{t('Browse by Category')}</h2>
@@ -270,8 +270,8 @@ export default function HomePage() {
                   onClick={() => setActiveCatTab(cat)}
                   className={`px-8 py-3 rounded-full text-sm font-bold border transition-all duration-300 ${
                     activeCatTab === cat 
-                      ? "bg-[#EC7D22]/85 backdrop-blur-sm border-[#EC7D22] text-white shadow-md shadow-orange-900/20 scale-105" 
-                      : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-[#EC7D22] dark:hover:border-[#FB923C] hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C]"
+                      ? "bg-[#78A090]/85 backdrop-blur-sm border-[#78A090] text-white shadow-md shadow-emerald-900/20 scale-105" 
+                      : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:border-[#78A090] dark:hover:border-[#A7C7B8] hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8]"
                   }`}
                 >
                   {t(cat)}
@@ -287,7 +287,7 @@ export default function HomePage() {
                      <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-md border border-zinc-100 dark:border-zinc-800 mb-4 bg-zinc-100 dark:bg-zinc-800 relative transition-colors">
                        <img src={book.cover_image || PH} onError={onErr} alt={book.title || "Book cover"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex justify-center">
-                         <div className="w-full py-2 bg-[#EC7D22]/85 backdrop-blur-sm hover:bg-[#D66D1B]/90 text-white text-[10px] uppercase tracking-wider font-bold rounded-lg shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all flex items-center justify-center">
+                         <div className="w-full py-2 bg-[#78A090]/85 backdrop-blur-sm hover:bg-[#6D9483]/90 text-white text-[10px] uppercase tracking-wider font-bold rounded-lg shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all flex items-center justify-center">
                            {t('Details')}
                          </div>
                        </div>
@@ -302,7 +302,7 @@ export default function HomePage() {
         </section>
 
         {/* FOOTER */}
-        <footer className="bg-white dark:bg-[#121212] border-t border-zinc-200/80 dark:border-zinc-800/80 pt-16 pb-8 transition-colors">
+        <footer className="bg-white dark:bg-[#101A16] border-t border-zinc-200/80 dark:border-zinc-800/80 pt-16 pb-8 transition-colors">
           <div className="max-w-[1200px] mx-auto px-8 grid grid-cols-4 gap-12 mb-16">
             <div className="col-span-1">
               <div className="flex items-center gap-2 mb-6">
@@ -319,26 +319,26 @@ export default function HomePage() {
             <div>
               <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mb-6">{t('Platform')}</h4>
               <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                <li><Link to="/search" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('Browse Library')}</Link></li>
-                <li><Link to="/search?filter=new" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('New Arrivals')}</Link></li>
-                <li><Link to="/search?filter=popular" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('Trending Now')}</Link></li>
+                <li><Link to="/search" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('Browse Library')}</Link></li>
+                <li><Link to="/search?filter=new" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('New Arrivals')}</Link></li>
+                <li><Link to="/search?filter=popular" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('Trending Now')}</Link></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mb-6">{t('Support')}</h4>
               <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                <li><Link to="/faq" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('Help Center')}</Link></li>
-                <li><Link to="/contact" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('Contact Us')}</Link></li>
-                <li><Link to="/status" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('System Status')}</Link></li>
+                <li><Link to="/faq" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('Help Center')}</Link></li>
+                <li><Link to="/contact" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('Contact Us')}</Link></li>
+                <li><Link to="/status" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('System Status')}</Link></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mb-6">{t('Legal')}</h4>
               <ul className="flex flex-col gap-4 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                <li><Link to="/terms" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('Terms of Service')}</Link></li>
-                <li><Link to="/privacy" className="hover:text-[#EC7D22]/90 dark:hover:text-[#FB923C] transition-colors">{t('Privacy Policy')}</Link></li>
+                <li><Link to="/terms" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('Terms of Service')}</Link></li>
+                <li><Link to="/privacy" className="hover:text-[#78A090]/90 dark:hover:text-[#A7C7B8] transition-colors">{t('Privacy Policy')}</Link></li>
               </ul>
             </div>
           </div>

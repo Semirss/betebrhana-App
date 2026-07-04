@@ -1086,7 +1086,7 @@ class _ReaderPageState extends State<ReaderPage>
                                                   _showInterstitial = false),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor:
-                                                    const Color(0xFFFF7A3B),
+                                                    const Color(0xFF78A090),
                                                 foregroundColor: Colors.white,
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -1098,7 +1098,7 @@ class _ReaderPageState extends State<ReaderPage>
                                                             30)),
                                                 elevation: 4,
                                                 shadowColor:
-                                                    const Color(0xFFFF7A3B)
+                                                    const Color(0xFF78A090)
                                                         .withOpacity(0.5),
                                               ),
                                               child: Row(
@@ -1215,11 +1215,11 @@ class _ReaderPageState extends State<ReaderPage>
                             Container(
                               color: currentTheme.scaffoldBackgroundColor,
                               child: TabBar(
-                                labelColor: const Color(0xFFFF7A3B),
+                                labelColor: const Color(0xFF78A090),
                                 unselectedLabelColor: currentTheme
                                     .colorScheme.onSurface
                                     .withOpacity(0.5),
-                                indicatorColor: const Color(0xFFFF7A3B),
+                                indicatorColor: const Color(0xFF78A090),
                                 indicatorWeight: 3.0,
                                 labelStyle: const TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 14),
