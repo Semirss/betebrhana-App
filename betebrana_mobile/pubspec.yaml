@@ -1,4 +1,4 @@
-name: betebrana_mobile
+﻿name: betebrana_mobile
 description: "A new Flutter project."
 publish_to: 'none'
 
@@ -62,7 +62,7 @@ flutter:
   uses-material-design: true
   assets:
     - lib/features/auth/image/unnamed.jpg
-    - assets/icon/
+    - "assets/icon/betebrana with name white.png"
 
 flutter_icons:
   android: true
