@@ -68,6 +68,8 @@ class _ReaderPageState extends State<ReaderPage>
   int _totalPages = 1;
   double _currentProgress = 0.0;
   double? _initialProgress;
+  TabController? _txtTabController;
+  int _txtTabIndex = 0;
 
   // Global Keys for Tutorial
   final GlobalKey _searchKey = GlobalKey();
@@ -83,7 +85,7 @@ class _ReaderPageState extends State<ReaderPage>
       _sharedAd; // Single ad used for both banner and interstitial
   bool _showInterstitial = false;
   bool _isLoadingAds = true;
-  int _adCountdown = 5; // 5-second countdown before close button appears
+  final ValueNotifier<int> _adCountdownNotifier = ValueNotifier<int>(5);
   Timer? _adCountdownTimer;
 
   @override
@@ -91,6 +93,11 @@ class _ReaderPageState extends State<ReaderPage>
     super.initState();
     _loadSettings();
     _loadBookmark();
+
+    if ((widget.book.fileType ?? '').toLowerCase() == 'txt') {
+      _txtTabController = TabController(length: 2, vsync: this);
+      _txtTabController!.addListener(_handleTxtTabChanged);
+    }
 
     _scrollController.addListener(() {
       if (_scrollController.hasClients) {
@@ -115,6 +122,15 @@ class _ReaderPageState extends State<ReaderPage>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndShowTutorial();
+    });
+  }
+
+  void _handleTxtTabChanged() {
+    final controller = _txtTabController;
+    if (controller == null || _txtTabIndex == controller.index) return;
+
+    setState(() {
+      _txtTabIndex = controller.index;
     });
   }
 
@@ -226,7 +242,7 @@ class _ReaderPageState extends State<ReaderPage>
             setState(() {
               _sharedAd = pickedAd;
               _showInterstitial = true;
-              _adCountdown = 5;
+              _adCountdownNotifier.value = 5;
             });
             _startAdCountdown();
           }
@@ -254,7 +270,7 @@ class _ReaderPageState extends State<ReaderPage>
           setState(() {
             _sharedAd = ad;
             _showInterstitial = true;
-            _adCountdown = 5;
+            _adCountdownNotifier.value = 5;
           });
           _startAdCountdown();
           print('Loaded cached ad for offline use');
@@ -267,18 +283,20 @@ class _ReaderPageState extends State<ReaderPage>
 
   void _startAdCountdown() {
     _adCountdownTimer?.cancel();
+    _adCountdownNotifier.value = 5;
     _adCountdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) {
         t.cancel();
         return;
       }
-      setState(() {
-        if (_adCountdown > 0) {
-          _adCountdown--;
-        } else {
-          t.cancel();
-        }
-      });
+
+      final nextValue = _adCountdownNotifier.value - 1;
+      if (nextValue <= 0) {
+        _adCountdownNotifier.value = 0;
+        t.cancel();
+      } else {
+        _adCountdownNotifier.value = nextValue;
+      }
     });
   }
 
@@ -289,19 +307,22 @@ class _ReaderPageState extends State<ReaderPage>
     return "$baseUrl$path";
   }
 
+  Future<void> _openAdLink(Map<String, dynamic> ad) async {
+    final redirectLink = ad['redirect_link'];
+    if (redirectLink is! String || redirectLink.isEmpty) return;
+
+    final url = Uri.parse(redirectLink);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
   Widget _buildBannerAd() {
     if (_sharedAd == null) return const SizedBox.shrink();
     final ad = _sharedAd!;
 
     return GestureDetector(
-      onTap: () async {
-        if (ad['redirect_link'] != null) {
-          final url = Uri.parse(ad['redirect_link']);
-          if (await canLaunchUrl(url)) {
-            await launchUrl(url, mode: LaunchMode.externalApplication);
-          }
-        }
-      },
+      onTap: () => _openAdLink(ad),
       child: Container(
         color: theme.colorScheme.surface,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -351,6 +372,97 @@ class _ReaderPageState extends State<ReaderPage>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInterstitialActions(Map<String, dynamic> ad) {
+    return ValueListenableBuilder<int>(
+      valueListenable: _adCountdownNotifier,
+      builder: (context, countdown, _) {
+        if (countdown > 0) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: countdown / 5.0,
+                      strokeWidth: 4,
+                      color: Colors.white,
+                      backgroundColor: Colors.white24,
+                    ),
+                    Text(
+                      '$countdown',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Ad - please wait',
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton(
+              onPressed: () => setState(() => _showInterstitial = false),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF78A090),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 4,
+                shadowColor: const Color(0xFF78A090).withOpacity(0.5),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.menu_book_rounded, size: 20),
+                  SizedBox(width: 10),
+                  Text(
+                    'Read Book',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextButton(
+              onPressed: () => _openAdLink(ad),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.open_in_new, size: 15, color: Colors.white54),
+                  SizedBox(width: 6),
+                  Text(
+                    'Visit Sponsor',
+                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -404,7 +516,21 @@ class _ReaderPageState extends State<ReaderPage>
   }
 
   Future<void> _saveSettings(ReaderSettings newSettings) async {
-    setState(() => _settings = newSettings);
+    final oldSettings = _settings;
+    if (oldSettings == newSettings) return;
+
+    final changesReaderDisplay = oldSettings.theme != newSettings.theme ||
+        oldSettings.typeface != newSettings.typeface ||
+        oldSettings.textSize != newSettings.textSize ||
+        oldSettings.lineHeight != newSettings.lineHeight ||
+        oldSettings.alignment != newSettings.alignment;
+
+    if (changesReaderDisplay) {
+      setState(() => _settings = newSettings);
+    } else {
+      _settings = newSettings;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('reader_theme', newSettings.theme.index);
     await prefs.setString('reader_typeface', newSettings.typeface);
@@ -416,9 +542,9 @@ class _ReaderPageState extends State<ReaderPage>
     await prefs.setBool(
         'reader_publisher_defaults', newSettings.usePublisherDefaults);
 
-    // Auto-scroll speed might have changed
-    if (_isAutoScrolling) {
-      _startAutoScroll(); // Restart with new speed
+    if (_isAutoScrolling &&
+        oldSettings.autoScrollSpeed != newSettings.autoScrollSpeed) {
+      _startAutoScroll();
     }
   }
 
@@ -472,10 +598,13 @@ class _ReaderPageState extends State<ReaderPage>
   @override
   void dispose() {
     _autoScrollTimer?.cancel();
+    _txtTabController?.removeListener(_handleTxtTabChanged);
+    _txtTabController?.dispose();
     _scrollController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _adCountdownTimer?.cancel();
+    _adCountdownNotifier.dispose();
     _epubController?.dispose();
 
     // Reset orientation
@@ -832,7 +961,7 @@ class _ReaderPageState extends State<ReaderPage>
       data: currentTheme,
       child: DefaultTabController(
         length: type == 'txt' ? 2 : 1,
-        initialIndex: type == 'txt' ? 1 : 0,
+        initialIndex: 0,
         child: Scaffold(
           backgroundColor: currentTheme.scaffoldBackgroundColor,
           body: Stack(
@@ -885,7 +1014,22 @@ class _ReaderPageState extends State<ReaderPage>
                                     child: Text('Book is empty.'));
                               }
 
+                              final textStyle =
+                                  theme.textTheme.bodyMedium?.copyWith(
+                                        fontSize: _settings.textSize,
+                                        height: _settings.lineHeight,
+                                        color: theme.colorScheme.onSurface,
+                                        fontFamily: _settings.typeface,
+                                      ) ??
+                                      TextStyle(
+                                        fontSize: _settings.textSize,
+                                        height: _settings.lineHeight,
+                                        color: theme.colorScheme.onSurface,
+                                        fontFamily: _settings.typeface,
+                                      );
+
                               return TabBarView(
+                                controller: _txtTabController,
                                 physics:
                                     const NeverScrollableScrollPhysics(), // Disable swipe between tabs
                                 children: [
@@ -897,50 +1041,41 @@ class _ReaderPageState extends State<ReaderPage>
                                     initialProgress: _initialProgress,
                                     onCenterTap: _toggleUI,
                                   ),
-                                  _TxtPagedView(
-                                    text: text,
-                                    settings: _settings,
-                                    initialProgress: _initialProgress,
-                                    onCenterTap: _toggleUI,
-                                    textStyle: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                          fontSize: _settings.textSize,
-                                          height: _settings.lineHeight,
-                                          color: theme.colorScheme.onSurface,
-                                          fontFamily: _settings.typeface,
-                                        ) ??
-                                        TextStyle(
-                                            fontSize: _settings.textSize,
-                                            height: _settings.lineHeight,
-                                            color: theme.colorScheme.onSurface,
-                                            fontFamily: _settings.typeface),
-                                    isLockEnabled: _isLockEnabled,
-                                    onPageChanged: (page, total) {
-                                      WidgetsBinding.instance
-                                          .addPostFrameCallback((_) {
-                                        if (mounted) {
-                                          setState(() {
-                                            if (_currentPage != page ||
-                                                _totalPages != total) {
-                                              _currentPage = page;
-                                              _totalPages = total;
-                                              if (total > 1) {
-                                                _currentProgress =
-                                                    page / (total - 1);
-                                              } else {
-                                                _currentProgress = 0.0;
-                                              }
-                                            }
-                                            if (_showUI) {
-                                              _showUI = false;
-                                              if (_isSearching)
-                                                _isSearching = false;
-                                            }
-                                          });
-                                        }
-                                      });
-                                    },
-                                  ),
+                                  _txtTabIndex == 1
+                                      ? _TxtPagedView(
+                                          text: text,
+                                          settings: _settings,
+                                          initialProgress: _initialProgress,
+                                          onCenterTap: _toggleUI,
+                                          textStyle: textStyle,
+                                          isLockEnabled: _isLockEnabled,
+                                          onPageChanged: (page, total) {
+                                            WidgetsBinding.instance
+                                                .addPostFrameCallback((_) {
+                                              if (!mounted) return;
+
+                                              setState(() {
+                                                final pageChanged =
+                                                    _currentPage != page;
+                                                if (pageChanged ||
+                                                    _totalPages != total) {
+                                                  _currentPage = page;
+                                                  _totalPages = total;
+                                                  _currentProgress = total > 1
+                                                      ? page / (total - 1)
+                                                      : 0.0;
+                                                }
+                                                if (pageChanged && _showUI) {
+                                                  _showUI = false;
+                                                  if (_isSearching) {
+                                                    _isSearching = false;
+                                                  }
+                                                }
+                                              });
+                                            });
+                                          },
+                                        )
+                                      : const SizedBox.shrink(),
                                 ],
                               );
                             },
@@ -1044,109 +1179,7 @@ class _ReaderPageState extends State<ReaderPage>
                                             ),
                                           const SizedBox(height: 32),
                                           // --- Countdown or action buttons ---
-                                          if (_adCountdown > 0) ...[
-                                            // Show countdown ring while waiting
-                                            SizedBox(
-                                              width: 64,
-                                              height: 64,
-                                              child: Stack(
-                                                alignment: Alignment.center,
-                                                children: [
-                                                  CircularProgressIndicator(
-                                                    value: _adCountdown / 5.0,
-                                                    strokeWidth: 4,
-                                                    color: Colors.white,
-                                                    backgroundColor:
-                                                        Colors.white24,
-                                                  ),
-                                                  Text(
-                                                    '$_adCountdown',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 22,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(height: 12),
-                                            const Text(
-                                              'Ad — please wait',
-                                              style: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 13),
-                                            ),
-                                          ] else ...[
-                                            // Countdown finished — show action buttons
-                                            // PRIMARY: Read Book (highlighted)
-                                            ElevatedButton(
-                                              onPressed: () => setState(() =>
-                                                  _showInterstitial = false),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    const Color(0xFF78A090),
-                                                foregroundColor: Colors.white,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 32,
-                                                        vertical: 16),
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            30)),
-                                                elevation: 4,
-                                                shadowColor:
-                                                    const Color(0xFF78A090)
-                                                        .withOpacity(0.5),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: const [
-                                                  Icon(Icons.menu_book_rounded,
-                                                      size: 20),
-                                                  SizedBox(width: 10),
-                                                  Text('Read Book',
-                                                      style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 16)),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(height: 14),
-                                            // SECONDARY: Visit Sponsor (subtle)
-                                            TextButton(
-                                              onPressed: () async {
-                                                if (_sharedAd![
-                                                        'redirect_link'] !=
-                                                    null) {
-                                                  final url = Uri.parse(
-                                                      _sharedAd![
-                                                          'redirect_link']);
-                                                  if (await canLaunchUrl(url)) {
-                                                    await launchUrl(url,
-                                                        mode: LaunchMode
-                                                            .externalApplication);
-                                                  }
-                                                }
-                                              },
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: const [
-                                                  Icon(Icons.open_in_new,
-                                                      size: 15,
-                                                      color: Colors.white54),
-                                                  SizedBox(width: 6),
-                                                  Text('Visit Sponsor',
-                                                      style: TextStyle(
-                                                          color: Colors.white54,
-                                                          fontSize: 13)),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
+                                          _buildInterstitialActions(_sharedAd!),
                                           const SizedBox(height: 24),
                                         ],
                                       ), // Column
@@ -1215,6 +1248,7 @@ class _ReaderPageState extends State<ReaderPage>
                             Container(
                               color: currentTheme.scaffoldBackgroundColor,
                               child: TabBar(
+                                controller: _txtTabController,
                                 labelColor: const Color(0xFF78A090),
                                 unselectedLabelColor: currentTheme
                                     .colorScheme.onSurface
@@ -1290,16 +1324,7 @@ class _ReaderPageState extends State<ReaderPage>
                               }),
                           if (_sharedAd != null && !_showInterstitial)
                             GestureDetector(
-                                onTap: () async {
-                                  if (_sharedAd!['redirect_link'] != null) {
-                                    final url =
-                                        Uri.parse(_sharedAd!['redirect_link']);
-                                    if (await canLaunchUrl(url)) {
-                                      await launchUrl(url,
-                                          mode: LaunchMode.externalApplication);
-                                    }
-                                  }
-                                },
+                                onTap: () => _openAdLink(_sharedAd!),
                                 child: _buildBannerAd()),
                         ],
                       ),
@@ -1313,6 +1338,98 @@ class _ReaderPageState extends State<ReaderPage>
       ), // end DefaultTabController
     ); // end Theme
   }
+}
+
+class _TextSlice {
+  const _TextSlice(this.start, this.end);
+
+  final int start;
+  final int end;
+}
+
+bool _isWhitespaceCodeUnit(int codeUnit) {
+  return codeUnit == 0x09 ||
+      codeUnit == 0x0A ||
+      codeUnit == 0x0B ||
+      codeUnit == 0x0C ||
+      codeUnit == 0x0D ||
+      codeUnit == 0x20;
+}
+
+int _skipLeadingWhitespace(String text, int start) {
+  var index = start;
+  while (index < text.length && _isWhitespaceCodeUnit(text.codeUnitAt(index))) {
+    index++;
+  }
+  return index;
+}
+
+int _findReadableBreak(
+  String text,
+  int start,
+  int preferredEnd, {
+  double minBreakFraction = 0.55,
+}) {
+  final length = text.length;
+  if (preferredEnd >= length) return length;
+
+  final safePreferredEnd = preferredEnd.clamp(start + 1, length).toInt();
+  final minEnd = math
+      .min(
+        length,
+        start +
+            math.max(
+                1, ((safePreferredEnd - start) * minBreakFraction).floor()),
+      )
+      .toInt();
+
+  for (final marker in const [
+    '\n\n',
+    '\n',
+    '. ',
+    '? ',
+    '! ',
+    '; ',
+    ', ',
+    ' '
+  ]) {
+    final index = text.lastIndexOf(marker, safePreferredEnd);
+    if (index >= minEnd) {
+      return math.min(length, index + marker.length).toInt();
+    }
+  }
+
+  return safePreferredEnd;
+}
+
+List<_TextSlice> _buildTextSlices(
+  String text,
+  int targetChars, {
+  double minBreakFraction = 0.55,
+}) {
+  if (text.trim().isEmpty) return const <_TextSlice>[];
+
+  final slices = <_TextSlice>[];
+  final target = targetChars.clamp(320, 6000).toInt();
+  var start = _skipLeadingWhitespace(text, 0);
+
+  while (start < text.length) {
+    final preferredEnd = math.min(start + target, text.length).toInt();
+    var end = _findReadableBreak(
+      text,
+      start,
+      preferredEnd,
+      minBreakFraction: minBreakFraction,
+    );
+    if (end <= start) {
+      end = math.min(start + target, text.length).toInt();
+    }
+
+    slices.add(_TextSlice(start, end));
+    start = _skipLeadingWhitespace(text, end);
+  }
+
+  return slices;
 }
 
 // -----------------------------------------------------------------------------
@@ -1341,49 +1458,69 @@ class _TxtScrollView extends StatefulWidget {
 }
 
 class _TxtScrollViewState extends State<_TxtScrollView> {
+  static const int _targetChunkChars = 1800;
+
+  late List<_TextSlice> _chunks;
   bool _hasScrolledToInitial = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToInitial();
-    });
+    _chunks = _buildTextSlices(widget.text, _targetChunkChars);
+    _scheduleScrollToInitial();
   }
 
   @override
   void didUpdateWidget(covariant _TxtScrollView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!oldWidget.scrollController.hasClients &&
-        widget.scrollController.hasClients) {
-      _scrollToInitial();
+    if (oldWidget.text != widget.text) {
+      _chunks = _buildTextSlices(widget.text, _targetChunkChars);
+      _hasScrolledToInitial = false;
+      _scheduleScrollToInitial();
+    } else if (oldWidget.initialProgress != widget.initialProgress &&
+        widget.initialProgress != null) {
+      _hasScrolledToInitial = false;
+      _scheduleScrollToInitial();
     }
   }
 
+  void _scheduleScrollToInitial() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToInitial());
+  }
+
   void _scrollToInitial() {
-    if (mounted && widget.initialProgress != null && !_hasScrolledToInitial) {
-      if (widget.scrollController.hasClients) {
-        final max = widget.scrollController.position.maxScrollExtent;
-        if (max > 0) {
-          widget.scrollController.jumpTo(max * widget.initialProgress!);
-          _hasScrolledToInitial = true;
-        }
+    if (!mounted || widget.initialProgress == null || _hasScrolledToInitial) {
+      return;
+    }
+    if (widget.scrollController.hasClients) {
+      final max = widget.scrollController.position.maxScrollExtent;
+      if (max > 0) {
+        widget.scrollController.jumpTo(max * widget.initialProgress!);
+        _hasScrolledToInitial = true;
       }
+    } else {
+      _scheduleScrollToInitial();
+    }
+  }
+
+  TextAlign _textAlign() {
+    switch (widget.settings.alignment) {
+      case ReaderAlignment.center:
+        return TextAlign.center;
+      case ReaderAlignment.justified:
+        return TextAlign.justify;
+      default:
+        return TextAlign.left;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    TextAlign getTextAlign() {
-      switch (widget.settings.alignment) {
-        case ReaderAlignment.center:
-          return TextAlign.center;
-        case ReaderAlignment.justified:
-          return TextAlign.justify;
-        default:
-          return TextAlign.left;
-      }
-    }
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontSize: widget.settings.textSize,
+          height: widget.settings.lineHeight,
+          fontFamily: widget.settings.typeface,
+        );
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -1391,9 +1528,9 @@ class _TxtScrollViewState extends State<_TxtScrollView> {
       child: Scrollbar(
         controller: widget.scrollController,
         interactive: true,
-        child: SingleChildScrollView(
+        child: ListView.builder(
           controller: widget.scrollController,
-          physics: const BouncingScrollPhysics(
+          physics: const ClampingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
           padding: EdgeInsets.fromLTRB(
@@ -1402,15 +1539,25 @@ class _TxtScrollViewState extends State<_TxtScrollView> {
             24,
             MediaQuery.of(context).padding.bottom + 128,
           ),
-          child: Text(
-            widget.text,
-            textAlign: getTextAlign(),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: widget.settings.textSize,
-                  height: widget.settings.lineHeight,
-                  fontFamily: widget.settings.typeface,
+          cacheExtent: 2400,
+          itemCount: _chunks.length,
+          itemBuilder: (context, index) {
+            final slice = _chunks[index];
+            final chunk = widget.text.substring(slice.start, slice.end).trim();
+
+            return RepaintBoundary(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == _chunks.length - 1 ? 0 : 18,
                 ),
-          ),
+                child: Text(
+                  chunk,
+                  textAlign: _textAlign(),
+                  style: textStyle,
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -1445,12 +1592,14 @@ class _TxtPagedView extends StatefulWidget {
 
 class _TxtPagedViewState extends State<_TxtPagedView> {
   late PageController _pageController;
-  List<String> _pages = [];
-  bool _isPaginating = true;
+  List<_TextSlice> _pages = const <_TextSlice>[];
+  bool _isPaginating = false;
+  bool _paginationComplete = false;
   int _currentPage = 0;
   Size? _lastSize;
   double? _lastTextScale;
-  bool _hasSetInitialPage = false;
+  double? _pendingProgress;
+  bool _userChangedPage = false;
   int _paginationRun = 0;
 
   @override
@@ -1460,17 +1609,39 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
   }
 
   @override
+  void dispose() {
+    _paginationRun++;
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant _TxtPagedView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Repaginate if text style (scale/font) or content changes
-    if (oldWidget.settings.textSize != widget.settings.textSize ||
-        oldWidget.settings.lineHeight != widget.settings.lineHeight ||
-        oldWidget.settings.typeface != widget.settings.typeface ||
-        oldWidget.settings.alignment != widget.settings.alignment ||
-        oldWidget.textStyle != widget.textStyle ||
-        oldWidget.text != widget.text) {
-      _isPaginating = true; // Trigger layout builder to recalculate
+    final textChanged = oldWidget.text != widget.text;
+    final layoutChanged =
+        oldWidget.settings.textSize != widget.settings.textSize ||
+            oldWidget.settings.lineHeight != widget.settings.lineHeight ||
+            oldWidget.settings.typeface != widget.settings.typeface ||
+            oldWidget.settings.alignment != widget.settings.alignment ||
+            oldWidget.textStyle != widget.textStyle;
+
+    if (textChanged || layoutChanged) {
+      _pendingProgress = textChanged
+          ? widget.initialProgress
+          : (_pendingProgress ?? _currentProgressFromPages());
+      _resetPaginationState();
     }
+  }
+
+  void _resetPaginationState() {
+    _paginationRun++;
+    _pages = const <_TextSlice>[];
+    _isPaginating = false;
+    _paginationComplete = false;
+    _lastSize = null;
+    _lastTextScale = null;
+    _userChangedPage = false;
   }
 
   TextAlign _textAlign() {
@@ -1484,37 +1655,127 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
     }
   }
 
+  double _currentProgressFromPages() {
+    if (widget.text.isEmpty || _pages.isEmpty) {
+      return widget.initialProgress ?? 0.0;
+    }
+    final page = _currentPage.clamp(0, _pages.length - 1).toInt();
+    return (_pages[page].start / widget.text.length).clamp(0.0, 1.0).toDouble();
+  }
+
+  int _pageIndexForProgress(double progress) {
+    if (_pages.isEmpty || widget.text.isEmpty) return 0;
+    final clampedProgress = progress.clamp(0.0, 1.0).toDouble();
+    final targetOffset = (widget.text.length * clampedProgress).round();
+    var low = 0;
+    var high = _pages.length - 1;
+
+    while (low <= high) {
+      final mid = (low + high) >> 1;
+      final page = _pages[mid];
+      if (targetOffset < page.start) {
+        high = mid - 1;
+      } else if (targetOffset >= page.end) {
+        low = mid + 1;
+      } else {
+        return mid;
+      }
+    }
+
+    return low.clamp(0, _pages.length - 1).toInt();
+  }
+
+  bool get _waitingForPendingProgress {
+    if (_pendingProgress == null || _pages.isEmpty || _paginationComplete) {
+      return false;
+    }
+    final targetOffset =
+        (widget.text.length * _pendingProgress!.clamp(0.0, 1.0).toDouble())
+            .round();
+    return _pages.last.end < targetOffset;
+  }
+
   TextPainter _layoutText(
     String text,
     double pageWidth,
     TextScaler textScaler,
+    TextStyle textStyle,
+    TextAlign textAlign,
   ) {
     return TextPainter(
-      text: TextSpan(text: text, style: widget.textStyle),
-      textAlign: _textAlign(),
+      text: TextSpan(text: text, style: textStyle),
+      textAlign: textAlign,
       textDirection: TextDirection.ltr,
       textScaler: textScaler,
     )..layout(maxWidth: pageWidth);
   }
 
-  bool _fitsPage(
+  double _lineHeightPx(TextStyle textStyle, TextScaler textScaler) {
+    final baseFontSize = textStyle.fontSize ?? widget.settings.textSize;
+    final scaledFontSize = math.max(8.0, textScaler.scale(baseFontSize));
+    final heightMultiplier = textStyle.height ?? widget.settings.lineHeight;
+    return math.max(scaledFontSize, scaledFontSize * heightMultiplier);
+  }
+
+  double _bottomFitReserve(TextStyle textStyle, TextScaler textScaler) {
+    return math.max(12.0, _lineHeightPx(textStyle, textScaler) * 0.6);
+  }
+
+  int _trimTrailingWhitespace(String text, int start, int end) {
+    var index = math.min(end, text.length).toInt();
+    while (index > start && _isWhitespaceCodeUnit(text.codeUnitAt(index - 1))) {
+      index--;
+    }
+    return index;
+  }
+
+  bool _fitsRange(
     String text,
+    int start,
+    int end,
     double pageWidth,
     double pageHeight,
     TextScaler textScaler,
+    TextStyle textStyle,
+    TextAlign textAlign,
   ) {
-    if (text.isEmpty) return true;
-    final painter = _layoutText(text, pageWidth, textScaler);
-    return painter.height <= pageHeight;
+    final trimmedEnd = _trimTrailingWhitespace(text, start, end);
+    if (trimmedEnd <= start) return true;
+
+    final painter = _layoutText(
+      text.substring(start, trimmedEnd),
+      pageWidth,
+      textScaler,
+      textStyle,
+      textAlign,
+    );
+    final lineMetrics = painter.computeLineMetrics();
+    if (lineMetrics.isEmpty) return true;
+
+    final lastLine = lineMetrics.last;
+    final lastLineBottom = lastLine.baseline + lastLine.descent;
+    final usableHeight = pageHeight - _bottomFitReserve(textStyle, textScaler);
+    return painter.height <= usableHeight && lastLineBottom <= usableHeight;
   }
 
   int _previousWordBoundary(String text, int start, int offset) {
-    for (int i = math.min(offset, text.length) - 1; i > start; i--) {
-      if (RegExp(r'\s').hasMatch(text[i])) {
+    for (var i = math.min(offset, text.length).toInt() - 1; i > start; i--) {
+      if (_isWhitespaceCodeUnit(text.codeUnitAt(i))) {
         return i;
       }
     }
     return -1;
+  }
+
+  int _estimateProbeChars(Size size, TextScaler textScaler) {
+    final baseFontSize = widget.textStyle.fontSize ?? widget.settings.textSize;
+    final scaledFontSize = math.max(8.0, textScaler.scale(baseFontSize));
+    final lineHeightPx = _lineHeightPx(widget.textStyle, textScaler);
+    final linesPerPage = math.max(4, (size.height / lineHeightPx).floor());
+    final averageGlyphWidth = math.max(5.0, scaledFontSize * 0.56);
+    final charsPerLine = math.max(14, (size.width / averageGlyphWidth).floor());
+
+    return math.max(128, (linesPerPage * charsPerLine * 0.65).floor());
   }
 
   int _findPageEnd({
@@ -1524,25 +1785,36 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
     required double pageWidth,
     required double pageHeight,
     required TextScaler textScaler,
+    required TextStyle textStyle,
+    required TextAlign textAlign,
+    required int probeChars,
   }) {
     final remaining = end - start;
     if (remaining <= 0) return end;
 
     bool fitsOffset(int offset) {
-      final candidate = text.substring(start, start + offset).trimRight();
-      return _fitsPage(candidate, pageWidth, pageHeight, textScaler);
+      return _fitsRange(
+        text,
+        start,
+        start + offset,
+        pageWidth,
+        pageHeight,
+        textScaler,
+        textStyle,
+        textAlign,
+      );
     }
 
-    int upper = math.min(remaining, 1024);
+    var upper = math.min(remaining, probeChars.clamp(64, 4096)).toInt();
     while (upper < remaining && fitsOffset(upper)) {
-      final nextUpper = math.min(remaining, upper * 2);
+      final nextUpper = math.min(remaining, upper * 2).toInt();
       if (nextUpper == upper) break;
       upper = nextUpper;
     }
 
-    int low = 1;
-    int high = upper;
-    int best = 0;
+    var low = 1;
+    var high = upper;
+    var best = 0;
     while (low <= high) {
       final mid = (low + high) >> 1;
       if (fitsOffset(mid)) {
@@ -1554,69 +1826,96 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
     }
 
     if (best <= 0) {
-      return math.min(start + 1, end);
+      return math.min(start + 1, end).toInt();
     }
 
-    int splitIndex = start + best;
+    var splitIndex = start + best;
     if (splitIndex < end) {
       final wordBoundary = _previousWordBoundary(text, start, splitIndex);
-      if (wordBoundary > start) {
-        final wordCandidate = text.substring(start, wordBoundary).trimRight();
-        if (_fitsPage(wordCandidate, pageWidth, pageHeight, textScaler)) {
-          splitIndex = wordBoundary;
-        }
+      if (wordBoundary > start &&
+          _fitsRange(
+            text,
+            start,
+            wordBoundary,
+            pageWidth,
+            pageHeight,
+            textScaler,
+            textStyle,
+            textAlign,
+          )) {
+        splitIndex = wordBoundary;
       }
     }
 
     while (splitIndex > start + 1 &&
-        !_fitsPage(
-          text.substring(start, splitIndex).trimRight(),
+        !_fitsRange(
+          text,
+          start,
+          splitIndex,
           pageWidth,
           pageHeight,
           textScaler,
+          textStyle,
+          textAlign,
         )) {
       final wordBoundary = _previousWordBoundary(text, start, splitIndex - 1);
       splitIndex = wordBoundary > start ? wordBoundary : splitIndex - 1;
     }
 
-    return math.min(math.max(splitIndex, start + 1), end);
+    return math.min(math.max(splitIndex, start + 1), end).toInt();
   }
 
-  /// Calculates pages against the same text box used by the render tree.
-  Future<void> _paginate(Size size, TextScaler textScaler) async {
-    if (size.width <= 0 || size.height <= 0) return;
+  void _startPaginationIfNeeded(Size size, TextScaler textScaler) {
+    if (size.width <= 0 || size.height <= 0 || widget.text.isEmpty) return;
 
-    final run = ++_paginationRun;
     final textScale =
         textScaler.scale(widget.textStyle.fontSize ?? widget.settings.textSize);
-
-    // If size hasn't changed materially, don't re-calculate
-    if (_lastSize != null &&
+    final sameLayout = _lastSize != null &&
         (size.width - _lastSize!.width).abs() < 1 &&
         (size.height - _lastSize!.height).abs() < 1 &&
         _lastTextScale == textScale &&
-        !_isPaginating) {
-      return;
-    }
+        (_isPaginating || _paginationComplete || _pages.isNotEmpty);
 
+    if (sameLayout) return;
+
+    final progress = _pendingProgress ?? _currentProgressFromPages();
+    final run = ++_paginationRun;
     _lastSize = size;
     _lastTextScale = textScale;
+    _pendingProgress = progress;
+    _pages = const <_TextSlice>[];
+    _currentPage = 0;
+    _isPaginating = true;
+    _paginationComplete = false;
+    _userChangedPage = false;
 
-    // Defer to next frame to allow UI to show loading state
-    await Future.delayed(const Duration(milliseconds: 50));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && run == _paginationRun) {
+        _paginateIncrementally(size, textScaler, run);
+      }
+    });
+  }
 
-    if (!mounted || run != _paginationRun) return;
-
-    final pages = <String>[];
+  Future<void> _paginateIncrementally(
+    Size size,
+    TextScaler textScaler,
+    int run,
+  ) async {
     final text = widget.text;
-    // Keep a small safety margin because RenderParagraph can round line boxes
-    // differently on some devices. The rendered text area remains full-size.
-    final double pageHeight = math.max(1.0, size.height - 2.0);
-    final double pageWidth = size.width;
-    int start = 0;
-    final int end = text.length;
+    final textStyle = widget.textStyle;
+    final textAlign = _textAlign();
+    final pageWidth = size.width;
+    final pageHeight = math.max(1.0, size.height - 4.0);
+    final probeChars = _estimateProbeChars(size, textScaler);
+    final pages = <_TextSlice>[];
+    var start = _skipLeadingWhitespace(text, 0);
+    final end = text.length;
+    var lastPublishedLength = 0;
+    final batchWatch = Stopwatch()..start();
 
     while (start < end) {
+      if (!mounted || run != _paginationRun) return;
+
       final splitIndex = _findPageEnd(
         text: text,
         start: start,
@@ -1624,50 +1923,84 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
         pageWidth: pageWidth,
         pageHeight: pageHeight,
         textScaler: textScaler,
+        textStyle: textStyle,
+        textAlign: textAlign,
+        probeChars: probeChars,
       );
 
-      pages.add(text.substring(start, splitIndex).trimRight());
-      start = splitIndex;
+      pages.add(_TextSlice(start, splitIndex));
+      start = _skipLeadingWhitespace(text, splitIndex);
 
-      // Skip leading whitespace at the start of the next page
-      while (start < end && RegExp(r'\s').hasMatch(text[start])) {
-        start++;
+      final shouldPublish =
+          pages.length == 1 || pages.length - lastPublishedLength >= 16;
+      final shouldYield = shouldPublish || batchWatch.elapsedMilliseconds >= 10;
+      if (shouldPublish) {
+        _publishPages(pages, complete: false, run: run);
+        lastPublishedLength = pages.length;
+      }
+      if (shouldYield) {
+        await Future<void>.delayed(Duration.zero);
+        batchWatch
+          ..reset()
+          ..start();
       }
     }
 
-    if (mounted && run == _paginationRun) {
-      setState(() {
-        _pages = pages;
-        _isPaginating = false;
+    _publishPages(pages, complete: true, run: run);
+  }
 
-        if (widget.initialProgress != null &&
-            !_hasSetInitialPage &&
-            _pages.isNotEmpty) {
-          _currentPage =
-              (widget.initialProgress! * (_pages.length - 1)).round();
-          if (_currentPage >= _pages.length) _currentPage = _pages.length - 1;
-          if (_currentPage < 0) _currentPage = 0;
-          _hasSetInitialPage = true;
-        } else if (_currentPage >= _pages.length) {
-          _currentPage = 0;
-        }
-      });
+  void _publishPages(
+    List<_TextSlice> pages, {
+    required bool complete,
+    required int run,
+  }) {
+    if (!mounted || run != _paginationRun) return;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _pageController.hasClients) {
-          if (!_pageController.position.isScrollingNotifier.value &&
-              _pageController.page?.round() != _currentPage) {
-            _pageController.jumpToPage(_currentPage);
-          }
+    int? pageToJump;
+    setState(() {
+      _pages = List<_TextSlice>.unmodifiable(pages);
+      _paginationComplete = complete;
+      _isPaginating = !complete;
+
+      if (_pendingProgress != null && !_userChangedPage && _pages.isNotEmpty) {
+        final targetOffset =
+            (widget.text.length * _pendingProgress!.clamp(0.0, 1.0).toDouble())
+                .round();
+        if (complete || _pages.last.end >= targetOffset) {
+          _currentPage = _pageIndexForProgress(_pendingProgress!);
+          _pendingProgress = null;
+          pageToJump = _currentPage;
         }
-      });
+      }
+
+      if (_pages.isNotEmpty && _currentPage >= _pages.length) {
+        _currentPage = _pages.length - 1;
+        pageToJump = _currentPage;
+      }
+    });
+
+    if (_pages.isNotEmpty && (complete || pageToJump != null)) {
+      final page = pageToJump ?? _currentPage;
+      _jumpToPage(page);
+      widget.onPageChanged?.call(page, _pages.length);
     }
   }
 
+  void _jumpToPage(int page) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients || _pages.isEmpty) return;
+      final targetPage = page.clamp(0, _pages.length - 1).toInt();
+      if (_pageController.page?.round() != targetPage) {
+        _pageController.jumpToPage(targetPage);
+      }
+    });
+  }
+
   void _nextPage() {
-    if (_currentPage < _pages.length - 1) {
+    final itemCount = _paginationComplete ? _pages.length : _pages.length + 1;
+    if (_currentPage < itemCount - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
       );
     }
@@ -1676,124 +2009,129 @@ class _TxtPagedViewState extends State<_TxtPagedView> {
   void _previousPage() {
     if (_currentPage > 0) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
       );
     }
   }
 
+  Widget _buildLoadingPage(String message, TextStyle footerStyle) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(message, style: footerStyle),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // We use LayoutBuilder to get the EXACT size available for the text
     return LayoutBuilder(
       builder: (context, constraints) {
         final textScaler = MediaQuery.textScalerOf(context);
-        final textScale = textScaler
-            .scale(widget.textStyle.fontSize ?? widget.settings.textSize);
-        // Margins chosen to ensure text always clears the overlaid header
-        // and bottom-controls bars, giving a premium e-reader feel at any
-        // font size. Since bars are Positioned overlays (not in the layout
-        // flow), constraints.maxHeight is stable — no repagination on bar
-        // show/hide.
         const double horizontalMargin = 24.0;
-        const double topMargin = 40.0; // clears header overlay (~36 dp)
-        const double bottomMargin = 50.0; // clears bottom-controls overlay
-        const double footerHeight = 32.0; // page-counter line
+        const double topMargin = 40.0;
+        const double bottomMargin = 50.0;
+        const double footerHeight = 32.0;
 
-        // The textAreaSize must exactly match what the Text widget renders.
-        final Size textAreaSize = Size(
+        final textAreaSize = Size(
           math.max(1.0, constraints.maxWidth - (horizontalMargin * 2)),
           math.max(
             1.0,
             constraints.maxHeight - topMargin - bottomMargin - footerHeight,
           ),
         );
+        final footerStyle = widget.textStyle.copyWith(
+          fontSize: 11,
+          color: widget.textStyle.color?.withOpacity(0.45),
+        );
 
-        // Paginate when explicitly flagged (text/settings changed) or on first
-        // run. Ignore height changes — they are stable with the Stack layout.
-        if (_isPaginating ||
-            _lastSize == null ||
-            (textAreaSize.width - (_lastSize?.width ?? 0)).abs() > 1 ||
-            (textAreaSize.height - (_lastSize?.height ?? 0)).abs() > 1 ||
-            _lastTextScale != textScale) {
-          _paginate(textAreaSize, textScaler);
-        }
+        _startPaginationIfNeeded(textAreaSize, textScaler);
 
-        if (_isPaginating) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Formatting book...'),
-              ],
-            ),
+        if (_pages.isEmpty || _waitingForPendingProgress) {
+          return _buildLoadingPage(
+            _pages.isEmpty ? 'Preparing pages...' : 'Finding your place...',
+            footerStyle,
           );
         }
 
-        return Stack(
-          children: [
-            GestureDetector(
-              onTapUp: (details) {
-                final width = MediaQuery.of(context).size.width;
-                if (details.localPosition.dx > width * 0.66) {
-                  _nextPage();
-                } else if (details.localPosition.dx < width * 0.33) {
-                  _previousPage();
-                } else {
-                  widget.onCenterTap?.call();
-                }
-              },
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _pages.length,
-                onPageChanged: (index) {
-                  setState(() => _currentPage = index);
-                  widget.onPageChanged?.call(index, _pages.length);
-                },
-                physics: const BouncingScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return Container(
-                    color: Colors.transparent,
-                    padding: const EdgeInsets.only(
-                      left: horizontalMargin,
-                      right: horizontalMargin,
-                      top: topMargin,
-                      bottom: bottomMargin,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          height: textAreaSize.height,
-                          child: Text(
-                            _pages[index],
-                            textAlign: _textAlign(),
-                            style: widget.textStyle,
-                            overflow: TextOverflow.visible,
-                          ),
+        final itemCount =
+            _paginationComplete ? _pages.length : _pages.length + 1;
+
+        return GestureDetector(
+          onTapUp: (details) {
+            final width = MediaQuery.of(context).size.width;
+            if (details.localPosition.dx > width * 0.66) {
+              _nextPage();
+            } else if (details.localPosition.dx < width * 0.33) {
+              _previousPage();
+            } else {
+              widget.onCenterTap?.call();
+            }
+          },
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: itemCount,
+            allowImplicitScrolling: false,
+            physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+            onPageChanged: (index) {
+              if (index >= _pages.length) return;
+              _userChangedPage = true;
+              if (_currentPage != index) {
+                setState(() => _currentPage = index);
+              }
+              widget.onPageChanged?.call(index, _pages.length);
+            },
+            itemBuilder: (context, index) {
+              if (index >= _pages.length) {
+                return _buildLoadingPage(
+                    'Counting remaining pages...', footerStyle);
+              }
+
+              final slice = _pages[index];
+              final pageText =
+                  widget.text.substring(slice.start, slice.end).trim();
+              final footerText = _paginationComplete
+                  ? '${index + 1} / ${_pages.length}'
+                  : '${index + 1} / ...';
+
+              return RepaintBoundary(
+                child: Container(
+                  color: Colors.transparent,
+                  padding: const EdgeInsets.only(
+                    left: horizontalMargin,
+                    right: horizontalMargin,
+                    top: topMargin,
+                    bottom: bottomMargin,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        height: textAreaSize.height,
+                        child: Text(
+                          pageText,
+                          textAlign: _textAlign(),
+                          style: widget.textStyle,
+                          overflow: TextOverflow.visible,
                         ),
-                        SizedBox(
-                          height: footerHeight,
-                          child: Center(
-                            child: Text(
-                              '${index + 1} / ${_pages.length}',
-                              style: widget.textStyle.copyWith(
-                                fontSize: 11,
-                                color:
-                                    widget.textStyle.color?.withOpacity(0.45),
-                              ),
-                            ),
-                          ),
+                      ),
+                      SizedBox(
+                        height: footerHeight,
+                        child: Center(
+                          child: Text(footerText, style: footerStyle),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );

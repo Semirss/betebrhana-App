@@ -68,6 +68,30 @@ class ReaderSettings {
     ReaderTheme.sepia: Color(0xFFF5EFE1),
     ReaderTheme.oled: Color(0xFF000000),
   };
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is ReaderSettings &&
+            other.theme == theme &&
+            other.typeface == typeface &&
+            other.textSize == textSize &&
+            other.autoScrollSpeed == autoScrollSpeed &&
+            other.lineHeight == lineHeight &&
+            other.alignment == alignment &&
+            other.usePublisherDefaults == usePublisherDefaults;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        theme,
+        typeface,
+        textSize,
+        autoScrollSpeed,
+        lineHeight,
+        alignment,
+        usePublisherDefaults,
+      );
 }
 
 class DisplaySettingsSheet extends StatefulWidget {
@@ -87,8 +111,11 @@ class DisplaySettingsSheet extends StatefulWidget {
 }
 
 class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
+  static const Duration _commitDelay = Duration(milliseconds: 350);
+
   late ReaderSettings _settings;
   Timer? _debounceTimer;
+  bool _hasUncommittedChanges = false;
 
   @override
   void initState() {
@@ -98,6 +125,9 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
 
   @override
   void dispose() {
+    if (_hasUncommittedChanges && _settings != widget.currentSettings) {
+      widget.onSettingsChanged(_settings);
+    }
     _debounceTimer?.cancel();
     super.dispose();
   }
@@ -106,10 +136,26 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
     setState(() {
       _settings = newSettings;
     });
+    _hasUncommittedChanges = true;
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+    _debounceTimer = Timer(_commitDelay, () {
+      _hasUncommittedChanges = false;
       widget.onSettingsChanged(_settings);
     });
+  }
+
+  void _previewSettings(ReaderSettings newSettings) {
+    setState(() {
+      _settings = newSettings;
+    });
+    _hasUncommittedChanges = true;
+    _debounceTimer?.cancel();
+  }
+
+  void _commitSettings() {
+    _hasUncommittedChanges = false;
+    _debounceTimer?.cancel();
+    widget.onSettingsChanged(_settings);
   }
 
   @override
@@ -215,9 +261,10 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
                               secondaryTextColor: secondaryTextColor,
                               accentColor: accentColor,
                               onChanged: (value) {
-                                _updateSettings(
+                                _previewSettings(
                                     _settings.copyWith(textSize: value));
                               },
+                              onChangeEnd: (_) => _commitSettings(),
                             ),
                             // Auto Scroll Speed Slider
                             _buildSliderRow(
@@ -232,9 +279,10 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
                               secondaryTextColor: secondaryTextColor,
                               accentColor: accentColor,
                               onChanged: (value) {
-                                _updateSettings(
+                                _previewSettings(
                                     _settings.copyWith(autoScrollSpeed: value));
                               },
+                              onChangeEnd: (_) => _commitSettings(),
                             ),
                             const SizedBox(height: 16),
 
@@ -251,9 +299,10 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
                               secondaryTextColor: secondaryTextColor,
                               accentColor: accentColor,
                               onChanged: (value) {
-                                _updateSettings(
+                                _previewSettings(
                                     _settings.copyWith(lineHeight: value));
                               },
+                              onChangeEnd: (_) => _commitSettings(),
                             ),
                             const SizedBox(height: 20),
 
@@ -374,6 +423,7 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
     required double max,
     required String displayValue,
     required ValueChanged<double> onChanged,
+    ValueChanged<double>? onChangeEnd,
     required Color textColor,
     required Color secondaryTextColor,
     required Color accentColor,
@@ -415,6 +465,7 @@ class _DisplaySettingsSheetState extends State<DisplaySettingsSheet> {
             max: max,
             divisions: divisions,
             onChanged: onChanged,
+            onChangeEnd: onChangeEnd,
           ),
         ),
       ],
